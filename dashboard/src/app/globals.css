@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Marathi:ital@0;1&family=Baloo+2:wght@400;500;600;700;800&family=Yatra+One&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+body {
+  font-family: 'Tiro Devanagari Marathi', 'Baloo 2', 'Noto Sans Devanagari', serif;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, button, input, select, textarea {
+  font-family: 'Tiro Devanagari Marathi', 'Baloo 2', 'Noto Sans Devanagari', serif;
+}
+
+@layer utilities {
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0 !important;
+    size: A4 portrait;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFDF9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-page-wrapper {
+    padding: 5mm 8mm 8mm 8mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  thead.print-header-group {
+    display: table-header-group !important;
+  }
+
+  thead.print-header-group th {
+    padding-bottom: 6px !important;
+  }
+
+  /* Allow family table section to split cleanly across pages when content is long */
+  .family-table-section,
+  .family-table-section table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Repeat table column headers on every page when table splits */
+  .family-table-section table thead {
+    display: table-header-group !important;
+  }
+
+  /* Prevent individual table rows from breaking mid-row */
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
