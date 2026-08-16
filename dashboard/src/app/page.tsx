@@ -111,52 +111,37 @@ export default function DashboardHome() {
   const notificationRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-  const handleDeleteRegistration = async (id: string) => {
-    if (!id) return;
-    try {
-      setIsDeleting(true);
-      let res = await fetch(`${API_URL}/api/register/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+ const handleDeleteRegistration = async (id: string) => {
+  if (!id) return;
+  try {
+    setIsDeleting(true);
+    
+    // Explicitly send the DELETE request to the exact matching backend route
+    const res = await fetch(`${API_URL}/api/register/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
 
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
+    const data = await res.json();
 
-      // If DELETE method failed or preflight issue occurred, try POST fallback
-      if (!res.ok || !data?.success) {
-        const fallbackRes = await fetch(`${API_URL}/api/register/delete/${id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        data = await fallbackRes.json();
-        if (fallbackRes.ok && data.success) {
-          res = fallbackRes;
-        }
+    if (res.ok && data.success) {
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      if (selectedReg?.id === id) {
+        setSelectedReg(null);
       }
-
-      if (data && data.success) {
-        setRegistrations((prev) => prev.filter((r) => r.id !== id));
-        if (selectedReg?.id === id) {
-          setSelectedReg(null);
-        }
-        setDeleteConfirmReg(null);
-        setToastMessage("अर्ज यशस्वीरित्या डेटाबेसमधून हटवला गेला.");
-        setTimeout(() => setToastMessage(null), 4000);
-      } else {
-        alert(data?.error || "अर्ज हटवताना त्रुटी झाली!");
-      }
-    } catch (err: any) {
-      console.error("Delete registration error:", err);
-      alert("सर्व्हरशी संपर्क होऊ शकला नाही. हटवता आले नाही.");
-    } finally {
-      setIsDeleting(false);
+      setDeleteConfirmReg(null);
+      setToastMessage("अर्ज यशस्वीरित्या डेटाबेसमधून हटवला गेला.");
+      setTimeout(() => setToastMessage(null), 4000);
+    } else {
+      alert(data?.error || "अर्ज हटवताना त्रुटी झाली!");
     }
-  };
+  } catch (err: any) {
+    console.error("Delete registration error:", err);
+    alert("सर्व्हरशी संपर्क होऊ शकला नाही. हटवता आले नाही.");
+  } finally {
+    setIsDeleting(false);
+  }
+};
 
   // Check login session on mount: if not logged in, redirect to /login
   useEffect(() => {
