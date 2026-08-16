@@ -116,9 +116,9 @@ export default function DashboardHome() {
   try {
     setIsDeleting(true);
     
-    // Explicitly send the DELETE request to the exact matching backend route
-    const res = await fetch(`${API_URL}/api/register/${id}`, {
-      method: "DELETE",
+    // Explicitly send the request to the exact matching POST fallback route
+    const res = await fetch(`${API_URL}/api/register/delete/${id}`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
     });
 
