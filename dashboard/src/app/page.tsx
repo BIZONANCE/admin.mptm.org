@@ -177,7 +177,7 @@ export default function DashboardHome() {
     setProfileDropdownOpen(false);
     router.push("/login");
   };
-
+ 
 
   const fetchRegistrations = async () => {
     try {
