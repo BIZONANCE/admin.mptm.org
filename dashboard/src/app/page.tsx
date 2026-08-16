@@ -38,6 +38,8 @@ import {
   Banknote,
   QrCode,
   Lock,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 interface FamilyMember {
@@ -93,6 +95,9 @@ export default function DashboardHome() {
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
   
   const [selectedReg, setSelectedReg] = useState<MemberRegistration | null>(null);
+  const [deleteConfirmReg, setDeleteConfirmReg] = useState<MemberRegistration | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [screenshotZoom, setScreenshotZoom] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
@@ -105,6 +110,53 @@ export default function DashboardHome() {
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  const handleDeleteRegistration = async (id: string) => {
+    if (!id) return;
+    try {
+      setIsDeleting(true);
+      let res = await fetch(`${API_URL}/api/register/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      // If DELETE method failed or preflight issue occurred, try POST fallback
+      if (!res.ok || !data?.success) {
+        const fallbackRes = await fetch(`${API_URL}/api/register/delete/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        data = await fallbackRes.json();
+        if (fallbackRes.ok && data.success) {
+          res = fallbackRes;
+        }
+      }
+
+      if (data && data.success) {
+        setRegistrations((prev) => prev.filter((r) => r.id !== id));
+        if (selectedReg?.id === id) {
+          setSelectedReg(null);
+        }
+        setDeleteConfirmReg(null);
+        setToastMessage("अर्ज यशस्वीरित्या डेटाबेसमधून हटवला गेला.");
+        setTimeout(() => setToastMessage(null), 4000);
+      } else {
+        alert(data?.error || "अर्ज हटवताना त्रुटी झाली!");
+      }
+    } catch (err: any) {
+      console.error("Delete registration error:", err);
+      alert("सर्व्हरशी संपर्क होऊ शकला नाही. हटवता आले नाही.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Check login session on mount: if not logged in, redirect to /login
   useEffect(() => {
@@ -836,7 +888,8 @@ export default function DashboardHome() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
-                          <th className="py-3 px-4">पावती क्र. व दिनांक</th>
+                          <th className="py-3 px-4">दिनांक (Date)</th>
+                          <th className="py-3 px-4">पावती क्रमांक</th>
                           <th className="py-3 px-4">मुख्य सदस्य</th>
                           <th className="py-3 px-4">संपर्क व पत्ता</th>
                           <th className="py-3 px-4">प्रभाग क्र.</th>
@@ -859,17 +912,19 @@ export default function DashboardHome() {
                               key={reg.id}
                               className="hover:bg-blue-50/30 transition duration-150 group"
                             >
-                              {/* Receipt & Date */}
-                              <td className="py-3 px-4 align-top">
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-blue-900 font-mono text-xs bg-blue-50 border border-blue-200 px-2 py-0.5 rounded w-max">
-                                    {reg.receiptNo}
-                                  </span>
-                                  <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-1">
-                                    <Calendar className="w-3 h-3 text-slate-400" />
-                                    {reg.date}
-                                  </span>
-                                </div>
+                              {/* 1. Date (Starting Column) */}
+                              <td className="py-3 px-4 align-top whitespace-nowrap">
+                                <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 bg-slate-100/90 px-2 py-1 rounded border border-slate-200/90 w-max">
+                                  <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                  {reg.date}
+                                </span>
+                              </td>
+
+                              {/* 2. Receipt No. */}
+                              <td className="py-3 px-4 align-top whitespace-nowrap">
+                                <span className="font-bold text-blue-900 font-mono text-xs bg-blue-50 border border-blue-200 px-2 py-0.5 rounded inline-block">
+                                  {reg.receiptNo}
+                                </span>
                               </td>
 
                               {/* Main Member Info */}
@@ -951,15 +1006,27 @@ export default function DashboardHome() {
                                 </span>
                               </td>
 
-                              {/* Action Buttons */}
+                              {/* Action Buttons: ONLY Eye Icon Button & Delete Icon Button */}
                               <td className="py-3 px-4 align-top text-right">
-                                <button
-                                  onClick={() => setSelectedReg(reg)}
-                                  className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-2xs"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-amber-700" />
-                                  <span>सविस्तर</span>
-                                </button>
+                                <div className="flex items-center justify-end gap-2">
+                                  {/* Eye Icon Button */}
+                                  <button
+                                    onClick={() => setSelectedReg(reg)}
+                                    className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95"
+                                    title="सविस्तर पावती पहा (View Receipt)"
+                                  >
+                                    <Eye className="w-4 h-4 text-amber-700" />
+                                  </button>
+
+                                  {/* Delete Icon Button */}
+                                  <button
+                                    onClick={() => setDeleteConfirmReg(reg)}
+                                    className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 flex items-center justify-center transition shadow-2xs active:scale-95"
+                                    title="अर्ज हटवा (Delete Registration)"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1174,6 +1241,98 @@ export default function DashboardHome() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION POPUP MODAL */}
+      {deleteConfirmReg && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200 no-print">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-red-200 overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left font-sans">
+            <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4 mx-auto sm:mx-0">
+              <Trash2 className="w-7 h-7 text-red-600" />
+            </div>
+
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">
+              Do you really want to delete this receipt?
+            </h3>
+            <p className="text-xs font-bold text-slate-500 mt-1">
+              पावती हटवण्याची खात्री करा? (Receipt No: <span className="font-mono text-slate-900 font-extrabold">{deleteConfirmReg.receiptNo}</span>)
+            </p>
+
+            {/* Receipt Summary Info */}
+            <div className="mt-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs text-slate-800">
+              <p className="flex items-center justify-between">
+                <span className="text-slate-600">पावती क्र. (Receipt No):</span>
+                <span className="font-mono font-bold text-slate-900">{deleteConfirmReg.receiptNo}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-slate-600">मुख्य सदस्य (Member Name):</span>
+                <span className="font-bold text-slate-900">{deleteConfirmReg.mainMembers[0]?.fullName || "N/A"}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-slate-600">मोबाईल क्र. (Mobile):</span>
+                <span className="font-mono font-bold text-slate-800">{deleteConfirmReg.mainMembers[0]?.mobileNo || "N/A"}</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span className="text-slate-600">जमा शुल्क (Fee Amount):</span>
+                <span className="font-extrabold text-emerald-700">₹{deleteConfirmReg.registrationFee}</span>
+              </p>
+            </div>
+
+            {/* Warning Alert */}
+            <div className="mt-3.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-red-800">Warning / सूचना:</p>
+                <p className="mt-0.5">These changes cannot be undone! (हे बदल पूर्ववत केले जाऊ शकत नाहीत!)</p>
+              </div>
+            </div>
+
+            {/* Action Buttons: Cancel and Delete */}
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmReg(null)}
+                disabled={isDeleting}
+                className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-extrabold rounded-xl transition cursor-pointer"
+              >
+                Cancel (रद्द करा)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDeleteRegistration(deleteConfirmReg.id)}
+                disabled={isDeleting}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete (हटवा)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST SUCCESS NOTIFICATION */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[120] bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-xs font-bold">{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="ml-2 text-slate-400 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
