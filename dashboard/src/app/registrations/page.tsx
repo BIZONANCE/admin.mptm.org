@@ -324,14 +324,16 @@ export default function RegistrationsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
-            <button
-              onClick={() => setIsLinkModalOpen(true)}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 shrink-0"
-              title="सदस्य नोंदणी फॉर्मची लिंक तयार करा व शेअर करा"
-            >
-              <LinkIcon className="w-4 h-4" />
-              <span>फॉर्म लिंक तयार करा (Generate Link)</span>
-            </button>
+            {!isSuperAdmin && (
+              <button
+                onClick={() => setIsLinkModalOpen(true)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 shrink-0"
+                title="सदस्य नोंदणी फॉर्मची लिंक तयार करा व शेअर करा"
+              >
+                <LinkIcon className="w-4 h-4" />
+                <span>फॉर्म लिंक तयार करा (Generate Link)</span>
+              </button>
+            )}
 
             <button
               onClick={exportToCSV}
