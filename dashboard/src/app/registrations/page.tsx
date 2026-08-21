@@ -174,7 +174,18 @@ export default function RegistrationsPage() {
   };
 
   const filteredRegistrations = useMemo(() => {
+    const userEmailClean = loggedUserEmail.trim().toLowerCase();
+
     return registrations.filter((reg) => {
+      // 1. Role Scoping: Regular users ONLY see registrations referred by them
+      if (!isSuperAdmin) {
+        const regRef = (reg.referredBy || "").trim().toLowerCase();
+        if (!userEmailClean || regRef !== userEmailClean) {
+          return false;
+        }
+      }
+
+      // 2. Payment Method Filter
       const pMethod = (reg.paymentMethod || "").toLowerCase();
       let matchesPayment = true;
       if (paymentFilter === "CASH") {
@@ -190,8 +201,8 @@ export default function RegistrationsPage() {
 
       if (!matchesPayment) return false;
 
-      // Filter by Referrer User for Super Admin
-      if (referrerFilter !== "ALL") {
+      // 3. Referrer User Filter (for Super Admin dropdown selection)
+      if (isSuperAdmin && referrerFilter !== "ALL") {
         const regRef = (reg.referredBy || "").trim().toLowerCase();
         const targetRef = referrerFilter.trim().toLowerCase();
 
@@ -236,7 +247,7 @@ export default function RegistrationsPage() {
 
       return matchesFamilyMember;
     });
-  }, [registrations, searchQuery, paymentFilter, referrerFilter]);
+  }, [registrations, searchQuery, paymentFilter, referrerFilter, isSuperAdmin, loggedUserEmail]);
 
   const exportToCSV = () => {
     if (filteredRegistrations.length === 0) return;
@@ -297,11 +308,18 @@ export default function RegistrationsPage() {
         {/* Page Title & Subtitle */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              सदस्य नोंदणी डेटा
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5 flex-wrap">
+              <span>सदस्य नोंदणी डेटा</span>
+              {!isSuperAdmin && loggedUserEmail && (
+                <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300 shadow-2xs">
+                  👤 तुमचे रेफर केलेले अर्ज ({filteredRegistrations.length})
+                </span>
+              )}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              महाराष्ट्र प्रांतिक तैलिक महासभा - अमरावती विभाग (सर्व सदस्य नोंदणी फॉर्म डेटा)
+              {isSuperAdmin
+                ? "महाराष्ट्र प्रांतिक तैलिक महासभा - अमरावती विभाग (सर्व सदस्य नोंदणी फॉर्म डेटा)"
+                : `महाराष्ट्र प्रांतिक तैलिक महासभा (${loggedUserEmail} द्वारे रेफर केलेले नोंदणी अर्ज)`}
             </p>
           </div>
 
