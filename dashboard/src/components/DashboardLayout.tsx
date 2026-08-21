@@ -38,20 +38,67 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
 
+  const [userRole, setUserRole] = useState<string>("USER");
+  const [loggedUsername, setLoggedUsername] = useState<string>("");
+
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-  // Check login state
+  // Check login state and user role
   useEffect(() => {
+    let queryRole: string | null = null;
+    let queryUsername: string | null = null;
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      queryRole = params.get("role");
+      queryUsername = params.get("username");
+
+      if (queryRole && queryUsername) {
+        localStorage.setItem("mptm_admin_logged_in", "true");
+        localStorage.setItem("mptm_admin_username", queryUsername);
+        localStorage.setItem("mptm_admin_role", queryRole);
+        document.cookie = `mptm_admin_token=mptm_user_otp_token; path=/; max-age=86400; SameSite=Lax`;
+
+        // Clean query params from URL bar
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+
     const savedLogin = localStorage.getItem("mptm_admin_logged_in");
     if (savedLogin !== "true") {
       setIsAuthenticated(false);
       router.push("/login");
     } else {
       setIsAuthenticated(true);
+      const uName = queryUsername || localStorage.getItem("mptm_admin_username") || "";
+      const isSuperCreds = uName === "mptmamravati.org" || uName === "admin@mptmamravati.org";
+      const savedRole = localStorage.getItem("mptm_admin_role");
+      const role = queryRole || savedRole || (isSuperCreds ? "SUPER_ADMIN" : "USER");
+
+      // Strictly enforce USER role if credentials are not super admin
+      const finalRole = isSuperCreds ? "SUPER_ADMIN" : (role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "USER");
+      setUserRole(finalRole);
+      setLoggedUsername(uName);
     }
   }, [router]);
+
+  const isSuperAdmin = useMemo(() => {
+    if (loggedUsername === "mptmamravati.org" || loggedUsername === "admin@mptmamravati.org") return true;
+    if (userRole === "SUPER_ADMIN") return true;
+    return false;
+  }, [userRole, loggedUsername]);
+
+  // Route protection for non-super-admin users
+  useEffect(() => {
+    if (isAuthenticated && !isSuperAdmin) {
+      if (pathname === "/" || pathname === "/manage-users") {
+        router.replace("/registrations");
+      }
+    }
+  }, [isAuthenticated, isSuperAdmin, pathname, router]);
 
   // Fetch registrations for notification dropdown
   const fetchRegistrations = async () => {
@@ -93,6 +140,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     document.cookie = "mptm_admin_token=; path=/; max-age=0; SameSite=Lax";
     localStorage.removeItem("mptm_admin_logged_in");
     localStorage.removeItem("mptm_admin_username");
+    localStorage.removeItem("mptm_admin_role");
     setIsAuthenticated(false);
     router.push("/login");
   };
@@ -304,9 +352,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-blue-600" />
-                      Super Admin (मुख्य प्रशासक)
+                      {isSuperAdmin ? "Super Admin (मुख्य प्रशासक)" : "User (सदस्य)"}
                     </p>
-                    <p className="text-[11px] text-slate-500">mptmamravati.org</p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {loggedUsername || (isSuperAdmin ? "mptmamravati.org" : "user")}
+                    </p>
                   </div>
 
                   <button
@@ -335,29 +385,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           }`}
         >
           <div className={`py-3 space-y-1 ${sidebarOpen ? "pr-3 pl-2" : "px-2 flex flex-col items-center"}`}>
-            {/* Tab 1: Dashboard (Route "/") */}
-            <button
-              onClick={() => router.push("/")}
-              title="Dashboard"
-              className={`flex items-center transition-all ${
-                sidebarOpen
-                  ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
-                      pathname === "/"
-                        ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                        : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                    }`
-                  : `w-10 h-10 justify-center rounded-xl ${
-                      pathname === "/"
-                        ? "bg-[#D3E3FD] text-[#0B57D0]"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`
-              }`}
-            >
-              <LayoutDashboard className={`w-5 h-5 ${pathname === "/" ? "text-[#0B57D0]" : "text-slate-600"}`} />
-              {sidebarOpen && <span>Dashboard</span>}
-            </button>
+            {/* Tab 1: Dashboard (Route "/") - Super Admin Only */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => router.push("/")}
+                title="Dashboard"
+                className={`flex items-center transition-all ${
+                  sidebarOpen
+                    ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
+                        pathname === "/"
+                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
+                          : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                      }`
+                    : `w-10 h-10 justify-center rounded-xl ${
+                        pathname === "/"
+                          ? "bg-[#D3E3FD] text-[#0B57D0]"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`
+                }`}
+              >
+                <LayoutDashboard className={`w-5 h-5 ${pathname === "/" ? "text-[#0B57D0]" : "text-slate-600"}`} />
+                {sidebarOpen && <span>Dashboard</span>}
+              </button>
+            )}
 
-            {/* Tab 2: सदस्य नोंदणी (Route "/registrations") */}
+            {/* Tab 2: सदस्य नोंदणी (Route "/registrations") - Visible to Everyone */}
             <button
               onClick={() => router.push("/registrations")}
               title="सदस्य नोंदणी"
@@ -379,27 +431,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {sidebarOpen && <span>सदस्य नोंदणी</span>}
             </button>
 
-            {/* Tab 3: Manage Users (Route "/manage-users") */}
-            <button
-              onClick={() => router.push("/manage-users")}
-              title="Manage Users"
-              className={`flex items-center transition-all ${
-                sidebarOpen
-                  ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
-                      pathname === "/manage-users"
-                        ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                        : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                    }`
-                  : `w-10 h-10 justify-center rounded-xl ${
-                      pathname === "/manage-users"
-                        ? "bg-[#D3E3FD] text-[#0B57D0]"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`
-              }`}
-            >
-              <Users className={`w-5 h-5 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-slate-600"}`} />
-              {sidebarOpen && <span>Manage Users</span>}
-            </button>
+            {/* Tab 3: Manage Users (Route "/manage-users") - Super Admin Only */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => router.push("/manage-users")}
+                title="Manage Users"
+                className={`flex items-center transition-all ${
+                  sidebarOpen
+                    ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
+                        pathname === "/manage-users"
+                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
+                          : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                      }`
+                    : `w-10 h-10 justify-center rounded-xl ${
+                        pathname === "/manage-users"
+                          ? "bg-[#D3E3FD] text-[#0B57D0]"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`
+                }`}
+              >
+                <Users className={`w-5 h-5 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-slate-600"}`} />
+                {sidebarOpen && <span>Manage Users</span>}
+              </button>
+            )}
           </div>
         </aside>
 

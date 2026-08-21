@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Users,
   RefreshCw,
@@ -11,12 +12,28 @@ import {
   CheckCircle2,
   AlertCircle,
   Trash2,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { ManagedUser } from "../../types";
 import { formatDateToDDMMYYYY } from "../../utils/formatters";
 
 export default function ManageUsersPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const role = localStorage.getItem("mptm_admin_role");
+      const username = localStorage.getItem("mptm_admin_username");
+      const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
+      if (!isSuper) {
+        router.replace("/registrations");
+      }
+    }
+  }, [router]);
+
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("mptm_managed_users");
@@ -35,7 +52,7 @@ export default function ManageUsersPage() {
         date: formatDateToDDMMYYYY(new Date()),
         time: "10:00 AM",
         status: "VERIFIED",
-        role: "Administrator",
+        role: "Super Admin",
         createdAt: new Date().toISOString(),
       },
     ];
@@ -49,13 +66,37 @@ export default function ManageUsersPage() {
   const [userErrorMsg, setUserErrorMsg] = useState<string | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
 
+  // Edit / Save state per row
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editNameInput, setEditNameInput] = useState<string>("");
+  const [editPhoneInput, setEditPhoneInput] = useState<string>("");
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  // Fetch managed users from backend API on component mount and sync with localStorage
+  useEffect(() => {
+    const syncBackendUsers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/users`);
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.data)) {
+          setManagedUsers(data.data);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("mptm_managed_users", JSON.stringify(data.data));
+          }
+        }
+      } catch (err) {
+        console.error("Fetch managed users error:", err);
+      }
+    };
+    syncBackendUsers();
+  }, [API_URL]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("mptm_managed_users", JSON.stringify(managedUsers));
     }
   }, [managedUsers]);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const handleSendVerificationCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -78,7 +119,7 @@ export default function ManageUsersPage() {
       const res = await fetch(`${API_URL}/api/users/send-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailTrimmed }),
+        body: JSON.stringify({ email: emailTrimmed, isRegistration: true }),
       });
       const data = await res.json();
 
@@ -152,22 +193,74 @@ export default function ManageUsersPage() {
       createdAt: now.toISOString(),
     };
 
+    // Save user to backend API store
+    try {
+      await fetch(`${API_URL}/api/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      });
+    } catch (err) {
+      console.error("Backend user save error:", err);
+    }
+
     setManagedUsers((prev) => [newUser, ...prev]);
     setNewEmailInput("");
     setInputOtp("");
     setGeneratedOtp("");
     setVerificationStep("IDLE");
-    setUserSuccessMsg("✅ इमेल पडताळणी पूर्ण झाली! इमेल, दिनांक व वेळ आपोआप जोडली आहे. कृपया खालील तक्त्यामध्ये नाव व मोबाईल क्रमांक मॅन्युअली टाईप करा.");
+    
+    // Automatically start editing the new user so admin can save name and phone
+    setEditingUserId(newUser.id);
+    setEditNameInput("");
+    setEditPhoneInput("");
+    setUserSuccessMsg("✅ इमेल पडताळणी पूर्ण झाली! इमेल, दिनांक व वेळ आपोआप जोडली आहे. कृपया खालील तक्त्यामध्ये नाव व मोबाईल क्रमांक टाईप करून Save वर क्लिक करा.");
   };
 
-  const handleUpdateManagedUser = (id: string, field: "name" | "phone", value: string) => {
-    setManagedUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, [field]: value } : u))
+  const handleStartEditUser = (user: ManagedUser) => {
+    setEditingUserId(user.id);
+    setEditNameInput(user.name || "");
+    setEditPhoneInput(user.phone || "");
+  };
+
+  const handleSaveEditUser = (id: string) => {
+    const updatedUsers = managedUsers.map((u) =>
+      u.id === id ? { ...u, name: editNameInput.trim(), phone: editPhoneInput.trim() } : u
     );
+    setManagedUsers(updatedUsers);
+
+    const targetUser = updatedUsers.find((u) => u.id === id);
+    if (targetUser) {
+      fetch(`${API_URL}/api/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(targetUser),
+      }).catch((e) => console.error("User update sync error:", e));
+    }
+
+    setEditingUserId(null);
+    setUserSuccessMsg("✅ युझरचे नाव व फोन नंबर यशस्वीरित्या सेव्ह (Save) केले!");
+  };
+
+  const handleCancelEditUser = () => {
+    setEditingUserId(null);
+    setEditNameInput("");
+    setEditPhoneInput("");
   };
 
   const handleDeleteManagedUser = (id: string) => {
+    if (editingUserId === id) {
+      setEditingUserId(null);
+    }
+    const targetUser = managedUsers.find((u) => u.id === id);
     setManagedUsers((prev) => prev.filter((u) => u.id !== id));
+
+    if (targetUser) {
+      fetch(`${API_URL}/api/users/${targetUser.id}`, { method: "DELETE" }).catch((e) =>
+        console.error("Backend delete sync error:", e)
+      );
+    }
+
     setUserSuccessMsg("युझर डेटावेसमधून हटवला गेला.");
   };
 
@@ -316,7 +409,7 @@ export default function ManageUsersPage() {
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              * इमेल, दिनांक व वेळ आपोआप जोडली आहे. नाव व फोन नंबर मॅन्युअली टाईप करा.
+              * नाव किंवा फोन नंबर बदलण्यासाठी Action कॉलममधील Edit / Save बटणाचा वापर करा.
             </p>
           </div>
 
@@ -326,8 +419,8 @@ export default function ManageUsersPage() {
                 <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
                   <th className="py-3 px-4 w-12 text-center">अ. क्र.</th>
                   <th className="py-3 px-4">इमेल (Email - Auto)</th>
-                  <th className="py-3 px-4 min-w-[180px]">नाव (Name - Manual)</th>
-                  <th className="py-3 px-4 min-w-[160px]">फोन नंबर (Phone - Manual)</th>
+                  <th className="py-3 px-4 min-w-[180px]">नाव (Name)</th>
+                  <th className="py-3 px-4 min-w-[160px]">फोन नंबर (Phone)</th>
                   <th className="py-3 px-4">दिनांक (Date - Auto)</th>
                   <th className="py-3 px-4">वेळ (Time - Auto)</th>
                   <th className="py-3 px-4 text-center">स्थिती (Status)</th>
@@ -342,69 +435,120 @@ export default function ManageUsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  managedUsers.map((user, idx) => (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 text-center font-bold text-slate-500">
-                        {idx + 1}
-                      </td>
+                  managedUsers.map((user, idx) => {
+                    const isEditingThisRow = editingUserId === user.id;
 
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        <div className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="font-mono text-xs sm:text-sm">{user.email}</span>
-                        </div>
-                      </td>
+                    return (
+                      <tr key={user.id} className={`transition ${isEditingThisRow ? "bg-amber-50/40" : "hover:bg-slate-50/80"}`}>
+                        <td className="py-3 px-4 text-center font-bold text-slate-500">
+                          {idx + 1}
+                        </td>
 
-                      <td className="py-2 px-4">
-                        <input
-                          type="text"
-                          value={user.name}
-                          onChange={(e) => handleUpdateManagedUser(user.id, "name", e.target.value)}
-                          placeholder="नाव टाईप करा..."
-                          className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition"
-                        />
-                      </td>
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span className="font-mono text-xs sm:text-sm">{user.email}</span>
+                          </div>
+                        </td>
 
-                      <td className="py-2 px-4">
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          value={user.phone}
-                          onChange={(e) => {
-                            const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
-                            handleUpdateManagedUser(user.id, "phone", clean);
-                          }}
-                          placeholder="१० अंकी फोन नंबर..."
-                          className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition font-mono"
-                        />
-                      </td>
+                        {/* NAME COLUMN */}
+                        <td className="py-2 px-4">
+                          {isEditingThisRow ? (
+                            <input
+                              type="text"
+                              value={editNameInput}
+                              onChange={(e) => setEditNameInput(e.target.value)}
+                              placeholder="नाव टाईप करा..."
+                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className="font-semibold text-slate-800">
+                              {user.name || <span className="text-slate-400 italic">नाव जोडलेले नाही</span>}
+                            </span>
+                          )}
+                        </td>
 
-                      <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
-                        {user.date}
-                      </td>
+                        {/* PHONE COLUMN */}
+                        <td className="py-2 px-4">
+                          {isEditingThisRow ? (
+                            <input
+                              type="tel"
+                              maxLength={10}
+                              value={editPhoneInput}
+                              onChange={(e) => {
+                                const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                setEditPhoneInput(clean);
+                              }}
+                              placeholder="१० अंकी फोन नंबर..."
+                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono shadow-2xs"
+                            />
+                          ) : (
+                            <span className="font-mono text-slate-700">
+                              {user.phone || <span className="text-slate-400 italic">फोन नंबर नाही</span>}
+                            </span>
+                          )}
+                        </td>
 
-                      <td className="py-3 px-4 font-semibold text-slate-600 whitespace-nowrap">
-                        {user.time}
-                      </td>
+                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
+                          {user.date}
+                        </td>
 
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          Verified
-                        </span>
-                      </td>
+                        <td className="py-3 px-4 font-semibold text-slate-600 whitespace-nowrap">
+                          {user.time}
+                        </td>
 
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => handleDeleteManagedUser(user.id)}
-                          title="युझर हटवा"
-                          className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-800 border border-red-200 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Verified
+                          </span>
+                        </td>
+
+                        {/* ACTION COLUMN WITH EDIT, SAVE, CANCEL, & DELETE BUTTONS */}
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isEditingThisRow ? (
+                              <>
+                                <button
+                                  onClick={() => handleSaveEditUser(user.id)}
+                                  title="सेव्ह करा (Save)"
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                  <span>Save</span>
+                                </button>
+                                <button
+                                  onClick={handleCancelEditUser}
+                                  title="रद्द करा (Cancel)"
+                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleStartEditUser(user)}
+                                title="संपादित करा (Edit)"
+                                className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-800 border border-blue-200 font-bold text-xs flex items-center gap-1 transition"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDeleteManagedUser(user.id)}
+                              title="युझर हटवा (Delete)"
+                              className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-800 border border-red-200 transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -414,3 +558,4 @@ export default function ManageUsersPage() {
     </DashboardLayout>
   );
 }
+

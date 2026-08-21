@@ -28,6 +28,7 @@ export interface MemberRegistration {
   address: string;
   paymentMethod: string;
   paymentScreenshot?: string | null;
+  referredBy?: string | null;
   createdAt: string;
   updatedAt: string;
   mainMembers: MainMember[];

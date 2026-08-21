@@ -50,8 +50,17 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const role = localStorage.getItem("mptm_admin_role");
+      const username = localStorage.getItem("mptm_admin_username");
+      const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
+      if (!isSuper) {
+        router.replace("/registrations");
+        return;
+      }
+    }
     fetchRegistrations();
-  }, []);
+  }, [router]);
 
   const stats = useMemo(() => {
     const totalRegs = registrations.length;

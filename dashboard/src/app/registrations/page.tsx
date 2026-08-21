@@ -17,6 +17,11 @@ import {
   ChevronRight,
   Trash2,
   AlertTriangle,
+  Link as LinkIcon,
+  Copy,
+  Check,
+  ExternalLink,
+  Share2,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
@@ -31,6 +36,7 @@ export default function RegistrationsPage() {
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
+  const [referrerFilter, setReferrerFilter] = useState<string>("ALL");
 
   const [selectedReg, setSelectedReg] = useState<MemberRegistration | null>(null);
   const [deleteConfirmReg, setDeleteConfirmReg] = useState<MemberRegistration | null>(null);
@@ -39,7 +45,60 @@ export default function RegistrationsPage() {
   const [screenshotZoom, setScreenshotZoom] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  // User & Super Admin session state
+  const [loggedUserEmail, setLoggedUserEmail] = useState<string>("");
+  const [loggedUserRole, setLoggedUserRole] = useState<string>("USER");
+  const [managedUsers, setManagedUsers] = useState<any[]>([]);
+  const [selectedUserForLink, setSelectedUserForLink] = useState<string>("");
+
+  // Generate Link Modal state
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const MAIN_SITE_URL = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3001";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const email = localStorage.getItem("mptm_admin_username") || "";
+      const role = localStorage.getItem("mptm_admin_role") || "USER";
+      setLoggedUserEmail(email);
+      setLoggedUserRole(role);
+      setSelectedUserForLink(email);
+    }
+
+    const fetchManagedUsers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/users`);
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.data)) {
+          setManagedUsers(data.data);
+        }
+      } catch (err) {}
+    };
+    fetchManagedUsers();
+  }, [API_URL]);
+
+  const isSuperAdmin = useMemo(() => {
+    const cleanEmail = loggedUserEmail.toLowerCase();
+    return cleanEmail === "mptmamravati.org" || cleanEmail === "admin@mptmamravati.org" || loggedUserRole === "SUPER_ADMIN";
+  }, [loggedUserEmail, loggedUserRole]);
+
+  // Compute active unique referral link for logged in user or Super Admin selection
+  const activeReferralUser = isSuperAdmin ? (selectedUserForLink || loggedUserEmail) : loggedUserEmail;
+  const REGISTRATION_FORM_LINK = activeReferralUser
+    ? `${MAIN_SITE_URL}/registration?ref=${encodeURIComponent(activeReferralUser)}`
+    : `${MAIN_SITE_URL}/registration`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(REGISTRATION_FORM_LINK);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 3000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   const fetchRegistrations = async () => {
     try {
@@ -65,6 +124,22 @@ export default function RegistrationsPage() {
   useEffect(() => {
     fetchRegistrations();
   }, []);
+
+  // Compute unique referrers list for filter dropdown
+  const uniqueReferrersList = useMemo(() => {
+    const refsSet = new Set<string>();
+    registrations.forEach((r) => {
+      if (r.referredBy && r.referredBy !== "Direct Website" && r.referredBy !== "Direct") {
+        refsSet.add(r.referredBy);
+      }
+    });
+    managedUsers.forEach((u) => {
+      if (u.email && u.email !== "admin@mptmamravati.org" && u.email !== "mptmamravati.org") {
+        refsSet.add(u.email);
+      }
+    });
+    return Array.from(refsSet);
+  }, [registrations, managedUsers]);
 
   const handleDeleteRegistration = async (id: string) => {
     if (!id) return;
@@ -113,6 +188,18 @@ export default function RegistrationsPage() {
 
       if (!matchesPayment) return false;
 
+      // Filter by Referrer User for Super Admin
+      if (referrerFilter !== "ALL") {
+        const regRef = (reg.referredBy || "").trim().toLowerCase();
+        const targetRef = referrerFilter.trim().toLowerCase();
+
+        if (targetRef === "direct") {
+          if (regRef && regRef !== "direct website" && regRef !== "direct" && regRef !== "") return false;
+        } else {
+          if (regRef !== targetRef) return false;
+        }
+      }
+
       if (!searchQuery) return true;
 
       const query = searchQuery.toLowerCase().trim();
@@ -122,6 +209,7 @@ export default function RegistrationsPage() {
         reg.address.toLowerCase().includes(query) ||
         reg.paymentMethod.toLowerCase().includes(query) ||
         reg.registrationFee.toString().includes(query) ||
+        (reg.referredBy || "").toLowerCase().includes(query) ||
         getDatePart(reg).toLowerCase().includes(query)
       ) {
         return true;
@@ -146,7 +234,7 @@ export default function RegistrationsPage() {
 
       return matchesFamilyMember;
     });
-  }, [registrations, searchQuery, paymentFilter]);
+  }, [registrations, searchQuery, paymentFilter, referrerFilter]);
 
   const exportToCSV = () => {
     if (filteredRegistrations.length === 0) return;
@@ -159,6 +247,7 @@ export default function RegistrationsPage() {
       "प्रभाग क्र (Prabhag)",
       "मोबाइल क्र (Mobile)",
       "पत्ता (Address)",
+      "रेफरल (Referred By)",
       "नोंदणी शुल्क (Fee ₹)",
       "पेमेंट पद्धत (Payment Method)",
       "कुटुंब सदस्य संख्या (Family Count)",
@@ -177,6 +266,7 @@ export default function RegistrationsPage() {
         `"${main.prabhagNo}"`,
         `"${main.mobileNo}"`,
         `"${r.address.replace(/"/g, '""')}"`,
+        `"${r.referredBy || "Direct Website"}"`,
         r.registrationFee,
         `"${r.paymentMethod}"`,
         r.familyMembers.length,
@@ -213,14 +303,25 @@ export default function RegistrationsPage() {
             </p>
           </div>
 
-          <button
-            onClick={exportToCSV}
-            disabled={filteredRegistrations.length === 0}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 disabled:opacity-50 shrink-0 self-start sm:self-auto"
-          >
-            <Download className="w-4 h-4" />
-            <span>CSV डाउनलोड करा (Export CSV)</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <button
+              onClick={() => setIsLinkModalOpen(true)}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 shrink-0"
+              title="सदस्य नोंदणी फॉर्मची लिंक तयार करा व शेअर करा"
+            >
+              <LinkIcon className="w-4 h-4" />
+              <span>फॉर्म लिंक तयार करा (Generate Link)</span>
+            </button>
+
+            <button
+              onClick={exportToCSV}
+              disabled={filteredRegistrations.length === 0}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 disabled:opacity-50 shrink-0"
+            >
+              <Download className="w-4 h-4" />
+              <span>CSV डाउनलोड करा (Export CSV)</span>
+            </button>
+          </div>
         </div>
 
         {/* Toast Alert */}
@@ -253,38 +354,65 @@ export default function RegistrationsPage() {
             )}
           </div>
 
-          {/* Payment Method Filter Pills */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl">
-            <button
-              onClick={() => setPaymentFilter("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
-                paymentFilter === "ALL"
-                  ? "bg-white text-blue-700 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              सर्व ({registrations.length})
-            </button>
-            <button
-              onClick={() => setPaymentFilter("CASH")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
-                paymentFilter === "CASH"
-                  ? "bg-white text-emerald-700 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              💵 रोख पेमेंट
-            </button>
-            <button
-              onClick={() => setPaymentFilter("ONLINE")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
-                paymentFilter === "ONLINE"
-                  ? "bg-white text-purple-700 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              📲 ऑनलाइन UPI
-            </button>
+          {/* Filter Pills & Referrer Dropdown */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+            {/* Referrer Filter Dropdown (Visible for Super Admin or when multiple referrers exist) */}
+            {isSuperAdmin && (
+              <div className="flex items-center gap-1.5 bg-amber-50 p-1.5 rounded-xl border border-amber-200">
+                <span className="text-xs font-bold text-amber-900 shrink-0 px-1">👤 रेफरल:</span>
+                <select
+                  value={referrerFilter}
+                  onChange={(e) => setReferrerFilter(e.target.value)}
+                  className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value="ALL">सर्व रेफरल्स (All Referrers)</option>
+                  <option value="DIRECT">🌐 थेट वेबसाइट (Direct Website)</option>
+                  {uniqueReferrersList.map((refEmail) => {
+                    const matchedUser = managedUsers.find((u) => u.email.toLowerCase() === refEmail.toLowerCase());
+                    const labelName = matchedUser ? `${matchedUser.name || refEmail} (${refEmail})` : refEmail;
+                    return (
+                      <option key={refEmail} value={refEmail}>
+                        👤 {labelName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            {/* Payment Method Filter Pills */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setPaymentFilter("ALL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                  paymentFilter === "ALL"
+                    ? "bg-white text-blue-700 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                सर्व ({filteredRegistrations.length})
+              </button>
+              <button
+                onClick={() => setPaymentFilter("CASH")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                  paymentFilter === "CASH"
+                    ? "bg-white text-emerald-700 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                💵 रोख
+              </button>
+              <button
+                onClick={() => setPaymentFilter("ONLINE")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                  paymentFilter === "ONLINE"
+                    ? "bg-white text-purple-700 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                📲 ऑनलाइन UPI
+              </button>
+            </div>
           </div>
         </div>
 
@@ -312,7 +440,7 @@ export default function RegistrationsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[900px]">
+              <table className="w-full text-left border-collapse min-w-[950px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
                     <th className="py-3 px-4 w-12 text-center">अ.क्र.</th>
@@ -320,6 +448,7 @@ export default function RegistrationsPage() {
                     <th className="py-3 px-4">मुख्य सदस्य नाव & क्रमांक</th>
                     <th className="py-3 px-4">मोबाईल & पत्ता</th>
                     <th className="py-3 px-4">प्रभाग</th>
+                    <th className="py-3 px-4">रेफरल (Referrer)</th>
                     <th className="py-3 px-4">शुल्क & पेमेंट</th>
                     <th className="py-3 px-4 text-center">कुटुंब</th>
                     <th className="py-3 px-4 text-right">कृती</th>
@@ -384,6 +513,18 @@ export default function RegistrationsPage() {
                           <span className="inline-block text-xs font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
                             प्रभाग {main.prabhagNo || "-"}
                           </span>
+                        </td>
+
+                        <td className="py-3 px-4 align-top">
+                          {reg.referredBy && reg.referredBy !== "Direct Website" && reg.referredBy !== "Direct" ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200" title={`रेफरल युझर: ${reg.referredBy}`}>
+                              👤 {reg.referredBy}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              🌐 थेट वेबसाइट (Direct)
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 align-top">
@@ -605,6 +746,119 @@ export default function RegistrationsPage() {
                 >
                   {isDeleting ? "हटवत आहे..." : "होय, हटवा"}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GENERATE FORM LINK MODAL */}
+        {isLinkModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-5 sm:p-6 space-y-5 border border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center font-bold">
+                    <LinkIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      सदस्य नोंदणी फॉर्म लिंक (Registration Link)
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      हा फॉर्म लिंक कॉपी करून किंवा WhatsApp वर सदस्यांना पाठवा.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsLinkModalOpen(false)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  title="बंद करा"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Super Admin User Selector for Referral Link */}
+              {isSuperAdmin && (
+                <div className="space-y-1 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                  <label className="block text-xs font-bold text-amber-900">
+                    युझर निवड (Select User to generate unique link):
+                  </label>
+                  <select
+                    value={selectedUserForLink}
+                    onChange={(e) => setSelectedUserForLink(e.target.value)}
+                    className="w-full bg-white text-xs font-bold text-slate-800 py-2 px-3 rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                  >
+                    <option value="">🌐 मूळ फॉर्म लिंक (Default Direct Link)</option>
+                    {managedUsers.map((u) => (
+                      <option key={u.id} value={u.email}>
+                        👤 {u.name || u.email} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    सदस्य नोंदणी युनिक फॉर्म URL (Unique Referral Form URL)
+                  </label>
+                  {activeReferralUser && (
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
+                      युझर: {activeReferralUser}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={REGISTRATION_FORM_LINK}
+                    className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 select-all focus:outline-none"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shrink-0 ${
+                      isCopied
+                        ? "bg-emerald-600 text-white"
+                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                    }`}
+                  >
+                    {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{isCopied ? "कॉपी झाले!" : "कॉपी करा"}</span>
+                  </button>
+                </div>
+                {isCopied && (
+                  <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 animate-in fade-in">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>युनिक लिंक यशस्वीरित्या क्लिपबोर्डवर कॉपी झाली आहे!</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती*\n\nसदस्य नोंदणी फॉर्म भरण्यासाठी खालील लिंकवर क्लिक करा:\n👉 ${REGISTRATION_FORM_LINK}\n\nजय संताजी! 🚩`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>WhatsApp वर शेअर करा</span>
+                </a>
+
+                <a
+                  href={REGISTRATION_FORM_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 transition flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>फॉर्म उघडा (Open Form)</span>
+                </a>
               </div>
             </div>
           </div>
