@@ -26,6 +26,7 @@ import {
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
 import { formatDateToDDMMYYYY, getDatePart } from "../../utils/formatters";
+import { getApiUrl, getMainSiteUrl } from "../../utils/config";
 
 export default function RegistrationsPage() {
   const router = useRouter();
@@ -55,10 +56,11 @@ export default function RegistrationsPage() {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-  const MAIN_SITE_URL = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3001";
+  const [mainSiteUrl, setMainSiteUrl] = useState<string>("https://mptmamravati.org");
+  const API_URL = getApiUrl();
 
   useEffect(() => {
+    setMainSiteUrl(getMainSiteUrl());
     if (typeof window !== "undefined") {
       const email = localStorage.getItem("mptm_admin_username") || "";
       const role = localStorage.getItem("mptm_admin_role") || "USER";
@@ -87,8 +89,8 @@ export default function RegistrationsPage() {
   // Compute active unique referral link for logged in user or Super Admin selection
   const activeReferralUser = isSuperAdmin ? (selectedUserForLink || loggedUserEmail) : loggedUserEmail;
   const REGISTRATION_FORM_LINK = activeReferralUser
-    ? `${MAIN_SITE_URL}/registration?ref=${encodeURIComponent(activeReferralUser)}`
-    : `${MAIN_SITE_URL}/registration`;
+    ? `${mainSiteUrl}/registration?ref=${encodeURIComponent(activeReferralUser)}`
+    : `${mainSiteUrl}/registration`;
 
   const handleCopyLink = async () => {
     try {
