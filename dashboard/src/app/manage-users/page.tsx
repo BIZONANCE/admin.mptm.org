@@ -83,9 +83,20 @@ export default function ManageUsersPage() {
         const res = await fetch(`${API_URL}/api/users`);
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.data)) {
-          setManagedUsers(data.data);
+          const savedStr = typeof window !== "undefined" ? localStorage.getItem("mptm_managed_users") : null;
+          const savedList: ManagedUser[] = savedStr ? JSON.parse(savedStr) : [];
+          
+          const mergedData = data.data.map((bu: ManagedUser) => {
+            const local = savedList.find((l) => l.id === bu.id || l.email.toLowerCase() === bu.email.toLowerCase());
+            return {
+              ...bu,
+              city: bu.city || (local && local.city ? local.city : ""),
+            };
+          });
+
+          setManagedUsers(mergedData);
           if (typeof window !== "undefined") {
-            localStorage.setItem("mptm_managed_users", JSON.stringify(data.data));
+            localStorage.setItem("mptm_managed_users", JSON.stringify(mergedData));
           }
         }
       } catch (err) {
@@ -229,8 +240,12 @@ export default function ManageUsersPage() {
   };
 
   const handleSaveEditUser = async (id: string) => {
+    const updatedName = editNameInput.trim();
+    const updatedPhone = editPhoneInput.trim();
+    const updatedCity = editCityInput.trim();
+
     const updatedUsers = managedUsers.map((u) =>
-      u.id === id ? { ...u, name: editNameInput.trim(), phone: editPhoneInput.trim(), city: editCityInput.trim() } : u
+      u.id === id ? { ...u, name: updatedName, phone: updatedPhone, city: updatedCity } : u
     );
     setManagedUsers(updatedUsers);
     if (typeof window !== "undefined") {
@@ -247,9 +262,15 @@ export default function ManageUsersPage() {
         });
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.users)) {
-          setManagedUsers(data.users);
+          const merged = data.users.map((bu: ManagedUser) => {
+            if (bu.id === id || bu.email.toLowerCase() === targetUser.email.toLowerCase()) {
+              return { ...bu, name: updatedName, phone: updatedPhone, city: updatedCity };
+            }
+            return bu;
+          });
+          setManagedUsers(merged);
           if (typeof window !== "undefined") {
-            localStorage.setItem("mptm_managed_users", JSON.stringify(data.users));
+            localStorage.setItem("mptm_managed_users", JSON.stringify(merged));
           }
         }
       } catch (e) {
