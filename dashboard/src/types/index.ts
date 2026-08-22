@@ -40,8 +40,9 @@ export interface ManagedUser {
   email: string;
   name: string;
   phone: string;
+  city?: string;
   date: string;
-  time: string;
+  time?: string;
   status: "VERIFIED" | "PENDING";
   role: string;
   createdAt: string;
