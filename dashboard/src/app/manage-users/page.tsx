@@ -40,15 +40,16 @@ export default function ManageUsersPage() {
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return [
       {
         id: "usr_default_1",
         email: "admin@mptmamravati.org",
-        name: "प्रशासक (Admin)",
+        name: "Administrator (Admin)",
         phone: "9876543210",
+        city: "Amravati",
         date: formatDateToDDMMYYYY(new Date()),
         time: "10:00 AM",
         status: "VERIFIED",
@@ -59,6 +60,7 @@ export default function ManageUsersPage() {
   });
 
   const [newEmailInput, setNewEmailInput] = useState<string>("");
+  const [isEmailFocused, setIsEmailFocused] = useState<boolean>(false);
   const [verificationStep, setVerificationStep] = useState<"IDLE" | "SENT" | "VERIFIED">("IDLE");
   const [generatedOtp, setGeneratedOtp] = useState<string>("");
   const [inputOtp, setInputOtp] = useState<string>("");
@@ -70,6 +72,7 @@ export default function ManageUsersPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editNameInput, setEditNameInput] = useState<string>("");
   const [editPhoneInput, setEditPhoneInput] = useState<string>("");
+  const [editCityInput, setEditCityInput] = useState<string>("");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -105,12 +108,12 @@ export default function ManageUsersPage() {
 
     const emailTrimmed = newEmailInput.trim();
     if (!emailTrimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-      setUserErrorMsg("⚠️ कृपया वैध इमेल आयडी प्रविष्ट करा!");
+      setUserErrorMsg("Please enter a valid email address!");
       return;
     }
 
     if (managedUsers.some((u) => u.email.toLowerCase() === emailTrimmed.toLowerCase())) {
-      setUserErrorMsg("⚠️ हा इमेल आयडी आधीच सत्यप्रमाणित व जोडलेला आहे!");
+      setUserErrorMsg("This email address is already verified and added!");
       return;
     }
 
@@ -126,16 +129,16 @@ export default function ManageUsersPage() {
       if (res.ok && data.success) {
         setGeneratedOtp(data.code || "");
         setVerificationStep("SENT");
-        setUserSuccessMsg(`✅ पडताळणी कोड (Verification Code) ${emailTrimmed} वर पाठवला गेला आहे! इमेल इनबॉक्स/स्पॅम फोल्डर तपासा.`);
+        setUserSuccessMsg(`Verification code sent to ${emailTrimmed}! Check email inbox/spam folder.`);
       } else {
-        setUserErrorMsg(data.error || "इमेल पाठवताना त्रुटी आली.");
+        setUserErrorMsg(data.error || "Error sending verification email.");
       }
     } catch (err: any) {
       console.error("Verification dispatch error:", err);
       const code = String(Math.floor(100000 + Math.random() * 900000));
       setGeneratedOtp(code);
       setVerificationStep("SENT");
-      setUserSuccessMsg(`✅ पडताळणी कोड (Verification Code) ${emailTrimmed} वर पाठवला गेला आहे!`);
+      setUserSuccessMsg(`Verification code sent to ${emailTrimmed}!`);
     } finally {
       setIsSendingOtp(false);
     }
@@ -148,7 +151,7 @@ export default function ManageUsersPage() {
 
     const emailTrimmed = newEmailInput.trim();
     if (!inputOtp) {
-      setUserErrorMsg("⚠️ कृपया पडताळणी कोड प्रविष्ट करा!");
+      setUserErrorMsg("Please enter the verification code!");
       return;
     }
 
@@ -162,13 +165,13 @@ export default function ManageUsersPage() {
 
       if (!res.ok || !data.success) {
         if (inputOtp.trim() !== generatedOtp.trim()) {
-          setUserErrorMsg(data.error || "⚠️ प्रविष्ट केलेला पडताळणी कोड चुकीचा आहे!");
+          setUserErrorMsg(data.error || "Invalid verification code entered!");
           return;
         }
       }
     } catch (err) {
       if (inputOtp.trim() !== generatedOtp.trim()) {
-        setUserErrorMsg("⚠️ प्रविष्ट केलेला पडताळणी कोड चुकीचा आहे!");
+        setUserErrorMsg("Invalid verification code entered!");
         return;
       }
     }
@@ -209,23 +212,25 @@ export default function ManageUsersPage() {
     setInputOtp("");
     setGeneratedOtp("");
     setVerificationStep("IDLE");
-    
-    // Automatically start editing the new user so admin can save name and phone
+
+    // Automatically start editing the new user so admin can save name, phone, and city
     setEditingUserId(newUser.id);
     setEditNameInput("");
     setEditPhoneInput("");
-    setUserSuccessMsg("✅ इमेल पडताळणी पूर्ण झाली! इमेल, दिनांक व वेळ आपोआप जोडली आहे. कृपया खालील तक्त्यामध्ये नाव व मोबाईल क्रमांक टाईप करून Save वर क्लिक करा.");
+    setEditCityInput("");
+    setUserSuccessMsg("Email verification complete! Email and date auto-linked. Please enter Name, Phone, and City in the table below and click Save.");
   };
 
   const handleStartEditUser = (user: ManagedUser) => {
     setEditingUserId(user.id);
     setEditNameInput(user.name || "");
     setEditPhoneInput(user.phone || "");
+    setEditCityInput(user.city || "");
   };
 
   const handleSaveEditUser = (id: string) => {
     const updatedUsers = managedUsers.map((u) =>
-      u.id === id ? { ...u, name: editNameInput.trim(), phone: editPhoneInput.trim() } : u
+      u.id === id ? { ...u, name: editNameInput.trim(), phone: editPhoneInput.trim(), city: editCityInput.trim() } : u
     );
     setManagedUsers(updatedUsers);
 
@@ -239,13 +244,14 @@ export default function ManageUsersPage() {
     }
 
     setEditingUserId(null);
-    setUserSuccessMsg("✅ युझरचे नाव व फोन नंबर यशस्वीरित्या सेव्ह (Save) केले!");
+    setUserSuccessMsg("User details saved successfully!");
   };
 
   const handleCancelEditUser = () => {
     setEditingUserId(null);
     setEditNameInput("");
     setEditPhoneInput("");
+    setEditCityInput("");
   };
 
   const handleDeleteManagedUser = (id: string) => {
@@ -261,7 +267,7 @@ export default function ManageUsersPage() {
       );
     }
 
-    setUserSuccessMsg("युझर डेटावेसमधून हटवला गेला.");
+    setUserSuccessMsg("User deleted from database.");
   };
 
   return (
@@ -272,26 +278,12 @@ export default function ManageUsersPage() {
             Manage Users
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            इमेल पडताळणीद्वारे नवीन युझर जोडा व युझर तपशील व्यवस्थापित करा (Add User via Email Verification & Manage Credentials)
+            Add users via email verification and manage credentials
           </p>
         </div>
 
         {/* CARD 1: EMAIL VERIFICATION USER CREATION FORM */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 sm:p-6 space-y-4">
-          <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-bold">
-              <Mail className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                इमेल पडताळणीद्वारे युझर जोडा (Add User via Email Verification)
-              </h2>
-              <p className="text-xs text-slate-500">
-                इमेल टाईप करा, पडताळणी कोड पाठवा व कोड प्रविष्ट केल्यानंतर इमेल, दिनांक व वेळ आपोआप जोडली जाईल.
-              </p>
-            </div>
-          </div>
-
           {userErrorMsg && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700 flex items-center gap-2 animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
@@ -307,41 +299,53 @@ export default function ManageUsersPage() {
           )}
 
           {/* STEP 1: EMAIL INPUT & SEND BUTTON IN ONE LINE */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700">
-              इमेल आयडी (Write Email Address) <span className="text-red-500">*</span>
-            </label>
+          <div className="pt-2">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-              <input
-                type="email"
-                value={newEmailInput}
-                onChange={(e) => setNewEmailInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && verificationStep === "IDLE") {
-                    handleSendVerificationCode(e);
-                  }
-                }}
-                placeholder="नवीन युझरचा इमेल आयडी टाईप करा (उदा. user@example.com)..."
-                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition font-mono"
-                disabled={verificationStep === "SENT"}
-              />
+              <div className="relative flex-1">
+                <input
+                  type="email"
+                  id="newEmailInput"
+                  value={newEmailInput}
+                  onFocus={() => setIsEmailFocused(true)}
+                  onBlur={() => setIsEmailFocused(false)}
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && verificationStep === "IDLE") {
+                      handleSendVerificationCode(e);
+                    }
+                  }}
+                  placeholder=""
+                  disabled={verificationStep === "SENT"}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition font-mono disabled:opacity-50"
+                />
+                <label
+                  htmlFor="newEmailInput"
+                  className={`absolute left-3.5 pointer-events-none transition-all duration-200 ease-in-out rounded-sm ${
+                    isEmailFocused || newEmailInput.length > 0
+                      ? "-top-2.5 text-[11px] font-bold text-blue-600 bg-white px-1.5 shadow-2xs"
+                      : "top-3 text-xs sm:text-sm font-medium text-slate-400"
+                  }`}
+                >
+                  Enter Email Address <span className="text-red-500">*</span>
+                </label>
+              </div>
 
               {verificationStep === "IDLE" && (
                 <button
                   type="button"
                   onClick={handleSendVerificationCode}
                   disabled={isSendingOtp || !newEmailInput.trim()}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 whitespace-nowrap"
+                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 whitespace-nowrap"
                 >
                   {isSendingOtp ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>कोड पाठवत आहे...</span>
+                      <span>Sending code...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>पडताळणी कोड पाठवा (Send Verification Code)</span>
+                      <span>Send Verification Code</span>
                     </>
                   )}
                 </button>
@@ -355,7 +359,7 @@ export default function ManageUsersPage() {
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-blue-900 font-semibold">
                   <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>इमेल इनबॉक्स तपासा: ६-अंकी पडताळणी कोड इमेलवर पाठवला आहे. (Check your inbox for 6-digit OTP code)</span>
+                  <span>Check your inbox: 6-digit OTP code sent to email.</span>
                 </div>
                 <button
                   onClick={() => {
@@ -364,13 +368,13 @@ export default function ManageUsersPage() {
                   }}
                   className="text-[11px] font-bold text-blue-700 underline hover:text-blue-900 shrink-0"
                 >
-                  इमेल बदला
+                  Change Email
                 </button>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  पडताळणी कोड (Enter 6-Digit Verification Code) <span className="text-red-500">*</span>
+                  Enter 6-Digit Verification Code <span className="text-red-500">*</span>
                 </label>
                 <div className="flex flex-wrap items-center gap-3">
                   <input
@@ -378,7 +382,7 @@ export default function ManageUsersPage() {
                     maxLength={6}
                     value={inputOtp}
                     onChange={(e) => setInputOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="६-अंकी कोड (उदा. 123456)"
+                    placeholder="6-digit code (e.g. 123456)"
                     className="w-full sm:w-64 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold font-mono tracking-widest text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                   />
                   <button
@@ -388,7 +392,7 @@ export default function ManageUsersPage() {
                     className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center gap-2 disabled:opacity-50 shrink-0"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    <span>सत्यप्रमाणित करा व युझर जोडा</span>
+                    <span>Verify & Add User</span>
                   </button>
                 </div>
               </div>
@@ -402,14 +406,14 @@ export default function ManageUsersPage() {
             <div className="flex items-center gap-2.5">
               <Users className="w-5 h-5 text-blue-600" />
               <h2 className="text-base font-bold text-slate-900">
-                युझर यादी (Managed Users List)
+                Managed Users List
               </h2>
               <span className="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
-                एकूण: {managedUsers.length}
+                Total: {managedUsers.length}
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              * नाव किंवा फोन नंबर बदलण्यासाठी Action कॉलममधील Edit / Save बटणाचा वापर करा.
+              * Use Edit / Save button in Action column to update name, phone number, or city.
             </p>
           </div>
 
@@ -417,21 +421,21 @@ export default function ManageUsersPage() {
             <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
                 <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
-                  <th className="py-3 px-4 w-12 text-center">अ. क्र.</th>
-                  <th className="py-3 px-4">इमेल (Email - Auto)</th>
-                  <th className="py-3 px-4 min-w-[180px]">नाव (Name)</th>
-                  <th className="py-3 px-4 min-w-[160px]">फोन नंबर (Phone)</th>
-                  <th className="py-3 px-4">दिनांक (Date - Auto)</th>
-                  <th className="py-3 px-4">वेळ (Time - Auto)</th>
-                  <th className="py-3 px-4 text-center">स्थिती (Status)</th>
-                  <th className="py-3 px-4 text-right">कृती (Action)</th>
+                  <th className="py-3 px-4 w-12 text-center">Sr. No.</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4 min-w-[180px]">Name</th>
+                  <th className="py-3 px-4 min-w-[160px]">Phone</th>
+                  <th className="py-3 px-4 min-w-[140px]">City</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
                 {managedUsers.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-slate-500 italic">
-                      कोणतेही युझर जोडलेले नाहीत. वरील फॉर्म वापरून इमेल पडताळणीद्वारे युझर जोडा.
+                      No users added yet. Use form above to add a user via email verification.
                     </td>
                   </tr>
                 ) : (
@@ -442,6 +446,10 @@ export default function ManageUsersPage() {
                       <tr key={user.id} className={`transition ${isEditingThisRow ? "bg-amber-50/40" : "hover:bg-slate-50/80"}`}>
                         <td className="py-3 px-4 text-center font-bold text-slate-500">
                           {idx + 1}
+                        </td>
+
+                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
+                          {user.date}
                         </td>
 
                         <td className="py-3 px-4 font-bold text-slate-900">
@@ -458,13 +466,13 @@ export default function ManageUsersPage() {
                               type="text"
                               value={editNameInput}
                               onChange={(e) => setEditNameInput(e.target.value)}
-                              placeholder="नाव टाईप करा..."
+                              placeholder="Type name..."
                               className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
                               autoFocus
                             />
                           ) : (
                             <span className="font-semibold text-slate-800">
-                              {user.name || <span className="text-slate-400 italic">नाव जोडलेले नाही</span>}
+                              {user.name || <span className="text-slate-400 italic">Name not added</span>}
                             </span>
                           )}
                         </td>
@@ -480,22 +488,31 @@ export default function ManageUsersPage() {
                                 const clean = e.target.value.replace(/\D/g, "").slice(0, 10);
                                 setEditPhoneInput(clean);
                               }}
-                              placeholder="१० अंकी फोन नंबर..."
+                              placeholder="10-digit phone number..."
                               className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono shadow-2xs"
                             />
                           ) : (
                             <span className="font-mono text-slate-700">
-                              {user.phone || <span className="text-slate-400 italic">फोन नंबर नाही</span>}
+                              {user.phone || <span className="text-slate-400 italic">No phone number</span>}
                             </span>
                           )}
                         </td>
 
-                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
-                          {user.date}
-                        </td>
-
-                        <td className="py-3 px-4 font-semibold text-slate-600 whitespace-nowrap">
-                          {user.time}
+                        {/* CITY COLUMN */}
+                        <td className="py-2 px-4">
+                          {isEditingThisRow ? (
+                            <input
+                              type="text"
+                              value={editCityInput}
+                              onChange={(e) => setEditCityInput(e.target.value)}
+                              placeholder="Type city..."
+                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
+                            />
+                          ) : (
+                            <span className="font-semibold text-slate-800">
+                              {user.city || <span className="text-slate-400 italic">No city</span>}
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 text-center whitespace-nowrap">
@@ -512,7 +529,7 @@ export default function ManageUsersPage() {
                               <>
                                 <button
                                   onClick={() => handleSaveEditUser(user.id)}
-                                  title="सेव्ह करा (Save)"
+                                  title="Save"
                                   className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition"
                                 >
                                   <Save className="w-3.5 h-3.5" />
@@ -520,7 +537,7 @@ export default function ManageUsersPage() {
                                 </button>
                                 <button
                                   onClick={handleCancelEditUser}
-                                  title="रद्द करा (Cancel)"
+                                  title="Cancel"
                                   className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
                                 >
                                   <X className="w-3.5 h-3.5" />
@@ -529,7 +546,7 @@ export default function ManageUsersPage() {
                             ) : (
                               <button
                                 onClick={() => handleStartEditUser(user)}
-                                title="संपादित करा (Edit)"
+                                title="Edit"
                                 className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-800 border border-blue-200 font-bold text-xs flex items-center gap-1 transition"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -539,7 +556,7 @@ export default function ManageUsersPage() {
 
                             <button
                               onClick={() => handleDeleteManagedUser(user.id)}
-                              title="युझर हटवा (Delete)"
+                              title="Delete User"
                               className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-800 border border-red-200 transition"
                             >
                               <Trash2 className="w-4 h-4" />
