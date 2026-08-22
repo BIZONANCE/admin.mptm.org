@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="min-h-screen bg-[#FFF9F2] flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-3">
           <RefreshCw className="w-8 h-8 text-amber-700 animate-spin" />
-          <p className="text-xs font-bold text-stone-700">तपासणी करत आहे...</p>
+          <p className="text-xs font-bold text-stone-700">Checking authentication...</p>
         </div>
       </div>
     );
@@ -187,12 +187,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="w-10 h-10 rounded-full bg-slate-100/80 hover:bg-slate-200/80 flex items-center justify-center text-slate-700 transition"
-              title="टॉग्ल सायडबार"
+              title="Toggle Sidebar"
             >
               <Menu className="w-5 h-5 text-slate-700" />
             </button>
 
-            {/* Brand Logo & Title */}
+            {/* Brand Logo & Title (Kept in Marathi as requested) */}
             <div className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-full border-2 border-amber-500 bg-[#4A0404] p-0.5 flex items-center justify-center shadow-xs shrink-0">
                 <div className="w-full h-full rounded-full flex items-center justify-center text-amber-400 text-sm font-bold">
@@ -221,7 +221,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={fetchRegistrations}
               disabled={isRefreshing}
               className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition disabled:opacity-50"
-              title="डेटा रिफ्रेश करा"
+              title="Refresh Data"
             >
               <RefreshCw className={`w-5 h-5 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
             </button>
@@ -231,7 +231,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
                 className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition focus:outline-none relative"
-                title="मुख्य वेबसाईट अर्ज सूचना"
+                title="Website Notifications"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-blue-600" />
                       <h4 className="text-xs font-bold text-slate-800">
-                        मुख्य वेबसाईट अर्ज सूचना
+                        Website Application Notifications
                       </h4>
                     </div>
 
@@ -258,12 +258,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1 transition"
                       >
                         <CheckCheck className="w-3 h-3" />
-                        सर्व वाचले ({unreadCount})
+                        Mark All Read ({unreadCount})
                       </button>
                     ) : (
                       <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                         <CheckCheck className="w-3 h-3" />
-                        सर्व वाचलेले
+                        All Read
                       </span>
                     )}
                   </div>
@@ -272,20 +272,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {unreadRegistrations.length === 0 ? (
                       <div className="p-6 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
                         <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                        <p className="font-semibold text-slate-700">कोणतीही प्रलंबित सूचना नाही</p>
-                        <p className="text-[11px] text-slate-400">सर्व नवीन अर्ज वाचलेले आहेत.</p>
+                        <p className="font-semibold text-slate-700">No Pending Notifications</p>
+                        <p className="text-[11px] text-slate-400">All new applications have been read.</p>
                       </div>
                     ) : (
                       unreadRegistrations.slice(0, 6).map((reg) => {
-                        const main = reg.mainMembers[0] || { fullName: "नवीन सदस्य", memberNo: "" };
+                        const main = reg.mainMembers[0] || { fullName: "New Member", memberNo: "" };
                         return (
                           <div
                             key={reg.id}
                             onClick={() => handleMarkAsRead(reg.id)}
                             className="p-3 bg-blue-50/40 hover:bg-blue-50/80 transition cursor-pointer flex items-start gap-3 group border-l-2 border-blue-500"
                           >
-                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
-                              🌐
+                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5 border border-amber-200">
+                              <Globe className="w-4 h-4 text-amber-700" />
                             </div>
                             <div className="flex-1 text-xs">
                               <div className="flex items-center justify-between">
@@ -297,7 +297,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 </span>
                               </div>
                               <p className="text-[11px] text-slate-600 mt-0.5">
-                                मुख्य वेबसाईटवरून नवीन सदस्य नोंदणी अर्ज प्राप्त झाला.
+                                New member registration application received from main website.
                               </p>
                               <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
                                 <span className="flex items-center gap-1">
@@ -323,7 +323,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       }}
                       className="w-full text-center text-xs font-bold text-blue-700 hover:text-blue-900 py-1.5 rounded-lg hover:bg-blue-100/60 transition flex items-center justify-center gap-1"
                     >
-                      <span>सर्व नोंदणी अर्ज पहा ({registrations.length})</span>
+                      <span>View All Registrations ({registrations.length})</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -336,7 +336,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 hover:ring-2 hover:ring-red-400 focus:outline-none transition shadow-2xs flex items-center justify-center bg-white"
-                title="प्रोफाइल व सेटिंग्ज"
+                title="Profile & Settings"
               >
                 <Image
                   src="/bizonancelogo.png"
@@ -352,7 +352,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-blue-600" />
-                      {isSuperAdmin ? "Super Admin (मुख्य प्रशासक)" : "User (सदस्य)"}
+                      {isSuperAdmin ? "Super Admin" : "User"}
                     </p>
                     <p className="text-[11px] text-slate-500 truncate">
                       {loggedUsername || (isSuperAdmin ? "mptmamravati.org" : "user")}
@@ -364,7 +364,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
                   >
                     <LogOut className="w-4 h-4 text-red-600" />
-                    <span>लॉगआउट (Logout)</span>
+                    <span>Logout</span>
                   </button>
                 </div>
               )}
@@ -380,55 +380,55 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR NAVIGATION */}
         <aside
-          className={`bg-white border-r border-slate-200 shrink-0 transition-all duration-300 z-20 no-print ${
-            sidebarOpen ? "w-64" : "w-16"
+          className={`bg-white border-r border-slate-200/80 shrink-0 transition-all duration-300 z-20 no-print ${
+            sidebarOpen ? "w-60" : "w-16"
           }`}
         >
-          <div className={`py-3 space-y-1 ${sidebarOpen ? "pr-3 pl-2" : "px-2 flex flex-col items-center"}`}>
+          <div className={`py-3 space-y-1 ${sidebarOpen ? "px-0" : "px-2 flex flex-col items-center"}`}>
             {/* Tab 1: Dashboard (Route "/") - Super Admin Only */}
             {isSuperAdmin && (
               <button
                 onClick={() => router.push("/")}
                 title="Dashboard"
-                className={`flex items-center transition-all ${
+                className={`flex items-center transition-all duration-150 ${
                   sidebarOpen
-                    ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
+                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/"
                           ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
                       }`
-                    : `w-10 h-10 justify-center rounded-xl ${
+                    : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/"
                           ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
                       }`
                 }`}
               >
-                <LayoutDashboard className={`w-5 h-5 ${pathname === "/" ? "text-[#0B57D0]" : "text-slate-600"}`} />
+                <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
                 {sidebarOpen && <span>Dashboard</span>}
               </button>
             )}
 
-            {/* Tab 2: सदस्य नोंदणी (Route "/registrations") - Visible to Everyone */}
+            {/* Tab 2: Member Registrations (Route "/registrations") - Visible to Everyone */}
             <button
               onClick={() => router.push("/registrations")}
-              title="सदस्य नोंदणी"
-              className={`flex items-center transition-all ${
+              title="Member Registrations"
+              className={`flex items-center transition-all duration-150 ${
                 sidebarOpen
-                  ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
+                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                       pathname === "/registrations"
                         ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                        : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
                     }`
-                  : `w-10 h-10 justify-center rounded-xl ${
+                  : `w-10 h-10 justify-center rounded-full ${
                       pathname === "/registrations"
                         ? "bg-[#D3E3FD] text-[#0B57D0]"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
                     }`
               }`}
             >
-              <ClipboardList className={`w-5 h-5 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-slate-600"}`} />
-              {sidebarOpen && <span>सदस्य नोंदणी</span>}
+              <ClipboardList className={`w-5 h-5 shrink-0 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+              {sidebarOpen && <span>Member Registrations</span>}
             </button>
 
             {/* Tab 3: Manage Users (Route "/manage-users") - Super Admin Only */}
@@ -436,21 +436,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 onClick={() => router.push("/manage-users")}
                 title="Manage Users"
-                className={`flex items-center transition-all ${
+                className={`flex items-center transition-all duration-150 ${
                   sidebarOpen
-                    ? `w-full gap-3.5 px-4 py-2 text-[14px] rounded-r-full ${
+                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-users"
                           ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
                       }`
-                    : `w-10 h-10 justify-center rounded-xl ${
+                    : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-users"
                           ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
                       }`
                 }`}
               >
-                <Users className={`w-5 h-5 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-slate-600"}`} />
+                <Users className={`w-5 h-5 shrink-0 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
                 {sidebarOpen && <span>Manage Users</span>}
               </button>
             )}
