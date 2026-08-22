@@ -22,10 +22,15 @@ import {
   Check,
   ExternalLink,
   Share2,
+  Banknote,
+  QrCode,
+  User,
+  Globe,
+  Users,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
-import { formatDateToDDMMYYYY, getDatePart } from "../../utils/formatters";
+import { formatDateToDDMMYYYY, getDatePart, getTimePart, formatPaymentMethod } from "../../utils/formatters";
 import { getApiUrl, getMainSiteUrl } from "../../utils/config";
 
 export default function RegistrationsPage() {
@@ -48,59 +53,16 @@ export default function RegistrationsPage() {
 
   // User & Super Admin session state
   const [loggedUserEmail, setLoggedUserEmail] = useState<string>("");
-  const [loggedUserRole, setLoggedUserRole] = useState<string>("USER");
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   const [managedUsers, setManagedUsers] = useState<any[]>([]);
-  const [selectedUserForLink, setSelectedUserForLink] = useState<string>("");
 
-  // Generate Link Modal state
+  // Modal for Link Generation
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
-  const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [selectedUserForLink, setSelectedUserForLink] = useState<string>("");
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
-  const [mainSiteUrl, setMainSiteUrl] = useState<string>("https://mptmamravati.org");
   const API_URL = getApiUrl();
-
-  useEffect(() => {
-    setMainSiteUrl(getMainSiteUrl());
-    if (typeof window !== "undefined") {
-      const email = localStorage.getItem("mptm_admin_username") || "";
-      const role = localStorage.getItem("mptm_admin_role") || "USER";
-      setLoggedUserEmail(email);
-      setLoggedUserRole(role);
-      setSelectedUserForLink(email);
-    }
-
-    const fetchManagedUsers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/users`);
-        const data = await res.json();
-        if (res.ok && data.success && Array.isArray(data.data)) {
-          setManagedUsers(data.data);
-        }
-      } catch (err) {}
-    };
-    fetchManagedUsers();
-  }, [API_URL]);
-
-  const isSuperAdmin = useMemo(() => {
-    const cleanEmail = loggedUserEmail.toLowerCase();
-    return cleanEmail === "mptmamravati.org" || cleanEmail === "admin@mptmamravati.org" || loggedUserRole === "SUPER_ADMIN";
-  }, [loggedUserEmail, loggedUserRole]);
-
-  // Compute active unique referral link for logged in user or Super Admin selection
-  const activeReferralUser = isSuperAdmin ? (selectedUserForLink || loggedUserEmail) : loggedUserEmail;
-  const REGISTRATION_FORM_LINK = activeReferralUser
-    ? `${mainSiteUrl}/registration?ref=${encodeURIComponent(activeReferralUser)}`
-    : `${mainSiteUrl}/registration`;
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(REGISTRATION_FORM_LINK);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 3000);
-    } catch (err) {
-      console.error("Failed to copy link:", err);
-    }
-  };
+  const MAIN_SITE_URL = getMainSiteUrl();
 
   const fetchRegistrations = async () => {
     try {
@@ -112,11 +74,11 @@ export default function RegistrationsPage() {
       if (res.ok && data.success && Array.isArray(data.data)) {
         setRegistrations(data.data);
       } else {
-        setError(data.error || "डेटा लोड करताना त्रुटी आली.");
+        setError(data.error || "Failed to load registrations.");
       }
     } catch (err: any) {
-      console.error("Fetch registrations error:", err);
-      setError(err.message || "डेटा लोड करताना त्रुटी आली. बॅकएंड सर्व्हर चालू असल्याची खात्री करा.");
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to load registrations. Ensure backend server is running.");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -124,53 +86,146 @@ export default function RegistrationsPage() {
   };
 
   useEffect(() => {
-    fetchRegistrations();
-  }, []);
+    if (typeof window !== "undefined") {
+      const loggedIn = localStorage.getItem("mptm_admin_logged_in");
+      if (!loggedIn) {
+        router.replace("/login");
+        return;
+      }
 
-  // Compute unique referrers list for filter dropdown
+      const role = localStorage.getItem("mptm_admin_role");
+      const username = localStorage.getItem("mptm_admin_username") || "";
+
+      const superAdminStatus = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
+      setIsSuperAdmin(superAdminStatus);
+      setLoggedUserEmail(username);
+
+      const savedUsers = localStorage.getItem("mptm_managed_users");
+      if (savedUsers) {
+        try {
+          setManagedUsers(JSON.parse(savedUsers));
+        } catch (e) {}
+      }
+    }
+
+    fetchRegistrations();
+  }, [router]);
+
   const uniqueReferrersList = useMemo(() => {
     const refsSet = new Set<string>();
     registrations.forEach((r) => {
-      if (r.referredBy && r.referredBy !== "Direct Website" && r.referredBy !== "Direct") {
-        refsSet.add(r.referredBy);
+      const ref = (r.referredBy || "").trim();
+      if (ref && ref !== "Direct Website" && ref !== "Direct") {
+        refsSet.add(ref);
       }
     });
     managedUsers.forEach((u) => {
-      if (u.email && u.email !== "admin@mptmamravati.org" && u.email !== "mptmamravati.org") {
-        refsSet.add(u.email);
-      }
+      if (u.email) refsSet.add(u.email);
     });
     return Array.from(refsSet);
   }, [registrations, managedUsers]);
 
   const handleDeleteRegistration = async (id: string) => {
-    if (!id) return;
+    setIsDeleting(true);
     try {
-      setIsDeleting(true);
-      const res = await fetch(`${API_URL}/api/register/delete/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${API_URL}/api/register/${id}`, {
+        method: "DELETE",
       });
-
       const data = await res.json();
 
       if (res.ok && data.success) {
         setRegistrations((prev) => prev.filter((r) => r.id !== id));
-        if (selectedReg?.id === id) {
-          setSelectedReg(null);
-        }
+        setToastMessage("✅ Registration record deleted successfully.");
         setDeleteConfirmReg(null);
-        setToastMessage("अर्ज यशस्वीरित्या डेटाबेसमधून हटवला गेला.");
-        setTimeout(() => setToastMessage(null), 4000);
       } else {
-        alert(data.error || "हटवताना त्रुटी आली!");
+        alert(data.error || "Failed to delete record.");
       }
     } catch (err) {
       console.error("Delete error:", err);
-      alert("सर्व्हरशी संपर्क होऊ शकला नाही. पुन्हा प्रयत्न करा.");
+      alert("Could not connect to server. Please try again.");
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Payment Filter Counts computation
+  const paymentCounts = useMemo(() => {
+    const userEmailClean = loggedUserEmail.trim().toLowerCase();
+    let all = 0;
+    let cash = 0;
+    let online = 0;
+
+    registrations.forEach((reg) => {
+      // 1. Role Scoping
+      if (!isSuperAdmin) {
+        const regRef = (reg.referredBy || "").trim().toLowerCase();
+        if (!userEmailClean || regRef !== userEmailClean) return;
+      }
+
+      // 2. Referrer Filter
+      if (isSuperAdmin && referrerFilter !== "ALL") {
+        const regRef = (reg.referredBy || "").trim().toLowerCase();
+        const targetRef = referrerFilter.trim().toLowerCase();
+        if (targetRef === "direct") {
+          if (regRef && regRef !== "direct website" && regRef !== "direct" && regRef !== "") return;
+        } else {
+          if (regRef !== targetRef) return;
+        }
+      }
+
+      // 3. Search Query Filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesGeneral =
+          reg.receiptNo.toLowerCase().includes(query) ||
+          reg.address.toLowerCase().includes(query) ||
+          reg.paymentMethod.toLowerCase().includes(query) ||
+          reg.registrationFee.toString().includes(query) ||
+          (reg.referredBy || "").toLowerCase().includes(query) ||
+          getDatePart(reg).toLowerCase().includes(query);
+
+        const matchesMainMember = reg.mainMembers.some(
+          (m) =>
+            m.fullName.toLowerCase().includes(query) ||
+            m.memberNo.toLowerCase().includes(query) ||
+            m.mobileNo.toLowerCase().includes(query) ||
+            m.prabhagNo.toLowerCase().includes(query)
+        );
+
+        const matchesFamilyMember = reg.familyMembers.some(
+          (f) =>
+            f.name.toLowerCase().includes(query) ||
+            f.mobile.toLowerCase().includes(query) ||
+            f.relation.toLowerCase().includes(query) ||
+            f.occupation.toLowerCase().includes(query)
+        );
+
+        if (!matchesGeneral && !matchesMainMember && !matchesFamilyMember) return;
+      }
+
+      all++;
+      const pMethod = (reg.paymentMethod || "").toLowerCase();
+      if (pMethod.includes("रोख") || pMethod.includes("cash")) {
+        cash++;
+      } else {
+        online++;
+      }
+    });
+
+    return { all, cash, online };
+  }, [registrations, isSuperAdmin, loggedUserEmail, referrerFilter, searchQuery]);
+
+  // Referrer Name & Email resolver
+  const getReferrerDetails = (ref: string | null | undefined) => {
+    if (!ref || ref === "Direct Website" || ref === "Direct") {
+      return { isDirect: true, name: "Direct Website", email: "" };
+    }
+    const cleanRef = ref.trim().toLowerCase();
+    const matched = managedUsers.find((u) => (u.email || "").trim().toLowerCase() === cleanRef);
+    if (matched && matched.name && matched.name.trim()) {
+      return { isDirect: false, name: matched.name.trim(), email: matched.email.trim() };
+    }
+    return { isDirect: false, name: "", email: ref.trim() };
   };
 
   const filteredRegistrations = useMemo(() => {
@@ -253,49 +308,78 @@ export default function RegistrationsPage() {
     if (filteredRegistrations.length === 0) return;
 
     const headers = [
-      "पावती क्र (Receipt No)",
-      "दिनांक (Date)",
-      "मुख्य सदस्य नाव (Main Member Name)",
-      "सदस्य क्र (Member No)",
-      "प्रभाग क्र (Prabhag)",
-      "मोबाइल क्र (Mobile)",
-      "पत्ता (Address)",
-      "रेफरल (Referred By)",
-      "नोंदणी शुल्क (Fee ₹)",
-      "पेमेंट पद्धत (Payment Method)",
-      "कुटुंब सदस्य संख्या (Family Count)",
-      "कुटुंब सदस्यांची नावे (Family Names)",
+      "Receipt No",
+      "Date",
+      "Main Member Name",
+      "Member No",
+      "Prabhag No",
+      "Mobile No",
+      "Address",
+      "Referrer",
+      "Payment Method",
+      "Registration Fee",
+      "Family Members Count",
+      "Family Members List",
     ];
 
-    const rows = filteredRegistrations.map((r) => {
-      const main = r.mainMembers[0] || { fullName: "-", memberNo: "-", prabhagNo: "-", mobileNo: "-" };
-      const familyNames = r.familyMembers.map((f) => `${f.name} (${f.relation})`).join("; ");
+    const rows = filteredRegistrations.map((reg) => {
+      const main = reg.mainMembers[0] || {};
+      const familyListStr = reg.familyMembers
+        .map((f) => `${f.name} (${f.relation})`)
+        .join(" | ");
 
       return [
-        `"${r.receiptNo}"`,
-        `"${formatDateToDDMMYYYY(r.date)}"`,
-        `"${main.fullName}"`,
-        `"${main.memberNo}"`,
-        `"${main.prabhagNo}"`,
-        `"${main.mobileNo}"`,
-        `"${r.address.replace(/"/g, '""')}"`,
-        `"${r.referredBy || "Direct Website"}"`,
-        r.registrationFee,
-        `"${r.paymentMethod}"`,
-        r.familyMembers.length,
-        `"${familyNames.replace(/"/g, '""')}"`,
-      ].join(",");
+        `"${reg.receiptNo}"`,
+        `"${getDatePart(reg)} ${getTimePart(reg)}"`,
+        `"${main.fullName || ""}"`,
+        `"${main.memberNo || ""}"`,
+        `"${main.prabhagNo || ""}"`,
+        `"${main.mobileNo || ""}"`,
+        `"${reg.address.replace(/"/g, '""')}"`,
+        `"${reg.referredBy || "Direct Website"}"`,
+        `"${formatPaymentMethod(reg.paymentMethod)}"`,
+        `"${reg.registrationFee}"`,
+        `"${reg.familyMembers.length}"`,
+        `"${familyListStr.replace(/"/g, '""')}"`,
+      ];
     });
 
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `MPTM_Amravati_Registrations_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `MPTM_Registrations_${new Date().toISOString().slice(0, 10)}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const getActiveFormLink = () => {
+    const baseUrl = `${MAIN_SITE_URL}/register`;
+    const targetRef = isSuperAdmin ? selectedUserForLink : loggedUserEmail;
+    if (targetRef && targetRef.trim()) {
+      return `${baseUrl}?ref=${encodeURIComponent(targetRef.trim())}`;
+    }
+    return baseUrl;
+  };
+
+  const handleCopyFormLink = () => {
+    const link = getActiveFormLink();
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleShareWhatsApp = () => {
+    const link = getActiveFormLink();
+    const message = `जय संताजी! महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती विभाग) ऑनलाईन सदस्य नोंदणी फॉर्म भरण्यासाठी खालील लिंकवर क्लिक करा:\n\n${link}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, "_blank");
   };
 
   const handlePrint = () => {
@@ -305,21 +389,17 @@ export default function RegistrationsPage() {
   return (
     <DashboardLayout>
       <div>
-        {/* Page Title & Subtitle */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Page Title & Subtitle Toolbar */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5 flex-wrap">
-              <span>सदस्य नोंदणी डेटा</span>
-              {!isSuperAdmin && loggedUserEmail && (
-                <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300 shadow-2xs">
-                  👤 तुमचे रेफर केलेले अर्ज ({filteredRegistrations.length})
-                </span>
-              )}
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <User className="w-6 h-6 text-slate-800" />
+              <span>Member Registrations</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               {isSuperAdmin
-                ? "महाराष्ट्र प्रांतिक तैलिक महासभा - अमरावती विभाग (सर्व सदस्य नोंदणी फॉर्म डेटा)"
-                : `महाराष्ट्र प्रांतिक तैलिक महासभा (${loggedUserEmail} द्वारे रेफर केलेले नोंदणी अर्ज)`}
+                ? "Maharashtra Prantik Tailik Mahasabha - Amravati Division (All Member Registrations)"
+                : `Maharashtra Prantik Tailik Mahasabha (Registrations Referred by ${loggedUserEmail})`}
             </p>
           </div>
 
@@ -327,30 +407,30 @@ export default function RegistrationsPage() {
             {!isSuperAdmin && (
               <button
                 onClick={() => setIsLinkModalOpen(true)}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 shrink-0"
-                title="सदस्य नोंदणी फॉर्मची लिंक तयार करा व शेअर करा"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
+                title="Generate & Share Registration Form Link"
               >
                 <LinkIcon className="w-4 h-4" />
-                <span>फॉर्म लिंक तयार करा (Generate Link)</span>
+                <span>Generate Link</span>
               </button>
             )}
 
             <button
               onClick={exportToCSV}
               disabled={filteredRegistrations.length === 0}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 disabled:opacity-50 shrink-0"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 disabled:opacity-50 shrink-0"
             >
               <Download className="w-4 h-4" />
-              <span>CSV डाउनलोड करा (Export CSV)</span>
+              <span>Export CSV</span>
             </button>
           </div>
         </div>
 
         {/* Toast Alert */}
         {toastMessage && (
-          <div className="mb-4 p-3 bg-emerald-100 border border-emerald-400 text-emerald-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs">
+          <div className="mb-4 p-3 bg-slate-100 border border-slate-300 text-slate-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs">
             <span>{toastMessage}</span>
-            <button onClick={() => setToastMessage(null)} className="text-emerald-800 hover:text-emerald-950 font-bold text-base">×</button>
+            <button onClick={() => setToastMessage(null)} className="text-slate-600 hover:text-slate-900 font-bold text-base">×</button>
           </div>
         )}
 
@@ -361,10 +441,10 @@ export default function RegistrationsPage() {
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="पावती क्र., नाव, फोन क्र., किंवा प्रभाग क्र. शोधा..."
+              placeholder="Search receipt no, name, mobile, or prabhag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
             />
             {searchQuery && (
               <button
@@ -378,23 +458,26 @@ export default function RegistrationsPage() {
 
           {/* Filter Pills & Referrer Dropdown */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-            {/* Referrer Filter Dropdown (Visible for Super Admin or when multiple referrers exist) */}
+            {/* Referrer Filter Dropdown */}
             {isSuperAdmin && (
-              <div className="flex items-center gap-1.5 bg-amber-50 p-1.5 rounded-xl border border-amber-200">
-                <span className="text-xs font-bold text-amber-900 shrink-0 px-1">👤 रेफरल:</span>
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <User className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                <span className="text-xs font-bold text-slate-700 shrink-0">Referrer:</span>
                 <select
                   value={referrerFilter}
                   onChange={(e) => setReferrerFilter(e.target.value)}
-                  className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                  className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                 >
-                  <option value="ALL">सर्व रेफरल्स (All Referrers)</option>
-                  <option value="DIRECT">🌐 थेट वेबसाइट (Direct Website)</option>
+                  <option value="ALL">All Referrers</option>
+                  <option value="DIRECT">Direct Website</option>
                   {uniqueReferrersList.map((refEmail) => {
                     const matchedUser = managedUsers.find((u) => u.email.toLowerCase() === refEmail.toLowerCase());
-                    const labelName = matchedUser ? `${matchedUser.name || refEmail} (${refEmail})` : refEmail;
+                    const labelName = matchedUser && matchedUser.name && matchedUser.name.trim() 
+                      ? `${matchedUser.name.trim()} (${refEmail})` 
+                      : refEmail;
                     return (
                       <option key={refEmail} value={refEmail}>
-                        👤 {labelName}
+                        {labelName}
                       </option>
                     );
                   })}
@@ -403,36 +486,49 @@ export default function RegistrationsPage() {
             )}
 
             {/* Payment Method Filter Pills */}
-            <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
               <button
                 onClick={() => setPaymentFilter("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
                   paymentFilter === "ALL"
-                    ? "bg-white text-blue-700 shadow-2xs"
+                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                सर्व ({filteredRegistrations.length})
+                <span>All</span>
+                <span className="bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
+                  {paymentCounts.all}
+                </span>
               </button>
+
               <button
                 onClick={() => setPaymentFilter("CASH")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
                   paymentFilter === "CASH"
-                    ? "bg-white text-emerald-700 shadow-2xs"
+                    ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                💵 रोख
+                <Banknote className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Cash</span>
+                <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
+                  {paymentCounts.cash}
+                </span>
               </button>
+
               <button
                 onClick={() => setPaymentFilter("ONLINE")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
                   paymentFilter === "ONLINE"
-                    ? "bg-white text-purple-700 shadow-2xs"
+                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                📲 ऑनलाइन UPI
+                <QrCode className="w-3.5 h-3.5 text-slate-700" />
+                <span>Online UPI</span>
+                <span className="bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
+                  {paymentCounts.online}
+                </span>
               </button>
             </div>
           </div>
@@ -442,8 +538,8 @@ export default function RegistrationsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-              <p className="font-semibold text-sm">नोंदणी डेटा लोड होत आहे...</p>
+              <RefreshCw className="w-8 h-8 text-slate-600 animate-spin" />
+              <p className="font-semibold text-sm">Loading registration data...</p>
             </div>
           ) : error ? (
             <div className="p-8 text-center text-red-600 flex flex-col items-center justify-center gap-2">
@@ -451,74 +547,87 @@ export default function RegistrationsPage() {
               <p className="font-bold">{error}</p>
               <button
                 onClick={fetchRegistrations}
-                className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition"
+                className="mt-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition"
               >
-                पुन्हा प्रयत्न करा
+                Try Again
               </button>
             </div>
           ) : filteredRegistrations.length === 0 ? (
             <div className="p-12 text-center text-slate-500 italic">
-              कोणतीही जुळणारी नोंदणी आढळली नाही.
+              No matching registrations found.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[950px]">
+              <table className="w-full text-left border-collapse min-w-[1050px]">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
-                    <th className="py-3 px-4 w-12 text-center">अ.क्र.</th>
-                    <th className="py-3 px-4">पावती क्र. & दिनांक</th>
-                    <th className="py-3 px-4">मुख्य सदस्य नाव & क्रमांक</th>
-                    <th className="py-3 px-4">मोबाईल & पत्ता</th>
-                    <th className="py-3 px-4">प्रभाग</th>
-                    <th className="py-3 px-4">रेफरल (Referrer)</th>
-                    <th className="py-3 px-4">शुल्क & पेमेंट</th>
-                    <th className="py-3 px-4 text-center">कुटुंब</th>
-                    <th className="py-3 px-4 text-right">कृती</th>
+                    <th className="py-3.5 px-4 w-12 text-center">Sr. No.</th>
+                    <th className="py-3.5 px-4">Date & Time</th>
+                    <th className="py-3.5 px-4">Receipt No.</th>
+                    <th className="py-3.5 px-4">Main Member & Member No.</th>
+                    <th className="py-3.5 px-4">Mobile & Address</th>
+                    <th className="py-3.5 px-4">Prabhag</th>
+                    <th className="py-3.5 px-4">Referrer</th>
+                    <th className="py-3.5 px-4">Fee & Payment</th>
+                    <th className="py-3.5 px-4 text-center">Family</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
                   {filteredRegistrations.map((reg, index) => {
                     const main = reg.mainMembers[0] || {
-                      fullName: "माहिती उपलब्ध नाही",
+                      fullName: "No Details Available",
                       memberNo: "-",
                       mobileNo: "",
                       prabhagNo: "-",
                     };
+                    const timeString = getTimePart(reg);
 
                     return (
                       <tr key={reg.id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3 px-4 text-center font-bold text-slate-500 align-top">
+                        <td className="py-3.5 px-4 text-center font-bold text-slate-500 align-top">
                           {index + 1}
                         </td>
 
-                        <td className="py-3 px-4 align-top">
+                        {/* 1. DATE & TIME COLUMN */}
+                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-mono font-extrabold text-blue-700 text-xs sm:text-sm">
-                              {reg.receiptNo}
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                              {getDatePart(reg)}
                             </span>
                             <span className="text-[11px] font-semibold text-slate-500">
-                              📅 {getDatePart(reg)}
+                              {timeString || "-"}
                             </span>
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 align-top">
+                        {/* 2. RECEIPT NO COLUMN (BESIDE DATE) */}
+                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                          <span className="font-mono font-bold text-slate-900 text-xs bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs inline-block">
+                            {reg.receiptNo}
+                          </span>
+                        </td>
+
+                        {/* 3. MAIN MEMBER & MEMBER NO COLUMN (BESIDE RECEIPT NO) */}
+                        <td className="py-3.5 px-4 align-top">
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-extrabold text-slate-900">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
                               {main.fullName}
                             </span>
-                            <span className="font-mono text-[11px] text-amber-700 font-bold">
-                              {main.memberNo}
-                            </span>
+                            {main.memberNo && main.memberNo !== "-" && (
+                              <span className="font-mono text-[11px] text-slate-600 font-semibold bg-slate-50 border border-slate-200 px-1.5 py-0.2 rounded w-max">
+                                {main.memberNo}
+                              </span>
+                            )}
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 align-top max-w-xs">
+                        <td className="py-3.5 px-4 align-top max-w-xs">
                           <div className="flex flex-col gap-0.5">
                             {main.mobileNo && (
                               <a
                                 href={`tel:${main.mobileNo}`}
-                                className="text-xs font-semibold text-slate-800 hover:text-blue-600 flex items-center gap-1"
+                                className="text-xs font-semibold text-slate-800 hover:text-slate-900 flex items-center gap-1"
                               >
                                 <Phone className="w-3 h-3 text-slate-400" />
                                 {main.mobileNo}
@@ -526,51 +635,74 @@ export default function RegistrationsPage() {
                             )}
                             <span className="text-[11px] text-slate-600 line-clamp-2 flex items-start gap-1 mt-0.5">
                               <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                              {reg.address || "पत्ता दिलेला नाही"}
+                              {reg.address || "Address not provided"}
                             </span>
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 align-top">
-                          <span className="inline-block text-xs font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                            प्रभाग {main.prabhagNo || "-"}
+                        <td className="py-3.5 px-4 align-top">
+                          <span className="inline-block text-xs font-medium bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded border border-slate-200">
+                            {main.prabhagNo || "-"}
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 align-top">
-                          {reg.referredBy && reg.referredBy !== "Direct Website" && reg.referredBy !== "Direct" ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200" title={`रेफरल युझर: ${reg.referredBy}`}>
-                              👤 {reg.referredBy}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              🌐 थेट वेबसाइट (Direct)
-                            </span>
-                          )}
+                        {/* REFERRER COLUMN (SHOWING NAME + EMAIL) */}
+                        <td className="py-3.5 px-4 align-top min-w-[170px]">
+                          {(() => {
+                            const refInfo = getReferrerDetails(reg.referredBy);
+                            if (refInfo.isDirect) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                                  <Globe className="w-3.5 h-3.5 text-slate-400" />
+                                  <span>Direct Website</span>
+                                </span>
+                              );
+                            }
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                {refInfo.name ? (
+                                  <>
+                                    <span className="font-bold text-slate-900 text-xs flex items-center gap-1">
+                                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                      {refInfo.name}
+                                    </span>
+                                    <span className="font-mono text-[11px] text-slate-500 pl-4">
+                                      {refInfo.email}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="font-mono font-bold text-slate-800 text-xs flex items-center gap-1">
+                                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    {refInfo.email}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
 
-                        <td className="py-3 px-4 align-top">
+                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
                           <div className="flex flex-col gap-1">
-                            <span className="font-bold text-emerald-700 text-xs">
+                            <span className="font-bold text-slate-900 text-xs">
                               ₹{reg.registrationFee}
                             </span>
                             <div className="flex items-center gap-1">
                               <span
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
                                   reg.paymentMethod.toLowerCase().includes("रोख") ||
                                   reg.paymentMethod.toLowerCase().includes("cash")
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-purple-50 text-purple-700 border-purple-200"
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                    : "bg-slate-100 text-slate-800 border-slate-200"
                                 }`}
                               >
-                                {reg.paymentMethod}
+                                {formatPaymentMethod(reg.paymentMethod)}
                               </span>
 
                               {reg.paymentScreenshot && (
                                 <button
                                   onClick={() => setScreenshotZoom(reg.paymentScreenshot || null)}
-                                  className="text-[10px] text-blue-700 hover:text-blue-900 bg-blue-50 p-0.5 rounded border border-blue-200"
-                                  title="स्क्रीनशॉट पहा"
+                                  className="text-slate-600 hover:text-slate-900 bg-slate-100 p-1 rounded-md border border-slate-200 transition"
+                                  title="View Screenshot"
                                 >
                                   <ImageIcon className="w-3.5 h-3.5" />
                                 </button>
@@ -579,29 +711,29 @@ export default function RegistrationsPage() {
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 align-top text-center">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                            <UserPlus className="w-3 h-3" />
-                            {reg.familyMembers.length} सदस्य
+                        <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full">
+                            <UserPlus className="w-3.5 h-3.5 text-slate-500" />
+                            {reg.familyMembers.length} {reg.familyMembers.length === 1 ? "Member" : "Members"}
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 align-top text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => setSelectedReg(reg)}
-                              className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95"
-                              title="सविस्तर पावती पहा"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shadow-2xs active:scale-95"
+                              title="View Detailed Receipt"
                             >
-                              <Eye className="w-4 h-4 text-amber-700" />
+                              <Eye className="w-4 h-4 text-slate-600" />
                             </button>
 
                             <button
                               onClick={() => setDeleteConfirmReg(reg)}
-                              className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 flex items-center justify-center transition shadow-2xs active:scale-95"
-                              title="अर्ज हटवा"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center"
+                              title="Delete Application"
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -625,10 +757,10 @@ export default function RegistrationsPage() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-amber-200 tracking-wide drop-shadow-md">
-                      महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती)
+                      Maharashtra Prantik Tailik Mahasabha (Amravati)
                     </h3>
                     <p className="text-xs text-amber-300 font-bold">
-                      पावती क्र: <span className="font-mono text-amber-100 font-bold">{selectedReg.receiptNo}</span> | नोंदणी दिनांक: <span className="text-amber-100">{getDatePart(selectedReg)}</span>
+                      Receipt No: <span className="font-mono text-amber-100 font-bold">{selectedReg.receiptNo}</span> | Date: <span className="text-amber-100">{getDatePart(selectedReg)}</span>
                     </p>
                   </div>
                 </div>
@@ -639,7 +771,7 @@ export default function RegistrationsPage() {
                     className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>पावती प्रिंट काढा</span>
+                    <span>Print Receipt</span>
                   </button>
 
                   <button
@@ -655,37 +787,38 @@ export default function RegistrationsPage() {
               <div className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-300/60">
                   <div>
-                    <span className="font-bold text-stone-700">पावती क्रमांक: </span>
+                    <span className="font-bold text-stone-700">Receipt No: </span>
                     <span className="font-mono font-extrabold text-stone-900 text-sm">{selectedReg.receiptNo}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-700">नोंदणी दिनांक: </span>
+                    <span className="font-bold text-stone-700">Registration Date: </span>
                     <span className="font-bold text-stone-900">{getDatePart(selectedReg)}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-700">एकूण शुल्क: </span>
+                    <span className="font-bold text-stone-700">Total Fee: </span>
                     <span className="font-extrabold text-[#7A0C0C] text-sm">₹{selectedReg.registrationFee}</span>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1">
-                    👤 मुख्य सदस्य माहिती ({selectedReg.mainMembers.length})
+                  <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-amber-800" />
+                    <span>Main Member Details ({selectedReg.mainMembers.length})</span>
                   </h4>
                   <div className="grid grid-cols-1 gap-3">
                     {selectedReg.mainMembers.map((m) => (
                       <div key={m.id} className="p-3 rounded-xl bg-white border border-amber-700/30 space-y-1.5">
                         <div className="flex items-center justify-between border-b border-stone-200 pb-1 font-bold text-stone-900 text-xs">
                           <span>{m.memberNo}</span>
-                          <span className="text-amber-800">प्रभाग क्रमांक: {m.prabhagNo}</span>
+                          <span className="text-amber-800">Prabhag No: {m.prabhagNo}</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="font-semibold text-stone-600">सदस्याचे नाव: </span>
+                            <span className="font-semibold text-stone-600">Member Name: </span>
                             <span className="font-bold text-stone-900">{m.fullName}</span>
                           </div>
                           <div>
-                            <span className="font-semibold text-stone-600">मोबाईल: </span>
+                            <span className="font-semibold text-stone-600">Mobile: </span>
                             <span className="font-bold text-stone-900">{m.mobileNo}</span>
                           </div>
                         </div>
@@ -695,25 +828,26 @@ export default function RegistrationsPage() {
                 </div>
 
                 <div>
-                  <span className="font-bold text-stone-800">रहिवासी पत्ता: </span>
+                  <span className="font-bold text-stone-800">Address: </span>
                   <span className="font-semibold text-stone-900 border-b border-stone-800 pb-0.5">{selectedReg.address}</span>
                 </div>
 
                 {selectedReg.familyMembers.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1">
-                      👨‍👩‍👧‍👦 कौटुंबिक सदस्य माहिती ({selectedReg.familyMembers.length})
+                    <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-amber-800" />
+                      <span>Family Member Details ({selectedReg.familyMembers.length})</span>
                     </h4>
                     <div className="overflow-x-auto rounded-lg border border-amber-800/30">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#7A0C0C] text-white font-bold text-center">
-                            <th className="p-2 border-r border-amber-700/60">अ.क्र.</th>
-                            <th className="p-2 border-r border-amber-700/60">नाव</th>
-                            <th className="p-2 border-r border-amber-700/60">नाते</th>
-                            <th className="p-2 border-r border-amber-700/60">जन्म दिनांक</th>
-                            <th className="p-2 border-r border-amber-700/60">व्यवसाय</th>
-                            <th className="p-2">मोबाईल</th>
+                            <th className="p-2 border-r border-amber-700/60">Sr. No.</th>
+                            <th className="p-2 border-r border-amber-700/60">Name</th>
+                            <th className="p-2 border-r border-amber-700/60">Relation</th>
+                            <th className="p-2 border-r border-amber-700/60">Date of Birth</th>
+                            <th className="p-2 border-r border-amber-700/60">Occupation</th>
+                            <th className="p-2">Mobile</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-amber-800/30 text-stone-900 bg-white">
@@ -746,10 +880,10 @@ export default function RegistrationsPage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
-                  अर्ज हटवण्याची खात्री करा?
+                  Delete Registration Application?
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  पावती क्र. <strong className="text-slate-900">{deleteConfirmReg.receiptNo}</strong> डेटाबेसमधून पूर्णपणे हटवला जाईल. ही क्रिया परत करता येणार नाही.
+                  Receipt No. <strong className="text-slate-900">{deleteConfirmReg.receiptNo}</strong> will be permanently removed from database. This action cannot be undone.
                 </p>
               </div>
 
@@ -759,14 +893,14 @@ export default function RegistrationsPage() {
                   disabled={isDeleting}
                   className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
                 >
-                  रद्द करा
+                  Cancel
                 </button>
                 <button
                   onClick={() => handleDeleteRegistration(deleteConfirmReg.id)}
                   disabled={isDeleting}
                   className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md"
                 >
-                  {isDeleting ? "हटवत आहे..." : "होय, हटवा"}
+                  {isDeleting ? "Deleting..." : "Yes, Delete"}
                 </button>
               </div>
             </div>
@@ -784,17 +918,17 @@ export default function RegistrationsPage() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900">
-                      सदस्य नोंदणी फॉर्म लिंक (Registration Link)
+                      Member Registration Form Link
                     </h3>
                     <p className="text-xs text-slate-500">
-                      हा फॉर्म लिंक कॉपी करून किंवा WhatsApp वर सदस्यांना पाठवा.
+                      Copy this form link or share directly with members on WhatsApp.
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsLinkModalOpen(false)}
                   className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                  title="बंद करा"
+                  title="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -804,17 +938,17 @@ export default function RegistrationsPage() {
               {isSuperAdmin && (
                 <div className="space-y-1 bg-amber-50 p-3 rounded-xl border border-amber-200">
                   <label className="block text-xs font-bold text-amber-900">
-                    युझर निवड (Select User to generate unique link):
+                    Select User to generate unique link:
                   </label>
                   <select
                     value={selectedUserForLink}
                     onChange={(e) => setSelectedUserForLink(e.target.value)}
                     className="w-full bg-white text-xs font-bold text-slate-800 py-2 px-3 rounded-lg border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                   >
-                    <option value="">🌐 मूळ फॉर्म लिंक (Default Direct Link)</option>
+                    <option value="">Default Direct Link</option>
                     {managedUsers.map((u) => (
                       <option key={u.id} value={u.email}>
-                        👤 {u.name || u.email} ({u.email})
+                        {u.name || u.email} ({u.email})
                       </option>
                     ))}
                   </select>
@@ -824,11 +958,11 @@ export default function RegistrationsPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-700">
-                    सदस्य नोंदणी युनिक फॉर्म URL (Unique Referral Form URL)
+                    Unique Referral Form URL
                   </label>
-                  {activeReferralUser && (
+                  {(isSuperAdmin ? selectedUserForLink || loggedUserEmail : loggedUserEmail) && (
                     <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300">
-                      युझर: {activeReferralUser}
+                      User: {isSuperAdmin ? selectedUserForLink || loggedUserEmail : loggedUserEmail}
                     </span>
                   )}
                 </div>
@@ -836,50 +970,46 @@ export default function RegistrationsPage() {
                   <input
                     type="text"
                     readOnly
-                    value={REGISTRATION_FORM_LINK}
+                    value={getActiveFormLink()}
                     className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-800 select-all focus:outline-none"
                   />
                   <button
-                    onClick={handleCopyLink}
+                    onClick={handleCopyFormLink}
                     className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shrink-0 ${
-                      isCopied
+                      copiedLink
                         ? "bg-emerald-600 text-white"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                     }`}
                   >
-                    {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    <span>{isCopied ? "कॉपी झाले!" : "कॉपी करा"}</span>
+                    {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
                   </button>
                 </div>
-                {isCopied && (
+                {copiedLink && (
                   <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 animate-in fade-in">
                     <Check className="w-3.5 h-3.5" />
-                    <span>युनिक लिंक यशस्वीरित्या क्लिपबोर्डवर कॉपी झाली आहे!</span>
+                    <span>Unique link successfully copied to clipboard!</span>
                   </p>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                    `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती*\n\nसदस्य नोंदणी फॉर्म भरण्यासाठी खालील लिंकवर क्लिक करा:\n👉 ${REGISTRATION_FORM_LINK}\n\nजय संताजी! 🚩`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleShareWhatsApp}
                   className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
-                  <span>WhatsApp वर शेअर करा</span>
-                </a>
+                  <span>Share on WhatsApp</span>
+                </button>
 
                 <a
-                  href={REGISTRATION_FORM_LINK}
+                  href={getActiveFormLink()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 transition flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>फॉर्म उघडा (Open Form)</span>
+                  <span>Open Form</span>
                 </a>
               </div>
             </div>
