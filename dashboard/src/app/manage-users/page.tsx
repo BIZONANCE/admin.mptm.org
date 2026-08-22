@@ -228,19 +228,33 @@ export default function ManageUsersPage() {
     setEditCityInput(user.city || "");
   };
 
-  const handleSaveEditUser = (id: string) => {
+  const handleSaveEditUser = async (id: string) => {
     const updatedUsers = managedUsers.map((u) =>
       u.id === id ? { ...u, name: editNameInput.trim(), phone: editPhoneInput.trim(), city: editCityInput.trim() } : u
     );
     setManagedUsers(updatedUsers);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mptm_managed_users", JSON.stringify(updatedUsers));
+    }
 
     const targetUser = updatedUsers.find((u) => u.id === id);
     if (targetUser) {
-      fetch(`${API_URL}/api/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(targetUser),
-      }).catch((e) => console.error("User update sync error:", e));
+      try {
+        const res = await fetch(`${API_URL}/api/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(targetUser),
+        });
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.users)) {
+          setManagedUsers(data.users);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("mptm_managed_users", JSON.stringify(data.users));
+          }
+        }
+      } catch (e) {
+        console.error("User update sync error:", e);
+      }
     }
 
     setEditingUserId(null);
