@@ -81,3 +81,20 @@ export const getTimePart = (reg: MemberRegistration | null): string => {
   }
   return "";
 };
+
+export const formatPaymentMethod = (method: string | null | undefined): string => {
+  if (!method) return "Cash";
+  const lower = method.toLowerCase().trim();
+  if (lower.includes("रोख") || lower.includes("cash")) {
+    return "Cash";
+  }
+  if (
+    lower.includes("ऑनलाइन") ||
+    lower.includes("online") ||
+    lower.includes("upi") ||
+    lower.includes("phonepe")
+  ) {
+    return "Online UPI";
+  }
+  return method;
+};
