@@ -143,10 +143,10 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* METRIC CARDS GRID */}
+            {/* 3 MERGED METRIC CARDS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {/* 1 & 2. Merged Card: Total Members Registration (top) & Total Registration Fees Collected (below) */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs col-span-1 flex flex-col gap-4 hover:shadow-md transition">
+              {/* Card 1: Overall Registrations & Fees */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
                 {/* Top: Total Members Registration */}
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
@@ -180,63 +180,73 @@ export default function DashboardHome() {
                 </div>
               </div>
 
-              {/* 3. Cash Forms */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                  <Banknote className="w-6 h-6" />
+              {/* Card 2: UPI Registrations & UPI Payment Received */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
+                {/* Top: Total UPI Registrations */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
+                    <QrCode className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total UPI Registrations
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {stats.onlineCount}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Cash Payments Count
-                  </span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {stats.cashCount}
-                  </span>
+
+                <div className="w-full h-[1px] bg-slate-100" />
+
+                {/* Below: Total UPI Payment Received */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total UPI Payment Received
+                    </span>
+                    <span className="text-2xl font-black text-purple-600 tracking-tight">
+                      ₹{stats.onlineFees}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* 4. Cash Amount */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                  <IndianRupee className="w-6 h-6" />
+              {/* Card 3: Cash Registrations & Cash Payment Received */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
+                {/* Top: Total Cash Registrations */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                    <Banknote className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Cash Registrations
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {stats.cashCount}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Total Cash Collected
-                  </span>
-                  <span className="text-2xl font-black text-amber-600 tracking-tight">
-                    ₹{stats.cashFees}
-                  </span>
-                </div>
-              </div>
 
-              {/* 5. Online UPI Forms */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
-                  <QrCode className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Online UPI Payments Count
-                  </span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {stats.onlineCount}
-                  </span>
-                </div>
-              </div>
+                <div className="w-full h-[1px] bg-slate-100" />
 
-              {/* 6. Online UPI Amount */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
-                  <IndianRupee className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Total Online UPI Revenue
-                  </span>
-                  <span className="text-2xl font-black text-purple-600 tracking-tight">
-                    ₹{stats.onlineFees}
-                  </span>
+                {/* Below: Total Cash Payment Received */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Cash Payment Received
+                    </span>
+                    <span className="text-2xl font-black text-amber-600 tracking-tight">
+                      ₹{stats.cashFees}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
