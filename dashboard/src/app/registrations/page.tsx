@@ -404,29 +404,25 @@ export default function RegistrationsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
-            {!isSuperAdmin && (
-              <>
-                <button
-                  onClick={() => setIsLinkModalOpen(true)}
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
-                  title="Generate & Share Registration Form Link"
-                >
-                  <LinkIcon className="w-4 h-4" />
-                  <span>Generate Link</span>
-                </button>
+            <button
+              onClick={() => setIsLinkModalOpen(true)}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
+              title="Generate & Share Registration Form Link"
+            >
+              <LinkIcon className="w-4 h-4" />
+              <span>Generate Link</span>
+            </button>
 
-                <a
-                  href={getActiveFormLink()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
-                  title="Open Member Registration Form"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Member Registration Form</span>
-                </a>
-              </>
-            )}
+            <a
+              href={getActiveFormLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
+              title="Open Member Registration Form"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Member Registration Form</span>
+            </a>
 
             <button
               onClick={exportToCSV}
