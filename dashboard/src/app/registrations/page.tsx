@@ -405,14 +405,27 @@ export default function RegistrationsPage() {
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
             {!isSuperAdmin && (
-              <button
-                onClick={() => setIsLinkModalOpen(true)}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
-                title="Generate & Share Registration Form Link"
-              >
-                <LinkIcon className="w-4 h-4" />
-                <span>Generate Link</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setIsLinkModalOpen(true)}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
+                  title="Generate & Share Registration Form Link"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  <span>Generate Link</span>
+                </button>
+
+                <a
+                  href={getActiveFormLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
+                  title="Open Registration Form"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Open Form</span>
+                </a>
+              </>
             )}
 
             <button
@@ -993,7 +1006,7 @@ export default function RegistrationsPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="pt-2">
                 <button
                   onClick={handleShareWhatsApp}
                   className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2"
@@ -1001,16 +1014,6 @@ export default function RegistrationsPage() {
                   <Share2 className="w-4 h-4" />
                   <span>Share on WhatsApp</span>
                 </button>
-
-                <a
-                  href={getActiveFormLink()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 transition flex items-center justify-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Open Form</span>
-                </a>
               </div>
             </div>
           </div>
