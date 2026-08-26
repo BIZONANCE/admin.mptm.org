@@ -551,13 +551,6 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-
-        {/* Bottom Multi-color Accent Bar */}
-        <div className="h-2 w-full flex absolute bottom-0 left-0 right-0">
-          <div className="h-full bg-[#FBBC05] w-[35%]" />
-          <div className="h-full bg-[#4285F4] w-[35%]" />
-          <div className="h-full bg-[#EA4335] w-[30%]" />
-        </div>
       </div>
     </div>
   );
