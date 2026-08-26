@@ -74,6 +74,9 @@ export default function ManageUsersPage() {
   const [editPhoneInput, setEditPhoneInput] = useState<string>("");
   const [editCityInput, setEditCityInput] = useState<string>("");
 
+  // Delete confirmation modal state
+  const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
 
   // Fetch managed users from backend API on component mount and sync with localStorage
@@ -289,20 +292,24 @@ export default function ManageUsersPage() {
     setEditCityInput("");
   };
 
-  const handleDeleteManagedUser = (id: string) => {
+  const handleDeleteManagedUser = (user: ManagedUser) => {
+    setDeletingUser(user);
+  };
+
+  const confirmDeleteUser = () => {
+    if (!deletingUser) return;
+    const id = deletingUser.id;
     if (editingUserId === id) {
       setEditingUserId(null);
     }
-    const targetUser = managedUsers.find((u) => u.id === id);
     setManagedUsers((prev) => prev.filter((u) => u.id !== id));
 
-    if (targetUser) {
-      fetch(`${API_URL}/api/users/${targetUser.id}`, { method: "DELETE" }).catch((e) =>
-        console.error("Backend delete sync error:", e)
-      );
-    }
+    fetch(`${API_URL}/api/users/${id}`, { method: "DELETE" }).catch((e) =>
+      console.error("Backend delete sync error:", e)
+    );
 
-    setUserSuccessMsg("User deleted from database.");
+    setUserSuccessMsg(`User "${deletingUser.name || deletingUser.email}" deleted successfully.`);
+    setDeletingUser(null);
   };
 
   return (
@@ -457,11 +464,11 @@ export default function ManageUsersPage() {
               <thead>
                 <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
                   <th className="py-3 px-4 w-12 text-center">Sr. No.</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Email</th>
                   <th className="py-3 px-4 min-w-[180px]">Name</th>
-                  <th className="py-3 px-4 min-w-[160px]">Phone</th>
+                  <th className="py-3 px-4 min-w-[160px]">Phone No.</th>
+                  <th className="py-3 px-4 min-w-[180px]">Email ID</th>
                   <th className="py-3 px-4 min-w-[140px]">City</th>
+                  <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4 text-center">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -483,18 +490,7 @@ export default function ManageUsersPage() {
                           {idx + 1}
                         </td>
 
-                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
-                          {user.date}
-                        </td>
-
-                        <td className="py-3 px-4 font-bold text-slate-900">
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                            <span className="font-mono text-xs sm:text-sm">{user.email}</span>
-                          </div>
-                        </td>
-
-                        {/* NAME COLUMN */}
+                        {/* 1. NAME COLUMN */}
                         <td className="py-2 px-4">
                           {isEditingThisRow ? (
                             <input
@@ -512,7 +508,7 @@ export default function ManageUsersPage() {
                           )}
                         </td>
 
-                        {/* PHONE COLUMN */}
+                        {/* 2. PHONE COLUMN */}
                         <td className="py-2 px-4">
                           {isEditingThisRow ? (
                             <input
@@ -533,7 +529,15 @@ export default function ManageUsersPage() {
                           )}
                         </td>
 
-                        {/* CITY COLUMN */}
+                        {/* 3. EMAIL COLUMN */}
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span className="font-mono text-xs sm:text-sm">{user.email}</span>
+                          </div>
+                        </td>
+
+                        {/* 4. CITY COLUMN */}
                         <td className="py-2 px-4">
                           {isEditingThisRow ? (
                             <input
@@ -550,6 +554,12 @@ export default function ManageUsersPage() {
                           )}
                         </td>
 
+                        {/* 5. DATE COLUMN */}
+                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
+                          {user.date}
+                        </td>
+
+                        {/* 6. STATUS COLUMN */}
                         <td className="py-3 px-4 text-center whitespace-nowrap">
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -557,7 +567,7 @@ export default function ManageUsersPage() {
                           </span>
                         </td>
 
-                        {/* ACTION COLUMN WITH EDIT, SAVE, CANCEL, & DELETE BUTTONS */}
+                        {/* 7. ACTION COLUMN */}
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             {isEditingThisRow ? (
@@ -590,7 +600,7 @@ export default function ManageUsersPage() {
                             )}
 
                             <button
-                              onClick={() => handleDeleteManagedUser(user.id)}
+                              onClick={() => handleDeleteManagedUser(user)}
                               title="Delete User"
                               className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-800 border border-red-200 transition"
                             >
@@ -607,6 +617,47 @@ export default function ManageUsersPage() {
           </div>
         </div>
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Confirm Delete User
+              </h3>
+            </div>
+
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Are you sure you want to delete user{" "}
+              <strong className="text-slate-900 font-bold">
+                "{deletingUser.name || deletingUser.email}"
+              </strong>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingUser(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-xs transition"
+              >
+                Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

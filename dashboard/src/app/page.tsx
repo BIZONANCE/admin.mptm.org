@@ -14,6 +14,7 @@ import {
   QrCode,
   AlertTriangle,
   Zap,
+  Users,
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { MemberRegistration } from "../types";
@@ -28,6 +29,33 @@ export default function DashboardHome() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
+
+  const [managedUsersCount, setManagedUsersCount] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("mptm_managed_users");
+      if (saved) {
+        try {
+          return JSON.parse(saved).length;
+        } catch (e) {}
+      }
+    }
+    return 1;
+  });
+
+  useEffect(() => {
+    const fetchUsersCount = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/users`);
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.data)) {
+          setManagedUsersCount(data.data.length);
+        }
+      } catch (e) {
+        console.error("Fetch users count error:", e);
+      }
+    };
+    fetchUsersCount();
+  }, [API_URL]);
 
   const fetchRegistrations = async () => {
     try {
@@ -143,8 +171,8 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* 3 MERGED METRIC CARDS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {/* 4 METRIC CARDS GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {/* Card 1: Overall Registrations & Fees */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
                 {/* Top: Total Members Registration */}
@@ -247,6 +275,35 @@ export default function DashboardHome() {
                       ₹{stats.cashFees}
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Card 4: Total Managed Users */}
+              <div
+                onClick={() => router.push("/manage-users")}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+              >
+                {/* Top: Total Managed Users */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Managed Users
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {managedUsersCount}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-slate-100" />
+
+                {/* Below: Quick Link to Manage Users */}
+                <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                  <span>Manage Users List</span>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>
             </div>
