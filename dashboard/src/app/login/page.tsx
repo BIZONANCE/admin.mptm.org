@@ -42,7 +42,7 @@ export default function LoginPage() {
   const [isAdminUserFocused, setIsAdminUserFocused] = useState<boolean>(false);
   const [isAdminPassFocused, setIsAdminPassFocused] = useState<boolean>(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
 
   // If already logged in, redirect straight to appropriate page based on role
   useEffect(() => {

@@ -74,7 +74,7 @@ export default function ManageUsersPage() {
   const [editPhoneInput, setEditPhoneInput] = useState<string>("");
   const [editCityInput, setEditCityInput] = useState<string>("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
 
   // Fetch managed users from backend API on component mount and sync with localStorage
   useEffect(() => {

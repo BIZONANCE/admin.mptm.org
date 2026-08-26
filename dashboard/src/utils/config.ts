@@ -5,7 +5,7 @@ export function getApiUrl(): string {
     if (host.includes("mptmamravati.org")) return "https://api.mptmamravati.org";
     if (host.includes("mptm.org")) return "https://api.mptm.org";
   }
-  return "http://localhost:5000";
+  return "http://localhost:5007";
 }
 
 export function getMainSiteUrl(): string {
@@ -14,7 +14,7 @@ export function getMainSiteUrl(): string {
     const origin = window.location.origin;
     const host = window.location.hostname;
     if (host.includes("localhost") || host === "127.0.0.1") {
-      return "http://localhost:3001";
+      return "http://localhost:3000";
     }
     if (host.includes("admin.mptmamravati.org")) return "https://mptmamravati.org";
     if (host.includes("admin.mptm.org")) return "https://mptm.org";
