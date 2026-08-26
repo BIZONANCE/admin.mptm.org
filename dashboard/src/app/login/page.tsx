@@ -16,6 +16,8 @@ import {
   KeyRound,
 } from "lucide-react";
 
+import { getApiUrl } from "../../utils/config";
+
 export default function LoginPage() {
   const router = useRouter();
   const [loginMode, setLoginMode] = useState<"USER_OTP" | "SUPER_ADMIN">("USER_OTP");
@@ -42,7 +44,7 @@ export default function LoginPage() {
   const [isAdminUserFocused, setIsAdminUserFocused] = useState<boolean>(false);
   const [isAdminPassFocused, setIsAdminPassFocused] = useState<boolean>(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
+  const API_URL = getApiUrl();
 
   // If already logged in, redirect straight to appropriate page based on role
   useEffect(() => {

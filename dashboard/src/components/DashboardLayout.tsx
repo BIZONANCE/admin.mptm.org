@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart } from "../utils/formatters";
+import { getApiUrl } from "../utils/config";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,7 +44,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
+  const API_URL = getApiUrl();
 
   // Check login state and user role
   useEffect(() => {
