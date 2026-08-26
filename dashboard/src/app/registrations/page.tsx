@@ -921,7 +921,7 @@ export default function RegistrationsPage() {
                       Member Registration Form Link
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Copy this form link or share directly with members on WhatsApp.
+                      Copy this form link or share directly with members on WhatsApp. (User links enable Cash payment option).
                     </p>
                   </div>
                 </div>
