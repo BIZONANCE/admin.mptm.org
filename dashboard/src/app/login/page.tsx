@@ -8,6 +8,7 @@ import {
   Send,
   ShieldCheck,
   CheckCircle2,
+  Check,
   AlertCircle,
   Eye,
   EyeOff,
@@ -135,7 +136,7 @@ export default function LoginPage() {
         setGeneratedOtp(data.code || "");
         setOtpStep("SENT");
         setSuccessMsg(
-          `✅ Verification OTP code sent to ${emailTrimmed}! Check your email inbox or spam folder.`
+          `Verification OTP code sent to ${emailTrimmed}! Check your email inbox or spam folder.`
         );
       } else {
         setLoginError(
@@ -343,13 +344,6 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {successMsg && (
-                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs sm:text-sm font-medium text-emerald-800 flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                  <span>{successMsg}</span>
-                </div>
-              )}
-
               {/* USER OTP LOGIN FORM */}
               {loginMode === "USER_OTP" && (
                 <div>
@@ -417,6 +411,13 @@ export default function LoginPage() {
                           Change Email
                         </button>
                       </div>
+
+                      {successMsg && (
+                        <div className="text-xs sm:text-sm font-semibold text-slate-900 flex items-start gap-2 pt-1 animate-in fade-in">
+                          <Check className="w-4 h-4 shrink-0 text-slate-900 mt-0.5" />
+                          <span className="leading-snug">{successMsg}</span>
+                        </div>
+                      )}
 
                       {/* 6-Digit OTP Boxes */}
                       <div className="pt-2">
