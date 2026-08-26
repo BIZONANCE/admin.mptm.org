@@ -28,6 +28,53 @@ export default function LoginPage() {
   const [generatedOtp, setGeneratedOtp] = useState<string>("");
   const [inputOtp, setInputOtp] = useState<string>("");
 
+  // 6-digit OTP boxes state & refs
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const otpInputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleOtpDigitChange = (index: number, val: string) => {
+    const cleanVal = val.replace(/\D/g, "");
+    if (!cleanVal) {
+      const updated = [...otpDigits];
+      updated[index] = "";
+      setOtpDigits(updated);
+      setInputOtp(updated.join(""));
+      return;
+    }
+
+    const digit = cleanVal.slice(-1);
+    const updated = [...otpDigits];
+    updated[index] = digit;
+    setOtpDigits(updated);
+    setInputOtp(updated.join(""));
+
+    if (index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+
+    const newDigits = ["", "", "", "", "", ""];
+    for (let i = 0; i < pasted.length; i++) {
+      newDigits[i] = pasted[i];
+    }
+    setOtpDigits(newDigits);
+    setInputOtp(newDigits.join(""));
+
+    const focusIndex = Math.min(pasted.length - 1, 5);
+    otpInputRefs.current[focusIndex]?.focus();
+  };
+
   // Super Admin Login state
   const [adminUsername, setAdminUsername] = useState<string>("");
   const [adminPassword, setAdminPassword] = useState<string>("");
@@ -361,6 +408,7 @@ export default function LoginPage() {
                           onClick={() => {
                             setOtpStep("IDLE");
                             setInputOtp("");
+                            setOtpDigits(["", "", "", "", "", ""]);
                             setSuccessMsg(null);
                             setLoginError(null);
                           }}
@@ -370,29 +418,31 @@ export default function LoginPage() {
                         </button>
                       </div>
 
-                      {/* Floating Label Input for OTP */}
-                      <div className="relative pt-2">
-                        <label
-                          className={`absolute left-4 px-1.5 transition-all duration-200 pointer-events-none z-10 ${
-                            isOtpFocused || inputOtp.trim().length > 0
-                              ? "-top-1 text-xs font-bold text-blue-600 bg-white"
-                              : "top-5 text-sm sm:text-base text-slate-400 font-normal"
-                          }`}
-                        >
+                      {/* 6-Digit OTP Boxes */}
+                      <div className="pt-2">
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2.5">
                           Enter 6-Digit OTP
                         </label>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          required
-                          value={inputOtp}
-                          onFocus={() => setIsOtpFocused(true)}
-                          onBlur={() => setIsOtpFocused(false)}
-                          onChange={(e) => setInputOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className={`w-full px-5 py-3.5 bg-white border rounded-lg text-lg font-bold font-mono tracking-widest text-slate-900 focus:outline-none transition ${
-                            isOtpFocused ? "border-blue-600 ring-1 ring-blue-600" : "border-slate-300"
-                          }`}
-                        />
+                        <div className="flex items-center justify-between gap-1.5 sm:gap-2.5">
+                          {otpDigits.map((digit, idx) => (
+                            <input
+                              key={idx}
+                              ref={(el) => { otpInputRefs.current[idx] = el; }}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={digit}
+                              onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                              onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                              onPaste={handleOtpPaste}
+                              className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-extrabold font-mono text-slate-900 border rounded-xl transition-all shadow-2xs ${
+                                digit
+                                  ? "border-blue-600 bg-blue-50/40 text-blue-900 ring-1 ring-blue-600"
+                                  : "border-slate-300 bg-slate-50 hover:bg-white focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
+                              }`}
+                            />
+                          ))}
+                        </div>
                         <p className="text-xs sm:text-sm text-slate-500 mt-2.5">
                           Please type the 6-digit OTP code sent to your email inbox
                         </p>
