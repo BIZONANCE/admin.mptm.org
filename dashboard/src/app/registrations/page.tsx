@@ -379,7 +379,7 @@ export default function RegistrationsPage() {
   const handleShareWhatsApp = () => {
     const link = getActiveFormLink();
     const message = `जय संताजी! महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती विभाग) ऑनलाईन सदस्य नोंदणी फॉर्म भरण्यासाठी खालील लिंकवर क्लिक करा:\n\n${link}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
   };
 
   const handlePrint = () => {
