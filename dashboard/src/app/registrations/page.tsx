@@ -361,7 +361,7 @@ export default function RegistrationsPage() {
   };
 
   const getActiveFormLink = () => {
-    const baseUrl = `${MAIN_SITE_URL}/register`;
+    const baseUrl = `${MAIN_SITE_URL}/registration`;
     const targetRef = isSuperAdmin ? selectedUserForLink : loggedUserEmail;
     if (targetRef && targetRef.trim()) {
       return `${baseUrl}?ref=${encodeURIComponent(targetRef.trim())}`;
