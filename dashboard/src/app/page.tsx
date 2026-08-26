@@ -143,35 +143,38 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* 6 METRIC CARDS GRID */}
+            {/* METRIC CARDS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {/* 1. Total Registrations */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                  <FileText className="w-6 h-6" />
+              {/* 1 & 2. Merged Card: Total Members Registration & Total Registration Fees Collected */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs col-span-1 sm:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 hover:shadow-md transition">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Members Registration
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {stats.totalRegs}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Total Registrations
-                  </span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tight">
-                    {stats.totalRegs}
-                  </span>
-                </div>
-              </div>
 
-              {/* 2. Total Revenue */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                  <IndianRupee className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-slate-500 block">
-                    Total Revenue Collected
-                  </span>
-                  <span className="text-2xl font-black text-emerald-600 tracking-tight">
-                    ₹{stats.totalFees}
-                  </span>
+                <div className="hidden sm:block h-10 w-[1px] bg-slate-200" />
+
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <IndianRupee className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Registration Fees Collected
+                    </span>
+                    <span className="text-2xl font-black text-emerald-600 tracking-tight">
+                      ₹{stats.totalFees}
+                    </span>
+                  </div>
                 </div>
               </div>
 
