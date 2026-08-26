@@ -272,7 +272,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F0F4F9] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 select-none font-sans">
       <div className="w-full max-w-5xl bg-white rounded-3xl border border-slate-200/80 shadow-lg relative overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-10 sm:p-14 lg:p-16 pb-20">
+        <div className="p-10 sm:p-14 lg:p-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
             {/* Left Column: Logo, Heading, Subtitle & Role Switch */}
             <div className="space-y-6 text-left">
@@ -557,19 +557,6 @@ export default function LoginPage() {
           <div className="h-full bg-[#4285F4] w-[35%]" />
           <div className="h-full bg-[#EA4335] w-[30%]" />
         </div>
-      </div>
-
-      {/* Footer Links below Card */}
-      <div className="w-full max-w-5xl flex items-center justify-end gap-6 text-xs sm:text-sm text-slate-500 mt-4 pr-2">
-        <a href="#" className="flex items-center gap-1 hover:text-slate-800 transition">
-          🎧 Help
-        </a>
-        <a href="#" className="hover:text-slate-800 transition">
-          Privacy
-        </a>
-        <a href="#" className="hover:text-slate-800 transition">
-          Terms
-        </a>
       </div>
     </div>
   );
