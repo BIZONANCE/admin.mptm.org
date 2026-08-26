@@ -145,9 +145,10 @@ export default function DashboardHome() {
           <>
             {/* METRIC CARDS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {/* 1 & 2. Merged Card: Total Members Registration & Total Registration Fees Collected */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs col-span-1 sm:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 hover:shadow-md transition">
-                <div className="flex items-center gap-4 flex-1">
+              {/* 1 & 2. Merged Card: Total Members Registration (top) & Total Registration Fees Collected (below) */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs col-span-1 flex flex-col gap-4 hover:shadow-md transition">
+                {/* Top: Total Members Registration */}
+                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
                     <FileText className="w-6 h-6" />
                   </div>
@@ -161,9 +162,10 @@ export default function DashboardHome() {
                   </div>
                 </div>
 
-                <div className="hidden sm:block h-10 w-[1px] bg-slate-200" />
+                <div className="w-full h-[1px] bg-slate-100" />
 
-                <div className="flex items-center gap-4 flex-1">
+                {/* Below: Total Registration Fees Collected */}
+                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
                     <IndianRupee className="w-6 h-6" />
                   </div>
