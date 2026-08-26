@@ -420,10 +420,10 @@ export default function RegistrationsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
-                  title="Open Registration Form"
+                  title="Open Member Registration Form"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>Open Form</span>
+                  <span>Member Registration Form</span>
                 </a>
               </>
             )}
