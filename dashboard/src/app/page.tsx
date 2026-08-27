@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Zap,
   Users,
+  Briefcase,
+  Mail,
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { MemberRegistration } from "../types";
@@ -42,19 +44,42 @@ export default function DashboardHome() {
     return 1;
   });
 
+  const [careerAppsCount, setCareerAppsCount] = useState<number>(0);
+  const [contactMsgsCount, setContactMsgsCount] = useState<number>(0);
+
   useEffect(() => {
-    const fetchUsersCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/users`);
-        const data = await res.json();
-        if (res.ok && data.success && Array.isArray(data.data)) {
-          setManagedUsersCount(data.data.length);
+        const resUsers = await fetch(`${API_URL}/api/users`);
+        const dataUsers = await resUsers.json();
+        if (resUsers.ok && dataUsers.success && Array.isArray(dataUsers.data)) {
+          setManagedUsersCount(dataUsers.data.length);
         }
       } catch (e) {
         console.error("Fetch users count error:", e);
       }
+
+      try {
+        const resCareer = await fetch(`${API_URL}/api/career/applications`);
+        const dataCareer = await resCareer.json();
+        if (resCareer.ok && dataCareer.success && typeof dataCareer.count === "number") {
+          setCareerAppsCount(dataCareer.count);
+        }
+      } catch (e) {
+        console.error("Fetch career apps count error:", e);
+      }
+
+      try {
+        const resContact = await fetch(`${API_URL}/api/contact/messages`);
+        const dataContact = await resContact.json();
+        if (resContact.ok && dataContact.success && typeof dataContact.count === "number") {
+          setContactMsgsCount(dataContact.count);
+        }
+      } catch (e) {
+        console.error("Fetch contact msgs count error:", e);
+      }
     };
-    fetchUsersCount();
+    fetchCounts();
   }, [API_URL]);
 
   const fetchRegistrations = async () => {
@@ -171,8 +196,8 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* 4 METRIC CARDS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* 5 METRIC CARDS GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
               {/* Card 1: Overall Registrations & Fees */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
                 {/* Top: Total Members Registration */}
@@ -303,6 +328,64 @@ export default function DashboardHome() {
                 {/* Below: Quick Link to Manage Users */}
                 <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
                   <span>Manage Users List</span>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+
+              {/* Card 5: Total Career Applications */}
+              <div
+                onClick={() => router.push("/manage-career")}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+              >
+                {/* Top: Total Career Applications */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-slate-900 group-hover:text-white transition">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Career Applications
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {careerAppsCount}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-slate-100" />
+
+                {/* Below: Quick Link to Manage Career */}
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 group-hover:text-slate-900">
+                  <span>Manage Career Applications</span>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </div>
+
+              {/* Card 6: Total Contact Messages */}
+              <div
+                onClick={() => router.push("/manage-contact")}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+              >
+                {/* Top: Total Contact Messages */}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Total Contact Messages
+                    </span>
+                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                      {contactMsgsCount}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-slate-100" />
+
+                {/* Below: Quick Link to Contact Messages */}
+                <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                  <span>Manage Contact Messages</span>
                   <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>

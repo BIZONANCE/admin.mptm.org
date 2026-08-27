@@ -32,9 +32,9 @@ export const config = {
      * Match all request paths except for:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, icon.ico, bizonancelogo.png
+     * - Static image assets (*.png, *.jpg, *.jpeg, *.svg, *.webp, *.ico)
      * - api routes if any
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon.ico|bizonancelogo.png|api).*)",
+    "/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$|api).*)",
   ],
 };

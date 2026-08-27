@@ -17,6 +17,8 @@ import {
   CheckCheck,
   Globe,
   CheckCircle2,
+  Briefcase,
+  Mail,
 } from "lucide-react";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart } from "../utils/formatters";
@@ -95,7 +97,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Route protection for non-super-admin users
   useEffect(() => {
     if (isAuthenticated && !isSuperAdmin) {
-      if (pathname === "/" || pathname === "/manage-users") {
+      if (pathname === "/" || pathname === "/manage-users" || pathname === "/manage-career" || pathname === "/manage-contact") {
         router.replace("/registrations");
       }
     }
@@ -179,7 +181,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-[#F4F6F9] text-slate-800 flex flex-col font-sans selection:bg-red-500 selection:text-white">
+    <div className="h-screen bg-[#F4F6F9] text-slate-800 flex flex-col font-sans selection:bg-red-500 selection:text-white overflow-hidden">
       {/* 1. TOP HEADER NAVBAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 no-print">
         <div className="px-4 sm:px-6 h-18 flex items-center justify-between py-2">
@@ -381,7 +383,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR NAVIGATION */}
         <aside
-          className={`bg-white border-r border-slate-200/80 shrink-0 transition-all duration-300 z-20 no-print ${
+          className={`bg-white border-r border-slate-200/80 shrink-0 transition-all duration-300 ease-in-out z-20 no-print overflow-y-auto overflow-x-hidden ${
             sidebarOpen ? "w-60" : "w-16"
           }`}
         >
@@ -391,7 +393,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 onClick={() => router.push("/")}
                 title="Dashboard"
-                className={`flex items-center transition-all duration-150 ${
+                className={`flex items-center transition-all duration-300 ease-in-out ${
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/"
@@ -406,7 +408,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }`}
               >
                 <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                {sidebarOpen && <span>Dashboard</span>}
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                  }`}
+                >
+                  Dashboard
+                </span>
               </button>
             )}
 
@@ -414,7 +422,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <button
               onClick={() => router.push("/registrations")}
               title="Member Registrations"
-              className={`flex items-center transition-all duration-150 ${
+              className={`flex items-center transition-all duration-300 ease-in-out ${
                 sidebarOpen
                   ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                       pathname === "/registrations"
@@ -429,7 +437,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }`}
             >
               <ClipboardList className={`w-5 h-5 shrink-0 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-              {sidebarOpen && <span>Member Registrations</span>}
+              <span
+                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                }`}
+              >
+                Member Registrations
+              </span>
             </button>
 
             {/* Tab 3: Manage Users (Route "/manage-users") - Super Admin Only */}
@@ -437,7 +451,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 onClick={() => router.push("/manage-users")}
                 title="Manage Users"
-                className={`flex items-center transition-all duration-150 ${
+                className={`flex items-center transition-all duration-300 ease-in-out ${
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-users"
@@ -452,7 +466,73 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }`}
               >
                 <Users className={`w-5 h-5 shrink-0 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                {sidebarOpen && <span>Manage Users</span>}
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                  }`}
+                >
+                  Manage Users
+                </span>
+              </button>
+            )}
+
+            {/* Tab 4: Career Applications (Route "/manage-career") - Super Admin Only */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => router.push("/manage-career")}
+                title="Career Applications"
+                className={`flex items-center transition-all duration-300 ease-in-out ${
+                  sidebarOpen
+                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
+                        pathname === "/manage-career"
+                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
+                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                      }`
+                    : `w-10 h-10 justify-center rounded-full ${
+                        pathname === "/manage-career"
+                          ? "bg-[#D3E3FD] text-[#0B57D0]"
+                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                      }`
+                }`}
+              >
+                <Briefcase className={`w-5 h-5 shrink-0 ${pathname === "/manage-career" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                  }`}
+                >
+                  Career Applications
+                </span>
+              </button>
+            )}
+
+            {/* Tab 5: Contact Messages (Route "/manage-contact") - Super Admin Only */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => router.push("/manage-contact")}
+                title="Contact Messages"
+                className={`flex items-center transition-all duration-300 ease-in-out ${
+                  sidebarOpen
+                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
+                        pathname === "/manage-contact"
+                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
+                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                      }`
+                    : `w-10 h-10 justify-center rounded-full ${
+                        pathname === "/manage-contact"
+                          ? "bg-[#D3E3FD] text-[#0B57D0]"
+                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                      }`
+                }`}
+              >
+                <Mail className={`w-5 h-5 shrink-0 ${pathname === "/manage-contact" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                  }`}
+                >
+                  Contact Messages
+                </span>
               </button>
             )}
           </div>

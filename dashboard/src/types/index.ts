@@ -47,3 +47,16 @@ export interface ManagedUser {
   role: string;
   createdAt: string;
 }
+
+export interface CareerApplicationItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  message?: string;
+  resumeName?: string;
+  resumeData?: string;
+  status: "PENDING" | "REVIEWED" | "SHORTLISTED" | "REJECTED";
+  createdAt: string;
+}
