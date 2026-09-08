@@ -60,3 +60,17 @@ export interface CareerApplicationItem {
   status: "PENDING" | "REVIEWED" | "SHORTLISTED" | "REJECTED";
   createdAt: string;
 }
+
+export interface DonationItem {
+  id: string;
+  receiptNo: string;
+  name: string;
+  mobileNo: string;
+  city: string;
+  amount: number;
+  amountInWords: string;
+  paymentScreenshot?: string | null;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+}
