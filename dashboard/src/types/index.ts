@@ -74,3 +74,17 @@ export interface DonationItem {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ExecutiveMemberItem {
+  id: string;
+  fullName: string;
+  designation: string;
+  mobileNo: string;
+  city: string;
+  district: string;
+  photoUrl?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
