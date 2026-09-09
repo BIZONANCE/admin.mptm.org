@@ -138,36 +138,26 @@ export default function ManageDonationsPage() {
     <DashboardLayout>
       <div className="space-y-8 max-w-7xl mx-auto pb-10">
         
-        {/* PREMIUM HERO BANNER */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 border border-indigo-500/20 shadow-2xl">
-          {/* Decorative Glowing Orbs */}
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Financial Contributions & Impact Overview</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
-                <span>Donation Management</span>
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl font-normal leading-relaxed">
-                Monitor voluntary donor contributions, review payment proofs, manage official receipts, and maintain financial transparency for Maharashtra Prantik Tailik Mahasabha.
-              </p>
-            </div>
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              Donations
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              List of all voluntary donors, receipt details, and transaction proofs
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                onClick={fetchDonations}
-                disabled={refreshing}
-                className="px-5 py-3 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 hover:from-indigo-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2.5 transition-all duration-200 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-                <span>{refreshing ? "Updating..." : "Refresh Records"}</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchDonations}
+              disabled={refreshing}
+              className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-xl text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-indigo-600" : ""}`} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
 
@@ -181,94 +171,7 @@ export default function ManageDonationsPage() {
           </div>
         )}
 
-        {/* PREMIUM STATS KPI CARDS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          
-          {/* KPI 1: Total Donors */}
-          <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 border border-indigo-500/30 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all" />
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
-                TOTAL DONORS
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner">
-                <Heart className="w-5 h-5 text-indigo-300 fill-indigo-400" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                {stats.totalCount}
-              </div>
-              <p className="text-xs text-indigo-200/80 font-medium mt-1">
-                Registered Contributors
-              </p>
-            </div>
-          </div>
 
-          {/* KPI 2: Total Funds */}
-          <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-emerald-900 via-teal-950 to-slate-900 border border-emerald-500/30 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                TOTAL FUNDS RAISED
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-inner">
-                <IndianRupee className="w-5 h-5 text-emerald-300" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-300">
-                ₹ {stats.totalAmount.toLocaleString("en-IN")}
-              </div>
-              <p className="text-xs text-emerald-200/80 font-medium mt-1">
-                Voluntary Contributions
-              </p>
-            </div>
-          </div>
-
-          {/* KPI 3: Average Contribution */}
-          <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-amber-900 via-slate-950 to-slate-900 border border-amber-500/30 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                AVERAGE DONATION
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shadow-inner">
-                <TrendingUp className="w-5 h-5 text-amber-300" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl sm:text-4xl font-black tracking-tight text-amber-300">
-                ₹ {stats.avgAmount.toLocaleString("en-IN")}
-              </div>
-              <p className="text-xs text-amber-200/80 font-medium mt-1">
-                Average Per Contributor
-              </p>
-            </div>
-          </div>
-
-          {/* KPI 4: Verified Receipts */}
-          <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-blue-900 via-slate-950 to-slate-900 border border-blue-500/30 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all" />
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-300">
-                VERIFIED RECEIPTS
-              </span>
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shadow-inner">
-                <ShieldCheck className="w-5 h-5 text-blue-300" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-300">
-                {stats.verifiedReceipts}
-              </div>
-              <p className="text-xs text-blue-200/80 font-medium mt-1">
-                Proof Uploaded ({stats.totalCount > 0 ? Math.round((stats.verifiedReceipts / stats.totalCount) * 100) : 0}%)
-              </p>
-            </div>
-          </div>
-
-        </div>
 
         {/* SEARCH, FILTER & TABLE CONTAINER */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden">
