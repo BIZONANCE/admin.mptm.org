@@ -111,8 +111,13 @@ export default function ManageAdsPage() {
       setRefreshing(true);
       setError(null);
       const res = await fetch(`${API_URL}/api/ads`);
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !contentType.includes("application/json")) {
+        setError(`Unable to connect to backend service (HTTP ${res.status}). Please verify that the backend API server is deployed and updated.`);
+        return;
+      }
       const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.data)) {
+      if (data.success && Array.isArray(data.data)) {
         setAds(data.data);
       } else {
         setError(data.error || "Failed to load advertisements.");
@@ -194,8 +199,13 @@ export default function ManageAdsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: updatedStatus }),
       });
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !contentType.includes("application/json")) {
+        alert(`Server Error: API returned HTTP ${res.status}.`);
+        return;
+      }
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setAds((prev) =>
           prev.map((item) => (item.id === ad.id ? { ...item, isActive: updatedStatus } : item))
         );
@@ -231,8 +241,14 @@ export default function ManageAdsPage() {
         body: JSON.stringify(payload),
       });
 
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !contentType.includes("application/json")) {
+        alert(`Server Error: API returned HTTP ${res.status}. Please check backend API server.`);
+        return;
+      }
+
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setActionSuccess(
           isEdit
             ? `Advertisement updated successfully!`
@@ -259,8 +275,13 @@ export default function ManageAdsPage() {
       const res = await fetch(`${API_URL}/api/ads/${deleteCandidate.id}`, {
         method: "DELETE",
       });
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok || !contentType.includes("application/json")) {
+        alert(`Server Error: API returned HTTP ${res.status}.`);
+        return;
+      }
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setAds((prev) => prev.filter((a) => a.id !== deleteCandidate.id));
         setActionSuccess(`Ad "${deleteCandidate.title}" removed.`);
         setDeleteCandidate(null);
