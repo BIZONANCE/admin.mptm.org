@@ -90,8 +90,28 @@ export interface ExecutiveMemberItem {
   paymentScreenshot?: string | null;
   transactionId?: string | null;
   address?: string | null;
-  date?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SocialLinks {
+  whatsapp?: string;
+  facebook?: string;
+  instagram?: string;
+  youtube?: string;
+  twitter?: string;
+  website?: string;
+}
+
+export interface AdItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  adLink?: string;
+  socialLinks?: SocialLinks;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
 }
 

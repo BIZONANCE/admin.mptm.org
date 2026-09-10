@@ -21,6 +21,7 @@ import {
   Mail,
   Heart,
   UserCheck,
+  Megaphone,
 } from "lucide-react";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart } from "../utils/formatters";
@@ -594,6 +595,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   }`}
                 >
                   Executive Members
+                </span>
+              </button>
+            )}
+
+            {/* Tab 8: Ads Manager (Route "/manage-ads") - Super Admin Only */}
+            {isSuperAdmin && (
+              <button
+                onClick={() => router.push("/manage-ads")}
+                title="Ads Manager"
+                className={`flex items-center transition-all duration-300 ease-in-out ${
+                  sidebarOpen
+                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
+                        pathname === "/manage-ads"
+                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
+                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                      }`
+                    : `w-10 h-10 justify-center rounded-full ${
+                        pathname === "/manage-ads"
+                          ? "bg-[#D3E3FD] text-[#0B57D0]"
+                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                      }`
+                }`}
+              >
+                <Megaphone className={`w-5 h-5 shrink-0 ${pathname === "/manage-ads" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <span
+                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                  }`}
+                >
+                  Ads Manager
                 </span>
               </button>
             )}
