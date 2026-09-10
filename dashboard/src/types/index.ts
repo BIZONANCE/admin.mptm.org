@@ -84,6 +84,13 @@ export interface ExecutiveMemberItem {
   district: string;
   photoUrl?: string | null;
   status: string;
+  receiptNo?: string | null;
+  registrationFee?: number | string | null;
+  paymentMethod?: string | null;
+  paymentScreenshot?: string | null;
+  transactionId?: string | null;
+  address?: string | null;
+  date?: string | null;
   createdAt: string;
   updatedAt: string;
 }

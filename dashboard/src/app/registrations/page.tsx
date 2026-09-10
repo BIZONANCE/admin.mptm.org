@@ -27,6 +27,7 @@ import {
   User,
   Globe,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
@@ -66,6 +67,36 @@ export default function RegistrationsPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSendRegWhatsApp = (reg: MemberRegistration) => {
+    const main = reg.mainMembers[0];
+    const mobile = (main?.mobileNo || "").replace(/\D/g, "");
+    const cleanPhone = mobile.length === 10 ? `91${mobile}` : mobile;
+    const isExec = reg.receiptNo.startsWith("MPTM-EM-") || Number(reg.registrationFee) === 1001;
+    const title = isExec ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★" : "★ प्राथमिक सदस्य नोंदणी पावती ★";
+
+    const textMessage = `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती)* 🚩
+${title}
+
+----------------------------------
+📄 *पावती क्र.* : ${reg.receiptNo}
+📅 *दिनांक* : ${getDatePart(reg)}
+👤 *सदस्याचे नाव* : ${main?.fullName || "-"}
+📱 *मोबाईल क्र.* : ${main?.mobileNo || "-"}
+📍 *पत्ता* : ${reg.address || "-"}
+💰 *नोंदणी शुल्क* : ₹${reg.registrationFee}/- (${reg.amountInWords || convertNumberToMarathiWords(reg.registrationFee)})
+💳 *देयक पद्धत* : ${formatPaymentMethod(reg.paymentMethod)}
+✅ *स्थिती* : प्राप्त व सत्यापित (Payment Verified)
+----------------------------------
+
+संदेश: ${isExec ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली." : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
+
+_ही पावती सदस्य नोंदणीचा अधिकृत पुरावा आहे._
+mptmamravati.org`;
+
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMessage)}`;
+    window.open(waUrl, "_blank");
   };
 
   const fetchRegistrations = async () => {
@@ -722,15 +753,23 @@ export default function RegistrationsPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => setSelectedReg(reg)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shadow-2xs active:scale-95"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                               title="View Detailed Receipt"
                             >
                               <Eye className="w-4 h-4 text-slate-600" />
                             </button>
 
                             <button
+                              onClick={() => handleSendRegWhatsApp(reg)}
+                              className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                              title="Send Receipt on WhatsApp"
+                            >
+                              <MessageSquare className="w-4 h-4 text-emerald-600" />
+                            </button>
+
+                            <button
                               onClick={() => setDeleteConfirmReg(reg)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
                               title="Delete Application"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -766,6 +805,15 @@ export default function RegistrationsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSendRegWhatsApp(selectedReg)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    title="Send Receipt to WhatsApp"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </button>
+
                   <button
                     onClick={handlePrint}
                     className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"

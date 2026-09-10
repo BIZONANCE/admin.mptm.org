@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ExecutiveMemberItem } from "@/types";
+import { ExecutiveMemberItem, MemberRegistration } from "@/types";
 import { getApiUrl } from "@/utils/config";
+import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod, convertNumberToMarathiWords } from "@/utils/formatters";
 import {
   UserCheck,
   Search,
@@ -22,10 +24,15 @@ import {
   ShieldCheck,
   Filter,
   FileText,
+  Eye,
+  Printer,
+  ImageIcon,
+  MessageSquare,
 } from "lucide-react";
 
 export default function ManageExecutivesPage() {
   const [executives, setExecutives] = useState<ExecutiveMemberItem[]>([]);
+  const [registrations, setRegistrations] = useState<MemberRegistration[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +40,10 @@ export default function ManageExecutivesPage() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [designationFilter, setDesignationFilter] = useState<string>("ALL");
+
+  // Modal State for View Details & Receipt
+  const [selectedViewExec, setSelectedViewExec] = useState<ExecutiveMemberItem | null>(null);
+  const [screenshotZoom, setScreenshotZoom] = useState<string | null>(null);
 
   // Modal State for Add / Edit
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -60,12 +71,22 @@ export default function ManageExecutivesPage() {
     try {
       setRefreshing(true);
       setError(null);
-      const res = await fetch(`${API_URL}/api/executives`);
-      const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.data)) {
-        setExecutives(data.data);
+      const [resExec, resReg] = await Promise.all([
+        fetch(`${API_URL}/api/executives`),
+        fetch(`${API_URL}/api/register`),
+      ]);
+
+      const dataExec = await resExec.json();
+      const dataReg = await resReg.json();
+
+      if (resExec.ok && dataExec.success && Array.isArray(dataExec.data)) {
+        setExecutives(dataExec.data);
       } else {
-        setError(data.error || "Failed to load executive members.");
+        setError(dataExec.error || "Failed to load executive members.");
+      }
+
+      if (resReg.ok && dataReg.success && Array.isArray(dataReg.data)) {
+        setRegistrations(dataReg.data);
       }
     } catch (err: any) {
       console.error("Fetch executives error:", err);
@@ -108,6 +129,57 @@ export default function ManageExecutivesPage() {
       return matchesSearch && matchesDesignation;
     });
   }, [executives, searchQuery, designationFilter]);
+
+  // Find matching registration for view modal
+  const matchedReg = useMemo(() => {
+    if (!selectedViewExec) return null;
+    const cleanMob = selectedViewExec.mobileNo.replace(/\D/g, "");
+    return registrations.find((r) => {
+      const main = r.mainMembers[0];
+      if (!main) return false;
+      const regMob = (main.mobileNo || "").replace(/\D/g, "");
+      return (
+        (cleanMob && regMob && cleanMob === regMob) ||
+        (main.fullName && main.fullName.trim().toLowerCase() === selectedViewExec.fullName.trim().toLowerCase())
+      );
+    }) || null;
+  }, [selectedViewExec, registrations]);
+
+  const handleSendWhatsApp = (exec: ExecutiveMemberItem, regMatch?: MemberRegistration | null) => {
+    const mobile = exec.mobileNo.replace(/\D/g, "");
+    const cleanPhone = mobile.length === 10 ? `91${mobile}` : mobile;
+    const receiptNo = regMatch?.receiptNo || exec.receiptNo || `MPTM-EM-${exec.id.replace(/\D/g, "").slice(-4) || "101"}`;
+    const dateStr = regMatch ? getDatePart(regMatch) : formatDateToDDMMYYYY(exec.createdAt);
+    const fee = regMatch?.registrationFee || exec.registrationFee || 1001;
+    const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "रोख (Cash)");
+
+    const textMessage = `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती)* 🚩
+★ *कार्यकारिणी सदस्य नोंदणी पावती* ★
+
+----------------------------------
+📄 *पावती क्र.* : ${receiptNo}
+📅 *दिनांक* : ${dateStr}
+👤 *सदस्याचे नाव* : ${exec.fullName}
+🏅 *पदनाम* : ${exec.designation}
+📱 *मोबाईल क्र.* : ${exec.mobileNo}
+📍 *शहर/जिल्हा* : ${exec.city}${exec.district ? `, ${exec.district}` : ""}
+💰 *नोंदणी शुल्क* : ₹${fee}/- (एक हजार एक रुपये फक्त)
+💳 *देयक पद्धत* : ${payMethod}
+✅ *स्थिती* : प्राप्त व सत्यापित (Payment Verified)
+----------------------------------
+
+संदेश: वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली.
+
+_ही पावती सदस्य नोंदणीचा अधिकृत पुरावा आहे._
+mptmamravati.org`;
+
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMessage)}`;
+    window.open(waUrl, "_blank");
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleOpenAddModal = () => {
     setEditingMember(null);
@@ -226,14 +298,6 @@ export default function ManageExecutivesPage() {
               <span>Add Executive Member</span>
             </Link>
 
-            <Link
-              href="/registrations"
-              className="px-4 py-2 bg-amber-100/90 hover:bg-amber-200 text-amber-950 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-amber-800" />
-              <span>View Executive & Member Receipts</span>
-            </Link>
-
             <button
               onClick={fetchExecutives}
               disabled={refreshing}
@@ -329,7 +393,7 @@ export default function ManageExecutivesPage() {
                     <th className="py-3 px-4">Mobile Number</th>
                     <th className="py-3 px-4">City / District</th>
                     <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-center">Action</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
@@ -384,7 +448,26 @@ export default function ManageExecutivesPage() {
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedViewExec(item)}
+                            title="View Detailed Receipt & Payment Proof"
+                            className="p-1.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const match = registrations.find((r) => r.mainMembers[0]?.mobileNo?.replace(/\D/g, "") === item.mobileNo.replace(/\D/g, ""));
+                              handleSendWhatsApp(item, match);
+                            }}
+                            title="Send Receipt on WhatsApp"
+                            className="p-1.5 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
+                          >
+                            <MessageSquare className="w-4 h-4 text-emerald-600" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(item)}
@@ -582,6 +665,243 @@ export default function ManageExecutivesPage() {
                 {deleting ? "Deleting..." : "Confirm Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: View Executive Details & Official Marathi Receipt */}
+      {selectedViewExec && (
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
+          <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
+            
+            {/* Modal Top Header */}
+            <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40 text-amber-300 text-lg font-bold">
+                  🚩
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-amber-200 tracking-wide drop-shadow-md">
+                    Maharashtra Prantik Tailik Mahasabha (Amravati)
+                  </h3>
+                  <p className="text-xs text-amber-300 font-bold">
+                    Receipt No: <span className="font-mono text-amber-100 font-bold">{matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`}</span> | Date: <span className="text-amber-100">{matchedReg ? getDatePart(matchedReg) : formatDateToDDMMYYYY(selectedViewExec.createdAt)}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleSendWhatsApp(selectedViewExec, matchedReg)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                  title="Send Receipt to WhatsApp"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Receipt</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedViewExec(null)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body Printable Official Marathi Receipt */}
+            <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
+              
+              {/* Header Title Banner */}
+              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
+                <p className="text-xs font-bold text-amber-400">❖ जय संताजी ❖</p>
+                <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
+                  महाराष्ट्र प्रांतिक तैलिक महासभा
+                </h2>
+                <p className="text-xs text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
+                <div className="inline-block mt-1">
+                  <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
+                    ★ कार्यकारिणी सदस्य नोंदणी पावती
+                  </span>
+                </div>
+              </div>
+
+              {/* Top Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
+                <div>
+                  <span className="font-bold text-stone-700 text-xs">पावती क्र. : </span>
+                  <span className="font-mono font-black text-stone-900 text-sm">
+                    {matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-bold text-stone-700 text-xs">दिनांक : </span>
+                  <span className="font-bold text-stone-900 text-xs">
+                    {matchedReg ? getDatePart(matchedReg) : formatDateToDDMMYYYY(selectedViewExec.createdAt)}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-bold text-stone-700 text-xs">नोंदणी शुल्क : </span>
+                  <span className="font-black text-[#7A0C0C] text-sm">
+                    ₹{matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Member Details */}
+              <div className="p-4 rounded-xl bg-white border border-amber-300 space-y-3">
+                <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1.5 flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-amber-800" />
+                  <span>कार्यकारिणी सदस्य तपशील (Executive Member Details)</span>
+                </h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="font-bold text-stone-600">पूर्ण नाव : </span>
+                    <span className="font-black text-stone-900 text-sm">{selectedViewExec.fullName}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-600">पदनाम (Designation) : </span>
+                    <span className="font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-block">
+                      {selectedViewExec.designation}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-600">मोबाईल नंबर : </span>
+                    <a href={`tel:${selectedViewExec.mobileNo}`} className="font-mono font-bold text-stone-900 hover:underline">
+                      {selectedViewExec.mobileNo}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-600">शहर / जिल्हा : </span>
+                    <span className="font-bold text-stone-900">{selectedViewExec.city}, {selectedViewExec.district}</span>
+                  </div>
+                  {matchedReg?.address && (
+                    <div className="sm:col-span-2">
+                      <span className="font-bold text-stone-600">संपूर्ण पत्ता : </span>
+                      <span className="font-semibold text-stone-900">{matchedReg.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Amount in Words */}
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
+                <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
+                <span className="font-extrabold text-[#7A0C0C]">
+                  {matchedReg?.amountInWords || convertNumberToMarathiWords(matchedReg?.registrationFee || selectedViewExec.registrationFee || 1001)}
+                </span>
+              </div>
+
+              {/* Payment Details & Proof Section */}
+              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-300 space-y-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 pb-2">
+                  <div>
+                    <span className="font-bold text-stone-800">देयक पद्धत : </span>
+                    <span className="font-extrabold text-stone-900">
+                      {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : (selectedViewExec.paymentMethod || "रोख (Cash)")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold bg-emerald-100/90 border border-emerald-300 px-2.5 py-1 rounded-full">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">✓</span>
+                    <span>रक्कम रु. {matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"} प्राप्त झाली (Payment Verified)</span>
+                  </div>
+                </div>
+
+                {/* Proof of Payment Screenshot Thumbnail */}
+                {(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot) ? (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="font-bold text-stone-800 flex items-center gap-1">
+                      <ImageIcon className="w-4 h-4 text-indigo-600" />
+                      <span>ऑनलाइन पेमेंट पुरावा (Proof of Payment) :</span>
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <div
+                        onClick={() => setScreenshotZoom(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || null)}
+                        className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-indigo-400 shadow-sm cursor-zoom-in group hover:opacity-90 transition"
+                      >
+                        <Image
+                          src={matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || ""}
+                          alt="Payment Screenshot"
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition flex items-center justify-center text-white text-[10px] font-bold">
+                          Click Zoom
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setScreenshotZoom(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || null)}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View Full Screenshot</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-slate-600 italic text-[11px] flex items-center gap-1 pt-1">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>पेमेंट प्रकार: रोख (Cash) - अ‍ॅडमिन द्वारे थेट नोंदणी व शुल्क जमा करण्यात आले आहे.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Sandesh Declaration Box */}
+              <div className="p-3.5 rounded-xl bg-amber-100/90 border-2 border-amber-400 text-stone-900">
+                <p className="text-xs sm:text-sm font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
+                  <span className="whitespace-nowrap">संदेश :</span>
+                  <span className="text-stone-900 font-bold">
+                    वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली.
+                  </span>
+                </p>
+              </div>
+
+              {/* Footer Signature Block */}
+              <div className="pt-6 border-t border-amber-300 flex items-end justify-between text-xs">
+                <div className="text-stone-600 font-semibold italic">
+                  ही पावती सदस्य नोंदणी कालावधीसाठी अधिकृत पुरावा म्हणून जतन करावी.
+                </div>
+                <div className="text-center space-y-1">
+                  <div className="w-36 h-8 border-b-2 border-stone-800 border-dashed mx-auto"></div>
+                  <p className="font-extrabold text-[#7A0C0C]">पावती देणाऱ्याची सही / शिक्का</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ZOOMED PAYMENT SCREENSHOT MODAL */}
+      {screenshotZoom && (
+        <div
+          onClick={() => setScreenshotZoom(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200 no-print"
+        >
+          <div className="relative max-w-2xl max-h-[90vh] bg-white p-2 rounded-2xl overflow-hidden shadow-2xl">
+            <Image
+              src={screenshotZoom}
+              alt="Payment Screenshot Zoom"
+              width={800}
+              height={1000}
+              className="w-full h-full object-contain max-h-[85vh] rounded-xl"
+            />
+            <button
+              onClick={() => setScreenshotZoom(null)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center font-bold hover:bg-black transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}
