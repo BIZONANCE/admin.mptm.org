@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ExecutiveMemberItem } from "@/types";
 import { getApiUrl } from "@/utils/config";
@@ -215,7 +216,15 @@ export default function ManageExecutivesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/manage-executives/register"
+              className="px-4 py-2 bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:to-amber-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer border border-amber-400/60"
+            >
+              <Plus className="w-4 h-4 text-amber-300" />
+              <span>Add Executive Member</span>
+            </Link>
+
             <button
               onClick={fetchExecutives}
               disabled={refreshing}
@@ -223,14 +232,6 @@ export default function ManageExecutivesPage() {
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-indigo-600" : ""}`} />
               <span>Refresh</span>
-            </button>
-
-            <button
-              onClick={handleOpenAddModal}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Executive Member</span>
             </button>
           </div>
         </div>
@@ -325,7 +326,7 @@ export default function ManageExecutivesPage() {
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
                   {filteredExecutives.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      
+
                       {/* Name */}
                       <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
@@ -364,11 +365,10 @@ export default function ManageExecutivesPage() {
 
                       {/* Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                          item.status === "ACTIVE"
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${item.status === "ACTIVE"
                             ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                             : "bg-slate-100 text-slate-600 border-slate-200"
-                        }`}>
+                          }`}>
                           ● {item.status}
                         </span>
                       </td>
@@ -424,7 +424,7 @@ export default function ManageExecutivesPage() {
             </div>
 
             <form onSubmit={handleSaveMember} className="space-y-4 text-xs font-bold text-slate-700">
-              
+
               {/* Full Name */}
               <div className="space-y-1">
                 <label className="block">
