@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
-import { formatDateToDDMMYYYY, getDatePart, getTimePart, formatPaymentMethod } from "../../utils/formatters";
+import { formatDateToDDMMYYYY, getDatePart, getTimePart, formatPaymentMethod, convertNumberToMarathiWords } from "../../utils/formatters";
 import { getApiUrl, getMainSiteUrl } from "../../utils/config";
 
 export default function RegistrationsPage() {
@@ -63,6 +63,10 @@ export default function RegistrationsPage() {
 
   const API_URL = getApiUrl();
   const MAIN_SITE_URL = getMainSiteUrl();
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const fetchRegistrations = async () => {
     try {
@@ -380,10 +384,6 @@ export default function RegistrationsPage() {
     const link = getActiveFormLink();
     const message = `जय संताजी! महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती विभाग) ऑनलाईन सदस्य नोंदणी फॉर्म भरण्यासाठी खालील लिंकवर क्लिक करा:\n\n${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   return (
@@ -750,7 +750,7 @@ export default function RegistrationsPage() {
         {selectedReg && (
           <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
             <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
-              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400">
+              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40 text-amber-300 text-lg font-bold">
                     🚩
@@ -768,7 +768,7 @@ export default function RegistrationsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handlePrint}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition"
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
                   >
                     <Printer className="w-4 h-4" />
                     <span>Print Receipt</span>
@@ -776,50 +776,69 @@ export default function RegistrationsPage() {
 
                   <button
                     onClick={() => setSelectedReg(null)}
-                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Modal Body Receipt */}
-              <div className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-300/60">
-                  <div>
-                    <span className="font-bold text-stone-700">Receipt No: </span>
-                    <span className="font-mono font-extrabold text-stone-900 text-sm">{selectedReg.receiptNo}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700">Registration Date: </span>
-                    <span className="font-bold text-stone-900">{getDatePart(selectedReg)}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700">Total Fee: </span>
-                    <span className="font-extrabold text-[#7A0C0C] text-sm">₹{selectedReg.registrationFee}</span>
+              {/* Modal Body Printable Official Marathi Receipt */}
+              <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
+                
+                {/* Header Title Banner */}
+                <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
+                  <p className="text-xs font-bold text-amber-400">❖ जय संताजी ❖</p>
+                  <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
+                    महाराष्ट्र प्रांतिक तैलिक महासभा
+                  </h2>
+                  <p className="text-xs text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
+                  <div className="inline-block mt-1">
+                    <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
+                      {selectedReg.receiptNo.startsWith("MPTM-EM-") || Number(selectedReg.registrationFee) === 1001
+                        ? "★ कार्यकारिणी सदस्य नोंदणी पावती"
+                        : "★ प्राथमिक सदस्य नोंदणी पावती"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                {/* Top Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs">पावती क्र. : </span>
+                    <span className="font-mono font-black text-stone-900 text-sm">{selectedReg.receiptNo}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs">दिनांक : </span>
+                    <span className="font-bold text-stone-900 text-xs">{getDatePart(selectedReg)}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs">नोंदणी शुल्क : </span>
+                    <span className="font-black text-[#7A0C0C] text-sm">₹{selectedReg.registrationFee}</span>
+                  </div>
+                </div>
+
+                {/* Main Member Details */}
+                <div className="space-y-2">
                   <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
                     <User className="w-4 h-4 text-amber-800" />
-                    <span>Main Member Details ({selectedReg.mainMembers.length})</span>
+                    <span>मुख्य सदस्यांची माहिती ({selectedReg.mainMembers.length})</span>
                   </h4>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-2">
                     {selectedReg.mainMembers.map((m) => (
-                      <div key={m.id} className="p-3 rounded-xl bg-white border border-amber-700/30 space-y-1.5">
-                        <div className="flex items-center justify-between border-b border-stone-200 pb-1 font-bold text-stone-900 text-xs">
-                          <span>{m.memberNo}</span>
-                          <span className="text-amber-800">Prabhag No: {m.prabhagNo}</span>
+                      <div key={m.id || m.memberNo} className="p-3 rounded-xl bg-white border border-amber-300/80 space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between border-b border-stone-200 pb-1 font-bold">
+                          <span className="font-mono text-amber-950 bg-amber-200/80 px-2 py-0.5 rounded border border-amber-300">{m.memberNo}</span>
+                          <span className="text-stone-700">प्रभाग क्र. / गाव: {m.prabhagNo}</span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-semibold">
                           <div>
-                            <span className="font-semibold text-stone-600">Member Name: </span>
-                            <span className="font-bold text-stone-900">{m.fullName}</span>
+                            <span className="text-stone-600">संपूर्ण नाव : </span>
+                            <span className="font-extrabold text-stone-900">{m.fullName}</span>
                           </div>
                           <div>
-                            <span className="font-semibold text-stone-600">Mobile: </span>
-                            <span className="font-bold text-stone-900">{m.mobileNo}</span>
+                            <span className="text-stone-600">मोबाईल क्र. : </span>
+                            <span className="font-mono font-bold text-stone-900">{m.mobileNo}</span>
                           </div>
                         </div>
                       </div>
@@ -827,38 +846,46 @@ export default function RegistrationsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <span className="font-bold text-stone-800">Address: </span>
-                  <span className="font-semibold text-stone-900 border-b border-stone-800 pb-0.5">{selectedReg.address}</span>
+                {/* Address & Amount in Words */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
+                  <div>
+                    <span className="font-bold text-stone-800">संपूर्ण पत्ता : </span>
+                    <span className="font-semibold text-stone-900">{selectedReg.address}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
+                    <span className="font-extrabold text-[#7A0C0C]">{selectedReg.amountInWords || convertNumberToMarathiWords(selectedReg.registrationFee)}</span>
+                  </div>
                 </div>
 
-                {selectedReg.familyMembers.length > 0 && (
+                {/* Family Members Details Table */}
+                {selectedReg.familyMembers && selectedReg.familyMembers.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-amber-800" />
-                      <span>Family Member Details ({selectedReg.familyMembers.length})</span>
+                      <span>कौटुंबिक सदस्यांची माहिती ({selectedReg.familyMembers.length})</span>
                     </h4>
-                    <div className="overflow-x-auto rounded-lg border border-amber-800/30">
+                    <div className="overflow-x-auto rounded-lg border border-amber-300">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-[#7A0C0C] text-white font-bold text-center">
-                            <th className="p-2 border-r border-amber-700/60">Sr. No.</th>
-                            <th className="p-2 border-r border-amber-700/60">Name</th>
-                            <th className="p-2 border-r border-amber-700/60">Relation</th>
-                            <th className="p-2 border-r border-amber-700/60">Date of Birth</th>
-                            <th className="p-2 border-r border-amber-700/60">Occupation</th>
-                            <th className="p-2">Mobile</th>
+                            <th className="p-2 border-r border-amber-700/60">अ.क्र.</th>
+                            <th className="p-2 border-r border-amber-700/60">नाव</th>
+                            <th className="p-2 border-r border-amber-700/60">नाते</th>
+                            <th className="p-2 border-r border-amber-700/60">जन्म दिनांक</th>
+                            <th className="p-2 border-r border-amber-700/60">व्यवसाय</th>
+                            <th className="p-2">मोबाईल क्र.</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-amber-800/30 text-stone-900 bg-white">
+                        <tbody className="divide-y divide-amber-200 text-stone-900 bg-white">
                           {selectedReg.familyMembers.map((fam, idx) => (
-                            <tr key={fam.id}>
-                              <td className="p-2.5 text-center font-bold border-r border-amber-800/30">{idx + 1}</td>
-                              <td className="p-2.5 font-bold border-r border-amber-800/30">{fam.name}</td>
-                              <td className="p-2.5 font-medium border-r border-amber-800/30">{fam.relation}</td>
-                              <td className="p-2.5 border-r border-amber-800/30">{formatDateToDDMMYYYY(fam.dob)}</td>
-                              <td className="p-2.5 border-r border-amber-800/30">{fam.occupation || "-"}</td>
-                              <td className="p-2.5 font-medium">{fam.mobile || "-"}</td>
+                            <tr key={fam.id || idx}>
+                              <td className="p-2 text-center font-bold border-r border-amber-200">{idx + 1}</td>
+                              <td className="p-2 font-bold border-r border-amber-200">{fam.name}</td>
+                              <td className="p-2 font-medium border-r border-amber-200">{fam.relation}</td>
+                              <td className="p-2 border-r border-amber-200">{formatDateToDDMMYYYY(fam.dob)}</td>
+                              <td className="p-2 border-r border-amber-200">{fam.occupation || "-"}</td>
+                              <td className="p-2 font-medium">{fam.mobile || "-"}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -866,6 +893,42 @@ export default function RegistrationsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Payment & Verification Row */}
+                <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-amber-50/80 border border-amber-300 text-xs">
+                  <div>
+                    <span className="font-bold text-stone-800">देयक पद्धत : </span>
+                    <span className="font-extrabold text-stone-900">{formatPaymentMethod(selectedReg.paymentMethod)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">✓</span>
+                    <span>रक्कम रु. {selectedReg.registrationFee} प्राप्त झाली (Payment Verified)</span>
+                  </div>
+                </div>
+
+                {/* Sandesh Declaration Box */}
+                <div className="p-3.5 rounded-xl bg-amber-100/90 border-2 border-amber-400 text-stone-900">
+                  <p className="text-xs sm:text-sm font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
+                    <span className="whitespace-nowrap">संदेश :</span>
+                    <span className="text-stone-900 font-bold">
+                      {selectedReg.receiptNo.startsWith("MPTM-EM-") || Number(selectedReg.registrationFee) === 1001
+                        ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
+                        : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
+                    </span>
+                  </p>
+                </div>
+
+                {/* Footer Signature Block */}
+                <div className="pt-6 border-t border-amber-300 flex items-end justify-between text-xs">
+                  <div className="text-stone-600 font-semibold italic">
+                    ही पावती सदस्य नोंदणीचा अधिकृत पुरावा म्हणून जतन करावी.
+                  </div>
+                  <div className="text-center space-y-1">
+                    <div className="w-36 h-8 border-b-2 border-stone-800 border-dashed mx-auto"></div>
+                    <p className="font-extrabold text-[#7A0C0C]">पावती देणाऱ्याची सही / शिक्का</p>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

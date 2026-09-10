@@ -21,6 +21,7 @@ import {
   User,
   ShieldCheck,
   Filter,
+  FileText,
 } from "lucide-react";
 
 export default function ManageExecutivesPage() {
@@ -223,6 +224,14 @@ export default function ManageExecutivesPage() {
             >
               <Plus className="w-4 h-4 text-amber-300" />
               <span>Add Executive Member</span>
+            </Link>
+
+            <Link
+              href="/registrations"
+              className="px-4 py-2 bg-amber-100/90 hover:bg-amber-200 text-amber-950 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-amber-800" />
+              <span>View Executive & Member Receipts</span>
             </Link>
 
             <button
