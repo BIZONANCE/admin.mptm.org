@@ -6,7 +6,7 @@ import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ExecutiveMemberItem, MemberRegistration } from "@/types";
 import { getApiUrl } from "@/utils/config";
-import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod, convertNumberToMarathiWords } from "@/utils/formatters";
+import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod } from "@/utils/formatters";
 import {
   UserCheck,
   Search,
@@ -30,6 +30,38 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+const designationMap: Record<string, string> = {
+  "विभागीय अध्यक्ष": "Regional President",
+  "विभागीय उपाध्यक्ष": "Vice President",
+  "विभागीय सचिव": "Secretary",
+  "विभागीय सहसचिव": "Joint Secretary",
+  "कोषाध्यक्ष": "Treasurer",
+  "संघटक": "Organizer",
+  "कार्यकारिणी सदस्य": "Executive Member",
+  "सल्लागार": "Advisor",
+};
+
+function formatDesignationInEnglish(desig: string | null | undefined): string {
+  if (!desig) return "";
+  const trimmed = desig.trim();
+  return designationMap[trimmed] || trimmed;
+}
+
+function formatEnglishText(text: string | null | undefined): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed === "अमरावती") return "Amravati";
+  return trimmed;
+}
+
+function convertNumberToEnglishWords(amountStr: string | number): string {
+  const num = typeof amountStr === "number" ? amountStr : parseInt(String(amountStr), 10);
+  if (isNaN(num) || num <= 0) return "Zero Rupees Only";
+  if (num === 1001) return "One Thousand One Rupees Only";
+  if (num === 101) return "One Hundred One Rupees Only";
+  return `${num} Rupees Only`;
+}
+
 export default function ManageExecutivesPage() {
   const [executives, setExecutives] = useState<ExecutiveMemberItem[]>([]);
   const [registrations, setRegistrations] = useState<MemberRegistration[]>([]);
@@ -50,10 +82,10 @@ export default function ManageExecutivesPage() {
   const [editingMember, setEditingMember] = useState<ExecutiveMemberItem | null>(null);
   const [formData, setFormData] = useState({
     fullName: "",
-    designation: "कार्यकारिणी सदस्य",
+    designation: "Executive Member",
     mobileNo: "",
-    city: "अमरावती",
-    district: "अमरावती",
+    city: "Amravati",
+    district: "Amravati",
     photoUrl: "",
     status: "ACTIVE",
   });
@@ -114,13 +146,20 @@ export default function ManageExecutivesPage() {
   const filteredExecutives = useMemo(() => {
     return executives.filter((item) => {
       const q = searchQuery.toLowerCase().trim();
+      const desigEng = formatDesignationInEnglish(item.designation).toLowerCase();
+      const cityEng = formatEnglishText(item.city).toLowerCase();
+      const distEng = formatEnglishText(item.district).toLowerCase();
+
       const matchesSearch =
         !q ||
         item.fullName.toLowerCase().includes(q) ||
         item.designation.toLowerCase().includes(q) ||
+        desigEng.includes(q) ||
         item.mobileNo.includes(q) ||
         item.city.toLowerCase().includes(q) ||
-        item.district.toLowerCase().includes(q);
+        cityEng.includes(q) ||
+        item.district.toLowerCase().includes(q) ||
+        distEng.includes(q);
 
       const matchesDesignation =
         designationFilter === "ALL" ||
@@ -151,26 +190,26 @@ export default function ManageExecutivesPage() {
     const receiptNo = regMatch?.receiptNo || exec.receiptNo || `MPTM-EM-${exec.id.replace(/\D/g, "").slice(-4) || "101"}`;
     const dateStr = regMatch ? getDatePart(regMatch) : formatDateToDDMMYYYY(exec.createdAt);
     const fee = regMatch?.registrationFee || exec.registrationFee || 1001;
-    const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "रोख (Cash)");
+    const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "Cash");
 
-    const textMessage = `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती)* 🚩
-★ *कार्यकारिणी सदस्य नोंदणी पावती* ★
+    const textMessage = `🚩 *Maharashtra Prantik Tailik Mahasabha (Amravati)* 🚩
+★ *Executive Member Registration Receipt* ★
 
 ----------------------------------
-📄 *पावती क्र.* : ${receiptNo}
-📅 *दिनांक* : ${dateStr}
-👤 *सदस्याचे नाव* : ${exec.fullName}
-🏅 *पदनाम* : ${exec.designation}
-📱 *मोबाईल क्र.* : ${exec.mobileNo}
-📍 *शहर/जिल्हा* : ${exec.city}${exec.district ? `, ${exec.district}` : ""}
-💰 *नोंदणी शुल्क* : ₹${fee}/- (एक हजार एक रुपये फक्त)
-💳 *देयक पद्धत* : ${payMethod}
-✅ *स्थिती* : प्राप्त व सत्यापित (Payment Verified)
+📄 *Receipt No.* : ${receiptNo}
+📅 *Date* : ${dateStr}
+👤 *Member Name* : ${exec.fullName}
+🏅 *Designation* : ${formatDesignationInEnglish(exec.designation)}
+📱 *Mobile No.* : ${exec.mobileNo}
+📍 *City/District* : ${formatEnglishText(exec.city)}${exec.district ? `, ${formatEnglishText(exec.district)}` : ""}
+💰 *Registration Fee* : ₹${fee}/- (One Thousand One Rupees Only)
+💳 *Payment Method* : ${payMethod}
+✅ *Status* : Payment Verified
 ----------------------------------
 
-संदेश: वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली.
+Message: The above amount was received as registration fee for Executive Member of Maharashtra Prantik Tailik Mahasabha.
 
-_ही पावती सदस्य नोंदणीचा अधिकृत पुरावा आहे._
+_This receipt serves as official proof of member registration._
 mptmamravati.org`;
 
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMessage)}`;
@@ -185,10 +224,10 @@ mptmamravati.org`;
     setEditingMember(null);
     setFormData({
       fullName: "",
-      designation: "कार्यकारिणी सदस्य",
+      designation: "Executive Member",
       mobileNo: "",
-      city: "अमरावती",
-      district: "अमरावती",
+      city: "Amravati",
+      district: "Amravati",
       photoUrl: "",
       status: "ACTIVE",
     });
@@ -282,7 +321,7 @@ mptmamravati.org`;
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <UserCheck className="w-6 h-6 text-indigo-600" />
-              <span>Executive Members (कार्यकारिणी)</span>
+              <span>Executive Members</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Manage committee members, designations, contact details, and executive team hierarchy
@@ -354,7 +393,7 @@ mptmamravati.org`;
                     <option value="ALL">All ({executives.length})</option>
                     {uniqueDesignations.map((desig) => (
                       <option key={desig} value={desig}>
-                        {desig}
+                        {formatDesignationInEnglish(desig)}
                       </option>
                     ))}
                   </select>
@@ -389,7 +428,7 @@ mptmamravati.org`;
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200 uppercase tracking-wider">
                     <th className="py-3 px-4">Member Name</th>
-                    <th className="py-3 px-4">Designation (पदभार)</th>
+                    <th className="py-3 px-4">Designation</th>
                     <th className="py-3 px-4">Mobile Number</th>
                     <th className="py-3 px-4">City / District</th>
                     <th className="py-3 px-4">Status</th>
@@ -414,7 +453,7 @@ mptmamravati.org`;
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
                           <Award className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          <span>{item.designation}</span>
+                          <span>{formatDesignationInEnglish(item.designation)}</span>
                         </span>
                       </td>
 
@@ -432,15 +471,15 @@ mptmamravati.org`;
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-slate-700">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{item.city}{item.district ? `, ${item.district}` : ""}</span>
+                          <span>{formatEnglishText(item.city)}{item.district ? `, ${formatEnglishText(item.district)}` : ""}</span>
                         </div>
                       </td>
 
                       {/* Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${item.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
                           }`}>
                           ● {item.status}
                         </span>
@@ -505,7 +544,7 @@ mptmamravati.org`;
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-indigo-600" />
-                <span>{editingMember ? "Edit Executive Member" : "Add Executive Member (कार्यकारिणी सदस्य)"}</span>
+                <span>{editingMember ? "Edit Executive Member" : "Add Executive Member"}</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -520,14 +559,14 @@ mptmamravati.org`;
               {/* Full Name */}
               <div className="space-y-1">
                 <label className="block">
-                  Full Name (पूर्ण नाव) <span className="text-red-600">*</span> :
+                  Full Name <span className="text-red-600">*</span> :
                 </label>
                 <input
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
-                  placeholder="उदा. राजस बाळकृष्ण गुळवाडे"
+                  placeholder="e.g. Rajas Balkrishna Gulwade"
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                 />
               </div>
@@ -535,28 +574,28 @@ mptmamravati.org`;
               {/* Designation */}
               <div className="space-y-1">
                 <label className="block">
-                  Designation (पदनाम) <span className="text-red-600">*</span> :
+                  Designation <span className="text-red-600">*</span> :
                 </label>
                 <select
                   value={formData.designation}
                   onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                 >
-                  <option value="विभागीय अध्यक्ष">विभागीय अध्यक्ष (Regional President)</option>
-                  <option value="विभागीय उपाध्यक्ष">विभागीय उपाध्यक्ष (Vice President)</option>
-                  <option value="विभागीय सचिव">विभागीय सचिव (Secretary)</option>
-                  <option value="विभागीय सहसचिव">विभागीय सहसचिव (Joint Secretary)</option>
-                  <option value="कोषाध्यक्ष">कोषाध्यक्ष (Treasurer)</option>
-                  <option value="संघटक">संघटक (Organizer)</option>
-                  <option value="कार्यकारिणी सदस्य">कार्यकारिणी सदस्य (Executive Member)</option>
-                  <option value="सल्लागार">सल्लागार (Advisor)</option>
+                  <option value="Executive Member">Executive Member</option>
+                  <option value="Regional President">Regional President</option>
+                  <option value="Vice President">Vice President</option>
+                  <option value="Secretary">Secretary</option>
+                  <option value="Joint Secretary">Joint Secretary</option>
+                  <option value="Treasurer">Treasurer</option>
+                  <option value="Organizer">Organizer</option>
+                  <option value="Advisor">Advisor</option>
                 </select>
               </div>
 
               {/* Mobile Number */}
               <div className="space-y-1">
                 <label className="block">
-                  Mobile Number (मोबाईल क्र.) <span className="text-red-600">*</span> :
+                  Mobile Number <span className="text-red-600">*</span> :
                 </label>
                 <input
                   type="tel"
@@ -564,7 +603,7 @@ mptmamravati.org`;
                   onChange={(e) => setFormData({ ...formData, mobileNo: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                   required
                   maxLength={10}
-                  placeholder="१० अंकी मोबाईल नंबर"
+                  placeholder="10 digit mobile number"
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 font-mono"
                 />
               </div>
@@ -572,22 +611,22 @@ mptmamravati.org`;
               {/* City & District */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block">City / Town (शहर/गाव):</label>
+                  <label className="block">City / Town:</label>
                   <input
                     type="text"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="उदा. अमरावती"
+                    placeholder="e.g. Amravati"
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block">District (जिल्हा):</label>
+                  <label className="block">District:</label>
                   <input
                     type="text"
                     value={formData.district}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="उदा. अमरावती"
+                    placeholder="e.g. Amravati"
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
                   />
                 </div>
@@ -601,8 +640,8 @@ mptmamravati.org`;
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
                 >
-                  <option value="ACTIVE">ACTIVE (सक्रिय)</option>
-                  <option value="INACTIVE">INACTIVE (निष्क्रिय)</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
                 </select>
               </div>
 
@@ -643,7 +682,7 @@ mptmamravati.org`;
                 Delete Executive Member?
               </h3>
               <p className="text-xs text-slate-600 font-medium">
-                <span className="font-bold text-slate-900">{deleteCandidate.fullName}</span> ({deleteCandidate.designation}) will be permanently removed from the committee list.
+                <span className="font-bold text-slate-900">{deleteCandidate.fullName}</span> ({formatDesignationInEnglish(deleteCandidate.designation)}) will be permanently removed from the committee list.
               </p>
             </div>
 
@@ -669,11 +708,11 @@ mptmamravati.org`;
         </div>
       )}
 
-      {/* MODAL 3: View Executive Details & Official Marathi Receipt */}
+      {/* MODAL 3: View Executive Details & Official Receipt */}
       {selectedViewExec && (
         <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
           <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
-            
+
             {/* Modal Top Header */}
             <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
               <div className="flex items-center gap-3">
@@ -717,19 +756,19 @@ mptmamravati.org`;
               </div>
             </div>
 
-            {/* Modal Body Printable Official Marathi Receipt */}
+            {/* Modal Body Printable Official Receipt */}
             <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
-              
+
               {/* Header Title Banner */}
               <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
-                <p className="text-xs font-bold text-amber-400">❖ जय संताजी ❖</p>
+                <p className="text-xs font-bold text-amber-400">❖ Jai Santaji ❖</p>
                 <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
-                  महाराष्ट्र प्रांतिक तैलिक महासभा
+                  Maharashtra Prantik Tailik Mahasabha
                 </h2>
-                <p className="text-xs text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
+                <p className="text-xs text-sky-200 font-bold">Amravati Division, Amravati.</p>
                 <div className="inline-block mt-1">
                   <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
-                    ★ कार्यकारिणी सदस्य नोंदणी पावती
+                    ★ Executive Member Registration Receipt
                   </span>
                 </div>
               </div>
@@ -737,19 +776,19 @@ mptmamravati.org`;
               {/* Top Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
                 <div>
-                  <span className="font-bold text-stone-700 text-xs">पावती क्र. : </span>
+                  <span className="font-bold text-stone-700 text-xs">Receipt No. : </span>
                   <span className="font-mono font-black text-stone-900 text-sm">
                     {matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`}
                   </span>
                 </div>
                 <div>
-                  <span className="font-bold text-stone-700 text-xs">दिनांक : </span>
+                  <span className="font-bold text-stone-700 text-xs">Date : </span>
                   <span className="font-bold text-stone-900 text-xs">
                     {matchedReg ? getDatePart(matchedReg) : formatDateToDDMMYYYY(selectedViewExec.createdAt)}
                   </span>
                 </div>
                 <div>
-                  <span className="font-bold text-stone-700 text-xs">नोंदणी शुल्क : </span>
+                  <span className="font-bold text-stone-700 text-xs">Registration Fee : </span>
                   <span className="font-black text-[#7A0C0C] text-sm">
                     ₹{matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"}
                   </span>
@@ -760,33 +799,35 @@ mptmamravati.org`;
               <div className="p-4 rounded-xl bg-white border border-amber-300 space-y-3">
                 <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1.5 flex items-center gap-1.5">
                   <User className="w-4 h-4 text-amber-800" />
-                  <span>कार्यकारिणी सदस्य तपशील (Executive Member Details)</span>
+                  <span>Executive Member Details</span>
                 </h4>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="font-bold text-stone-600">पूर्ण नाव : </span>
+                    <span className="font-bold text-stone-600">Full Name : </span>
                     <span className="font-black text-stone-900 text-sm">{selectedViewExec.fullName}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-600">पदनाम (Designation) : </span>
+                    <span className="font-bold text-stone-600">Designation : </span>
                     <span className="font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-block">
-                      {selectedViewExec.designation}
+                      {formatDesignationInEnglish(selectedViewExec.designation)}
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-600">मोबाईल नंबर : </span>
+                    <span className="font-bold text-stone-600">Mobile Number : </span>
                     <a href={`tel:${selectedViewExec.mobileNo}`} className="font-mono font-bold text-stone-900 hover:underline">
                       {selectedViewExec.mobileNo}
                     </a>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-600">शहर / जिल्हा : </span>
-                    <span className="font-bold text-stone-900">{selectedViewExec.city}, {selectedViewExec.district}</span>
+                    <span className="font-bold text-stone-600">City / District : </span>
+                    <span className="font-bold text-stone-900">
+                      {formatEnglishText(selectedViewExec.city)}{selectedViewExec.district ? `, ${formatEnglishText(selectedViewExec.district)}` : ""}
+                    </span>
                   </div>
                   {matchedReg?.address && (
                     <div className="sm:col-span-2">
-                      <span className="font-bold text-stone-600">संपूर्ण पत्ता : </span>
+                      <span className="font-bold text-stone-600">Full Address : </span>
                       <span className="font-semibold text-stone-900">{matchedReg.address}</span>
                     </div>
                   )}
@@ -795,9 +836,9 @@ mptmamravati.org`;
 
               {/* Amount in Words */}
               <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
-                <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
+                <span className="font-bold text-stone-800">Amount in Words : </span>
                 <span className="font-extrabold text-[#7A0C0C]">
-                  {matchedReg?.amountInWords || convertNumberToMarathiWords(matchedReg?.registrationFee || selectedViewExec.registrationFee || 1001)}
+                  {matchedReg?.amountInWords || convertNumberToEnglishWords(matchedReg?.registrationFee || selectedViewExec.registrationFee || 1001)}
                 </span>
               </div>
 
@@ -805,14 +846,14 @@ mptmamravati.org`;
               <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-300 space-y-3 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 pb-2">
                   <div>
-                    <span className="font-bold text-stone-800">देयक पद्धत : </span>
+                    <span className="font-bold text-stone-800">Payment Method : </span>
                     <span className="font-extrabold text-stone-900">
-                      {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : (selectedViewExec.paymentMethod || "रोख (Cash)")}
+                      {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : (selectedViewExec.paymentMethod || "Cash")}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold bg-emerald-100/90 border border-emerald-300 px-2.5 py-1 rounded-full">
                     <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">✓</span>
-                    <span>रक्कम रु. {matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"} प्राप्त झाली (Payment Verified)</span>
+                    <span>Amount Rs. {matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"} Received (Payment Verified)</span>
                   </div>
                 </div>
 
@@ -821,7 +862,7 @@ mptmamravati.org`;
                   <div className="space-y-1.5 pt-1">
                     <span className="font-bold text-stone-800 flex items-center gap-1">
                       <ImageIcon className="w-4 h-4 text-indigo-600" />
-                      <span>ऑनलाइन पेमेंट पुरावा (Proof of Payment) :</span>
+                      <span>Proof of Payment :</span>
                     </span>
                     <div className="flex items-center gap-3">
                       <div
@@ -851,7 +892,7 @@ mptmamravati.org`;
                 ) : (
                   <div className="text-slate-600 italic text-[11px] flex items-center gap-1 pt-1">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>पेमेंट प्रकार: रोख (Cash) - अ‍ॅडमिन द्वारे थेट नोंदणी व शुल्क जमा करण्यात आले आहे.</span>
+                    <span>Payment Method: Cash - Registration and fee collected directly by Admin.</span>
                   </div>
                 )}
               </div>
@@ -859,9 +900,9 @@ mptmamravati.org`;
               {/* Sandesh Declaration Box */}
               <div className="p-3.5 rounded-xl bg-amber-100/90 border-2 border-amber-400 text-stone-900">
                 <p className="text-xs sm:text-sm font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
-                  <span className="whitespace-nowrap">संदेश :</span>
+                  <span className="whitespace-nowrap">Message :</span>
                   <span className="text-stone-900 font-bold">
-                    वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली.
+                    The above amount was received as registration fee for Executive Member of Maharashtra Prantik Tailik Mahasabha.
                   </span>
                 </p>
               </div>
@@ -869,11 +910,11 @@ mptmamravati.org`;
               {/* Footer Signature Block */}
               <div className="pt-6 border-t border-amber-300 flex items-end justify-between text-xs">
                 <div className="text-stone-600 font-semibold italic">
-                  ही पावती सदस्य नोंदणी कालावधीसाठी अधिकृत पुरावा म्हणून जतन करावी.
+                  This receipt should be preserved as official proof of member registration.
                 </div>
                 <div className="text-center space-y-1">
                   <div className="w-36 h-8 border-b-2 border-stone-800 border-dashed mx-auto"></div>
-                  <p className="font-extrabold text-[#7A0C0C]">पावती देणाऱ्याची सही / शिक्का</p>
+                  <p className="font-extrabold text-[#7A0C0C]">Issuer Signature / Stamp</p>
                 </div>
               </div>
 
