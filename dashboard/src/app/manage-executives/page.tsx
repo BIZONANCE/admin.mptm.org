@@ -426,7 +426,7 @@ mptmamravati.org`;
             ) : (
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200 uppercase tracking-wider">
+                  <tr className="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200">
                     <th className="py-3 px-4">Member Name</th>
                     <th className="py-3 px-4">Designation</th>
                     <th className="py-3 px-4">Mobile Number</th>

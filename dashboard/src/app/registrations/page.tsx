@@ -591,7 +591,7 @@ mptmamravati.org`;
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[1050px]">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                  <tr className="bg-slate-50 text-slate-700 text-xs font-bold border-b border-slate-200">
                     <th className="py-3.5 px-4 w-12 text-center">Sr. No.</th>
                     <th className="py-3.5 px-4">Date & Time</th>
                     <th className="py-3.5 px-4">Receipt No.</th>

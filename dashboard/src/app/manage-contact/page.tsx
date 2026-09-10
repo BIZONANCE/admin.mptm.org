@@ -451,7 +451,7 @@ export default function ManageContactPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                  <thead className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
                     <tr>
                       <th className="py-3.5 px-4 sm:px-6">Visitor Name</th>
                       <th className="py-3.5 px-4 sm:px-6">Contact Info</th>
