@@ -277,7 +277,7 @@ export default function ManageDonationsPage() {
             ) : (
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead>
-                  <tr className="bg-slate-100/80 text-slate-600 text-xs font-extrabold border-b border-slate-200">
+                  <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-extrabold border-b border-slate-300">
                     <th className="py-4 px-5">Receipt No.</th>
                     <th className="py-4 px-5">Donor Name</th>
                     <th className="py-4 px-5">Mobile Number</th>

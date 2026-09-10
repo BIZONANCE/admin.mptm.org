@@ -386,7 +386,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR NAVIGATION */}
         <aside
-          className={`bg-white border-r border-slate-200/80 shrink-0 transition-all duration-300 ease-in-out z-20 no-print overflow-y-auto overflow-x-hidden ${
+          className={`bg-[#DCE6FA] border-r border-slate-300/80 shrink-0 transition-all duration-300 ease-in-out z-20 no-print overflow-y-auto overflow-x-hidden ${
             sidebarOpen ? "w-60" : "w-16"
           }`}
         >
@@ -400,17 +400,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -429,17 +429,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 sidebarOpen
                   ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                       pathname === "/registrations"
-                        ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                        ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                        : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                     }`
                   : `w-10 h-10 justify-center rounded-full ${
                       pathname === "/registrations"
-                        ? "bg-[#D3E3FD] text-[#0B57D0]"
-                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                        ? "bg-white text-[#0B57D0] shadow-xs"
+                        : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                     }`
               }`}
             >
-              <ClipboardList className={`w-5 h-5 shrink-0 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+              <ClipboardList className={`w-5 h-5 shrink-0 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-slate-700"}`} />
               <span
                 className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                   sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -458,17 +458,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-users"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-users"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <Users className={`w-5 h-5 shrink-0 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <Users className={`w-5 h-5 shrink-0 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -488,17 +488,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-career"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-career"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <Briefcase className={`w-5 h-5 shrink-0 ${pathname === "/manage-career" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <Briefcase className={`w-5 h-5 shrink-0 ${pathname === "/manage-career" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -518,17 +518,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-contact"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-contact"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <Mail className={`w-5 h-5 shrink-0 ${pathname === "/manage-contact" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <Mail className={`w-5 h-5 shrink-0 ${pathname === "/manage-contact" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -548,17 +548,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-donations"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-donations"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <Heart className={`w-5 h-5 shrink-0 ${pathname === "/manage-donations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <Heart className={`w-5 h-5 shrink-0 ${pathname === "/manage-donations" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -578,17 +578,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-executives"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-executives"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <UserCheck className={`w-5 h-5 shrink-0 ${pathname === "/manage-executives" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <UserCheck className={`w-5 h-5 shrink-0 ${pathname === "/manage-executives" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
@@ -608,17 +608,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   sidebarOpen
                     ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
                         pathname === "/manage-ads"
-                          ? "text-[#041E49] bg-[#D3E3FD] font-semibold"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                          ? "text-[#041E49] bg-white font-extrabold shadow-xs"
+                          : "text-slate-800 hover:text-slate-950 hover:bg-white/40 font-semibold"
                       }`
                     : `w-10 h-10 justify-center rounded-full ${
                         pathname === "/manage-ads"
-                          ? "bg-[#D3E3FD] text-[#0B57D0]"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                          ? "bg-white text-[#0B57D0] shadow-xs"
+                          : "text-slate-800 hover:bg-white/40 hover:text-slate-950"
                       }`
                 }`}
               >
-                <Megaphone className={`w-5 h-5 shrink-0 ${pathname === "/manage-ads" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+                <Megaphone className={`w-5 h-5 shrink-0 ${pathname === "/manage-ads" ? "text-[#0B57D0]" : "text-slate-700"}`} />
                 <span
                   className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
                     sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
