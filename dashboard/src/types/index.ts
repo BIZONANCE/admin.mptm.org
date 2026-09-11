@@ -108,6 +108,8 @@ export interface AdItem {
   title: string;
   subtitle?: string;
   imageUrl?: string;
+  videoUrl?: string;
+  mediaType?: "image" | "video";
   adLink?: string;
   socialLinks?: SocialLinks;
   isActive: boolean;
