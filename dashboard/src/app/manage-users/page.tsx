@@ -143,7 +143,7 @@ export default function ManageUsersPage() {
       if (res.ok && data.success) {
         setGeneratedOtp(data.code || "");
         setVerificationStep("SENT");
-        setUserSuccessMsg(`Verification code sent to ${emailTrimmed}! Your code is also displayed on screen below for instant access.`);
+        setUserSuccessMsg(`Verification code sent to ${emailTrimmed}! Check email inbox/spam folder.`);
       } else {
         setUserErrorMsg(data.error || "Error sending verification email.");
       }
@@ -152,7 +152,7 @@ export default function ManageUsersPage() {
       const code = String(Math.floor(100000 + Math.random() * 900000));
       setGeneratedOtp(code);
       setVerificationStep("SENT");
-      setUserSuccessMsg(`Verification code sent to ${emailTrimmed}! Code is displayed below.`);
+      setUserSuccessMsg(`Verification code sent to ${emailTrimmed}!`);
     } finally {
       setIsSendingOtp(false);
     }
@@ -401,7 +401,7 @@ export default function ManageUsersPage() {
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2 text-blue-900 font-semibold">
                   <Mail className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Verification 6-digit OTP code sent to email.</span>
+                  <span>Check your inbox: 6-digit OTP code sent to email.</span>
                 </div>
                 <button
                   onClick={() => {
@@ -413,28 +413,6 @@ export default function ManageUsersPage() {
                   Change Email
                 </button>
               </div>
-
-              {/* On-screen OTP Badge Display */}
-              {generatedOtp && (
-                <div className="p-3 bg-amber-50 border-2 border-amber-400 rounded-xl flex items-center justify-between shadow-2xs animate-in fade-in">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🔑</span>
-                    <div>
-                      <p className="text-[10px] font-bold text-amber-900 uppercase tracking-wider">Your Verification OTP</p>
-                      <p className="text-2xl font-black font-mono tracking-widest text-amber-700">{generatedOtp}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInputOtp(generatedOtp);
-                    }}
-                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition shadow-2xs"
-                  >
-                    Auto Fill Code
-                  </button>
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
