@@ -34,6 +34,17 @@ import { MemberRegistration } from "../../types";
 import { formatDateToDDMMYYYY, getDatePart, getTimePart, formatPaymentMethod, convertNumberToMarathiWords } from "../../utils/formatters";
 import { getApiUrl, getMainSiteUrl } from "../../utils/config";
 
+function isExecutiveRegistration(reg: MemberRegistration): boolean {
+  const receipt = (reg.receiptNo || "").toUpperCase();
+  if (receipt.startsWith("MPTM-EM-") || receipt.includes("EM-R")) return true;
+  if (reg.mainMembers && Array.isArray(reg.mainMembers)) {
+    if (reg.mainMembers.some((m) => (m.memberNo || "").toUpperCase().includes("EM-S"))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function RegistrationsPage() {
   const router = useRouter();
 
@@ -191,6 +202,9 @@ mptmamravati.org`;
     let online = 0;
 
     registrations.forEach((reg) => {
+      // Exclude Executive Member registrations (visible ONLY on Executive Members page)
+      if (isExecutiveRegistration(reg)) return;
+
       // 1. Role Scoping
       if (!isSuperAdmin) {
         const regRef = (reg.referredBy || "").trim().toLowerCase();
@@ -267,6 +281,8 @@ mptmamravati.org`;
     const userEmailClean = loggedUserEmail.trim().toLowerCase();
 
     return registrations.filter((reg) => {
+      // Exclude Executive Member registrations (visible ONLY on Executive Members page)
+      if (isExecutiveRegistration(reg)) return false;
       // 1. Role Scoping: Regular users ONLY see registrations referred by them
       if (!isSuperAdmin) {
         const regRef = (reg.referredBy || "").trim().toLowerCase();

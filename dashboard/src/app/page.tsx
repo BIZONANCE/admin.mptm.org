@@ -22,6 +22,17 @@ import DashboardLayout from "../components/DashboardLayout";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart, formatPaymentMethod } from "../utils/formatters";
 
+function isExecutiveRegistration(reg: MemberRegistration): boolean {
+  const receipt = (reg.receiptNo || "").toUpperCase();
+  if (receipt.startsWith("MPTM-EM-") || receipt.includes("EM-R")) return true;
+  if (reg.mainMembers && Array.isArray(reg.mainMembers)) {
+    if (reg.mainMembers.some((m) => (m.memberNo || "").toUpperCase().includes("EM-S"))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export default function DashboardHome() {
   const router = useRouter();
 
@@ -116,15 +127,19 @@ export default function DashboardHome() {
     fetchRegistrations();
   }, [router]);
 
+  const primaryRegistrations = useMemo(() => {
+    return registrations.filter((r) => !isExecutiveRegistration(r));
+  }, [registrations]);
+
   const stats = useMemo(() => {
-    const totalRegs = registrations.length;
+    const totalRegs = primaryRegistrations.length;
     let totalFees = 0;
     let cashCount = 0;
     let onlineCount = 0;
     let cashFees = 0;
     let onlineFees = 0;
 
-    registrations.forEach((r) => {
+    primaryRegistrations.forEach((r) => {
       const fee = Number(r.registrationFee) || 0;
       totalFees += fee;
 
@@ -146,7 +161,7 @@ export default function DashboardHome() {
       cashFees,
       onlineFees,
     };
-  }, [registrations]);
+  }, [primaryRegistrations]);
 
   return (
     <DashboardLayout>
@@ -407,18 +422,18 @@ export default function DashboardHome() {
                   onClick={() => router.push("/registrations")}
                   className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-blue-200 transition"
                 >
-                  <span>View All ({registrations.length})</span>
+                  <span>View All ({primaryRegistrations.length})</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
-              {registrations.length === 0 ? (
+              {primaryRegistrations.length === 0 ? (
                 <p className="text-center text-xs text-slate-500 py-6 italic">
                   No registrations received yet.
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {registrations.slice(0, 6).map((reg) => {
+                  {primaryRegistrations.slice(0, 6).map((reg) => {
                     const main = reg.mainMembers[0] || { fullName: "New Member", memberNo: "" };
                     return (
                       <div
