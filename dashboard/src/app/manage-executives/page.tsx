@@ -192,8 +192,20 @@ export default function ManageExecutivesPage() {
     const fee = regMatch?.registrationFee || exec.registrationFee || 1001;
     const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "Cash");
 
-    const textMessage = `🚩 *Maharashtra Prantik Tailik Mahasabha (Amravati)* 🚩
-★ *Executive Member Registration Receipt* ★
+    const getBasePublicUrl = () => {
+      if (typeof window !== "undefined") {
+        const host = window.location.hostname;
+        if (host.includes("mptmamravati.org")) return "https://mptmamravati.org";
+        if (host.includes("mptm.org")) return "https://mptm.org";
+      }
+      return process.env.NEXT_PUBLIC_SITE_URL || "https://mptmamravati.org";
+    };
+
+    const siteUrl = getBasePublicUrl();
+    const receiptPdfUrl = `${siteUrl}/executives?receiptNo=${encodeURIComponent(receiptNo)}&id=${encodeURIComponent(exec.id)}`;
+
+    const textMessage = `🚩 *MAHARASHTRA PRANTIK TAILIK MAHASABHA (AMRAVATI)* 🚩
+★ *EXECUTIVE MEMBER REGISTRATION RECEIPT* ★
 
 ----------------------------------
 📄 *Receipt No.* : ${receiptNo}
@@ -204,12 +216,13 @@ export default function ManageExecutivesPage() {
 📍 *City/District* : ${formatEnglishText(exec.city)}${exec.district ? `, ${formatEnglishText(exec.district)}` : ""}
 💰 *Registration Fee* : ₹${fee}/- (One Thousand One Rupees Only)
 💳 *Payment Method* : ${payMethod}
-✅ *Status* : Payment Verified
+✅ *Status* : Executive Registration Verified & Active
 ----------------------------------
 
-Message: The above amount was received as registration fee for Executive Member of Maharashtra Prantik Tailik Mahasabha.
+🔗 *Download & Print Official Executive Receipt PDF Link:*
+${receiptPdfUrl}
 
-_This receipt serves as official proof of member registration._
+_This receipt serves as official proof of Executive Member Registration of Maharashtra Prantik Tailik Mahasabha (Amravati Division)._
 mptmamravati.org`;
 
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textMessage)}`;
