@@ -75,6 +75,7 @@ export default function ManageAdsPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingAd, setEditingAd] = useState<AdItem | null>(null);
   const [previewAdModal, setPreviewAdModal] = useState<AdItem | null>(null);
+  const [previewAspectRatio, setPreviewAspectRatio] = useState<number | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<AdItem | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -786,42 +787,71 @@ export default function ManageAdsPage() {
 
       {/* MODAL 3: Pop-up Ad Live Preview */}
       {previewAdModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200 relative my-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in overflow-y-auto">
+          <div
+            style={{
+              width: previewAspectRatio ? `min(calc(75vh * ${previewAspectRatio}), 92vw, 48rem)` : undefined,
+              minWidth: "280px",
+            }}
+            className="bg-white rounded-2xl max-w-[95vw] sm:max-w-3xl md:max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 relative my-auto flex flex-col transition-[width] duration-300"
+          >
 
             {/* Floating Close Button */}
             <button
-              onClick={() => setPreviewAdModal(null)}
-              className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white flex items-center justify-center transition cursor-pointer shadow-lg border border-white/40"
+              onClick={() => {
+                setPreviewAdModal(null);
+                setPreviewAspectRatio(null);
+              }}
+              className="absolute top-2.5 right-2.5 z-30 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white flex items-center justify-center transition cursor-pointer shadow-lg border border-white/40 backdrop-blur-xs"
               title="Close Advertisement"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Ad Image Container - Thinned white padding */}
-            <div className="p-1.5 sm:p-2 space-y-1.5">
+            <div className="p-1.5 sm:p-2 flex flex-col min-h-0 overflow-hidden space-y-1.5">
               {previewAdModal.imageUrl && (
-                <div className="relative w-full h-[45vh] max-h-[420px] sm:h-[390px] rounded-xl overflow-hidden shadow-xs bg-white flex items-center justify-center group">
+                <div className="relative max-h-[75vh] w-full flex items-center justify-center overflow-hidden rounded-xl bg-slate-50/50 group">
                   {previewAdModal.adLink ? (
                     <a
                       href={previewAdModal.adLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="block w-full h-full cursor-pointer relative"
+                      className="block cursor-pointer relative max-h-[75vh] w-full"
                     >
-                      <Image
+                      <img
+                        ref={(img) => {
+                          if (img && img.complete && img.naturalWidth && !previewAspectRatio) {
+                            setPreviewAspectRatio(img.naturalWidth / img.naturalHeight);
+                          }
+                        }}
                         src={previewAdModal.imageUrl}
                         alt={previewAdModal.title}
-                        fill
-                        className="object-contain group-hover:scale-[1.01] transition duration-300"
+                        onLoad={(e) => {
+                          const { naturalWidth, naturalHeight } = e.currentTarget;
+                          if (naturalWidth && naturalHeight) {
+                            setPreviewAspectRatio(naturalWidth / naturalHeight);
+                          }
+                        }}
+                        className="max-h-[75vh] w-full h-auto object-contain transition-all duration-300 group-hover:scale-[1.01] rounded-xl block mx-auto"
                       />
                     </a>
                   ) : (
-                    <Image
+                    <img
+                      ref={(img) => {
+                        if (img && img.complete && img.naturalWidth && !previewAspectRatio) {
+                          setPreviewAspectRatio(img.naturalWidth / img.naturalHeight);
+                        }
+                      }}
                       src={previewAdModal.imageUrl}
                       alt={previewAdModal.title}
-                      fill
-                      className="object-contain"
+                      onLoad={(e) => {
+                        const { naturalWidth, naturalHeight } = e.currentTarget;
+                        if (naturalWidth && naturalHeight) {
+                          setPreviewAspectRatio(naturalWidth / naturalHeight);
+                        }
+                      }}
+                      className="max-h-[75vh] w-full h-auto object-contain rounded-xl block mx-auto"
                     />
                   )}
                 </div>
@@ -834,7 +864,7 @@ export default function ManageAdsPage() {
                 previewAdModal.socialLinks?.youtube ||
                 previewAdModal.socialLinks?.twitter ||
                 previewAdModal.socialLinks?.website) && (
-                  <div className="flex items-center justify-start gap-3 py-0.5 px-1.5">
+                  <div className="flex items-center justify-start gap-3 py-1 px-1.5 min-h-[38px] w-full shrink-0">
                     {previewAdModal.socialLinks?.whatsapp && (
                       <a
                         href={previewAdModal.socialLinks.whatsapp}
