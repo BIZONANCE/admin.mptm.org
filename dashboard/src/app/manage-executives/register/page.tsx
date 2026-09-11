@@ -143,7 +143,7 @@ export default function ExecutiveMemberRegisterPage() {
 
   const fetchNextNumbers = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/next-numbers`);
+      const res = await fetch(`${API_URL}/api/next-numbers?type=EXECUTIVE`);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
@@ -153,12 +153,12 @@ export default function ExecutiveMemberRegisterPage() {
           setBaseMemberSeq(mSeq);
           setFormData((prev) => ({
             ...prev,
-            receiptNo: formatExecutiveReceiptNo(rSeq),
+            receiptNo: data.receiptNo || formatExecutiveReceiptNo(rSeq),
           }));
           setMainMembers((prev) =>
             prev.map((m, idx) => ({
               ...m,
-              memberNo: formatExecutiveMemberNo(mSeq + idx),
+              memberNo: data.nextMemberNo && idx === 0 ? data.nextMemberNo : formatExecutiveMemberNo(mSeq + idx),
             }))
           );
         }
