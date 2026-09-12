@@ -1055,106 +1055,118 @@ export default function ManageAdsPage() {
                 </div>
               )}
 
-              {/* Real Call, Visit Us & Social Media Icons on Left Side Bottom Corner */}
-              {(previewAdModal.socialLinks?.phone ||
-                previewAdModal.socialLinks?.visitUs ||
-                previewAdModal.socialLinks?.whatsapp ||
-                previewAdModal.socialLinks?.facebook ||
-                previewAdModal.socialLinks?.instagram ||
-                previewAdModal.socialLinks?.youtube ||
-                previewAdModal.socialLinks?.twitter ||
-                previewAdModal.socialLinks?.website) && (
-                  <div className="flex items-center justify-start gap-2.5 py-1 px-1.5 min-h-[38px] w-full shrink-0 flex-wrap">
-                    {previewAdModal.socialLinks?.phone && (
-                      <a
-                        href={previewAdModal.socialLinks.phone.startsWith("tel:") ? previewAdModal.socialLinks.phone : `tel:${previewAdModal.socialLinks.phone}`}
-                        className="p-1 text-emerald-600 hover:text-emerald-500 hover:scale-115 transition duration-200 cursor-pointer flex items-center gap-1 group"
-                        title="Call Us"
-                      >
-                        <Phone className="w-6 h-6" />
-                        <span className="text-[11px] font-bold text-emerald-700 hidden sm:inline group-hover:underline">Call Us</span>
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.visitUs && (
-                      <a
-                        href={previewAdModal.socialLinks.visitUs}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-purple-600 hover:text-purple-500 hover:scale-115 transition duration-200 cursor-pointer flex items-center gap-1 group"
-                        title="Visit Us"
-                      >
-                        <MapPin className="w-6 h-6" />
-                        <span className="text-[11px] font-bold text-purple-700 hidden sm:inline group-hover:underline">Visit Us</span>
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.whatsapp && (
-                      <a
-                        href={previewAdModal.socialLinks.whatsapp}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-[#25D366] hover:scale-115 transition duration-200 cursor-pointer"
-                        title="WhatsApp"
-                      >
-                        <WhatsappIcon className="w-6 h-6" />
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.facebook && (
-                      <a
-                        href={previewAdModal.socialLinks.facebook}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-[#1877F2] hover:scale-115 transition duration-200 cursor-pointer"
-                        title="Facebook"
-                      >
-                        <FacebookIcon className="w-6 h-6" />
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.instagram && (
-                      <a
-                        href={previewAdModal.socialLinks.instagram}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 hover:scale-115 transition duration-200 cursor-pointer"
-                        title="Instagram"
-                      >
-                        <InstagramIcon className="w-6 h-6" />
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.youtube && (
-                      <a
-                        href={previewAdModal.socialLinks.youtube}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-[#FF0000] hover:scale-115 transition duration-200 cursor-pointer"
-                        title="YouTube"
-                      >
-                        <YoutubeIcon className="w-6 h-6" />
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.twitter && (
-                      <a
-                        href={previewAdModal.socialLinks.twitter}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-slate-900 hover:text-black hover:scale-115 transition duration-200 cursor-pointer"
-                        title="Twitter / X"
-                      >
-                        <TwitterIcon className="w-5.5 h-5.5" />
-                      </a>
-                    )}
-                    {previewAdModal.socialLinks?.website && (
-                      <a
-                        href={previewAdModal.socialLinks.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1 text-amber-600 hover:text-amber-500 hover:scale-115 transition duration-200 cursor-pointer"
-                        title="Website"
-                      >
-                        <Globe className="w-6 h-6" />
-                      </a>
-                    )}
+              {/* Real Action Pills & Follow Us Social Media Icons Pill Container */}
+              <div className="flex items-center justify-start gap-2 py-1 px-1.5 min-h-[42px] w-full shrink-0 flex-wrap">
+
+                {/* 1. Call Us Pill */}
+                {previewAdModal.socialLinks?.phone && (
+                  <a
+                    href={previewAdModal.socialLinks.phone.startsWith("tel:") ? previewAdModal.socialLinks.phone : `tel:${previewAdModal.socialLinks.phone}`}
+                    className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border border-emerald-300/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
+                    title="Call Us"
+                  >
+                    <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Call Us</span>
+                  </a>
+                )}
+
+                {/* 2. Visit Us Pill */}
+                {previewAdModal.socialLinks?.visitUs && (
+                  <a
+                    href={previewAdModal.socialLinks.visitUs}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100/90 text-purple-700 border border-purple-300/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
+                    title="Visit Us"
+                  >
+                    <MapPin className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Visit Us</span>
+                  </a>
+                )}
+
+                {/* 3. Follow Us Pill Container with all Social Media Icons */}
+                {(previewAdModal.socialLinks?.whatsapp ||
+                  previewAdModal.socialLinks?.facebook ||
+                  previewAdModal.socialLinks?.instagram ||
+                  previewAdModal.socialLinks?.youtube ||
+                  previewAdModal.socialLinks?.twitter ||
+                  previewAdModal.socialLinks?.website) && (
+                  <div className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200/90 shadow-2xs flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-extrabold text-slate-700 tracking-wide select-none mr-0.5">
+                      Follow Us:
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {previewAdModal.socialLinks?.whatsapp && (
+                        <a
+                          href={previewAdModal.socialLinks.whatsapp}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#25D366] hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="WhatsApp"
+                        >
+                          <WhatsappIcon className="w-5 h-5" />
+                        </a>
+                      )}
+                      {previewAdModal.socialLinks?.facebook && (
+                        <a
+                          href={previewAdModal.socialLinks.facebook}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#1877F2] hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="Facebook"
+                        >
+                          <FacebookIcon className="w-5 h-5" />
+                        </a>
+                      )}
+                      {previewAdModal.socialLinks?.instagram && (
+                        <a
+                          href={previewAdModal.socialLinks.instagram}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="Instagram"
+                        >
+                          <InstagramIcon className="w-5 h-5" />
+                        </a>
+                      )}
+                      {previewAdModal.socialLinks?.youtube && (
+                        <a
+                          href={previewAdModal.socialLinks.youtube}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#FF0000] hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="YouTube"
+                        >
+                          <YoutubeIcon className="w-5 h-5" />
+                        </a>
+                      )}
+                      {previewAdModal.socialLinks?.twitter && (
+                        <a
+                          href={previewAdModal.socialLinks.twitter}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-slate-900 hover:text-black hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="Twitter / X"
+                        >
+                          <TwitterIcon className="w-4.5 h-4.5" />
+                        </a>
+                      )}
+                      {previewAdModal.socialLinks?.website && (
+                        <a
+                          href={previewAdModal.socialLinks.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-amber-600 hover:text-amber-500 hover:scale-120 transition-all duration-200 cursor-pointer flex items-center"
+                          title="Website"
+                        >
+                          <Globe className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
+              </div>
 
             </div>
 
