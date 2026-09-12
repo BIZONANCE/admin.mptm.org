@@ -1062,7 +1062,7 @@ export default function ManageAdsPage() {
                 {previewAdModal.socialLinks?.phone && (
                   <a
                     href={previewAdModal.socialLinks.phone.startsWith("tel:") ? previewAdModal.socialLinks.phone : `tel:${previewAdModal.socialLinks.phone}`}
-                    className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100/90 text-emerald-700 border border-emerald-300/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
+                    className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100/80 text-emerald-700 border border-slate-200 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
                     title="Call Us"
                   >
                     <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -1076,7 +1076,7 @@ export default function ManageAdsPage() {
                     href={previewAdModal.socialLinks.visitUs}
                     target="_blank"
                     rel="noreferrer"
-                    className="px-3 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100/90 text-purple-700 border border-purple-300/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
+                    className="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100/80 text-purple-700 border border-slate-200 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer flex items-center gap-1.5 font-bold text-xs shrink-0"
                     title="Visit Us"
                   >
                     <MapPin className="w-4 h-4 text-purple-600 shrink-0" />
@@ -1091,7 +1091,7 @@ export default function ManageAdsPage() {
                   previewAdModal.socialLinks?.youtube ||
                   previewAdModal.socialLinks?.twitter ||
                   previewAdModal.socialLinks?.website) && (
-                  <div className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200/90 shadow-2xs flex items-center gap-2 shrink-0">
+                  <div className="px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs flex items-center gap-2 shrink-0">
                     <span className="text-xs font-extrabold text-slate-700 tracking-wide select-none mr-0.5">
                       Follow Us:
                     </span>
