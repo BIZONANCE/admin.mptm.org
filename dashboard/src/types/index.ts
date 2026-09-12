@@ -95,6 +95,8 @@ export interface ExecutiveMemberItem {
 }
 
 export interface SocialLinks {
+  phone?: string;
+  visitUs?: string;
   whatsapp?: string;
   facebook?: string;
   instagram?: string;

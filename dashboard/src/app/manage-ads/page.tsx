@@ -21,6 +21,8 @@ import {
   Video as VideoIcon,
   Sparkles,
   Link as LinkIcon,
+  Phone,
+  MapPin,
 } from "lucide-react";
 
 // Authentic Real SVG Brand Icons
@@ -101,6 +103,8 @@ export default function ManageAdsPage() {
     adLink: "",
     isActive: true,
     socialLinks: {
+      phone: "",
+      visitUs: "",
       whatsapp: "",
       facebook: "",
       instagram: "",
@@ -152,6 +156,8 @@ export default function ManageAdsPage() {
       adLink: "",
       isActive: true,
       socialLinks: {
+        phone: "",
+        visitUs: "",
         whatsapp: "",
         facebook: "",
         instagram: "",
@@ -175,6 +181,8 @@ export default function ManageAdsPage() {
       adLink: ad.adLink || "",
       isActive: ad.isActive !== undefined ? ad.isActive : true,
       socialLinks: {
+        phone: ad.socialLinks?.phone || "",
+        visitUs: ad.socialLinks?.visitUs || "",
         whatsapp: ad.socialLinks?.whatsapp || "",
         facebook: ad.socialLinks?.facebook || "",
         instagram: ad.socialLinks?.instagram || "",
@@ -463,6 +471,26 @@ export default function ManageAdsPage() {
                         <span>Social Media Links</span>
                       </span>
                       <div className="flex flex-wrap gap-1.5">
+                        {ad.socialLinks?.phone && (
+                          <a
+                            href={ad.socialLinks.phone.startsWith("tel:") ? ad.socialLinks.phone : `tel:${ad.socialLinks.phone}`}
+                            className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] rounded-md font-bold hover:bg-emerald-100 transition flex items-center gap-1"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>Call</span>
+                          </a>
+                        )}
+                        {ad.socialLinks?.visitUs && (
+                          <a
+                            href={ad.socialLinks.visitUs}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[11px] rounded-md font-bold hover:bg-purple-100 transition flex items-center gap-1"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            <span>Visit Us</span>
+                          </a>
+                        )}
                         {ad.socialLinks?.whatsapp && (
                           <a
                             href={ad.socialLinks.whatsapp}
@@ -523,13 +551,15 @@ export default function ManageAdsPage() {
                             Website
                           </a>
                         )}
-                        {!ad.socialLinks?.whatsapp &&
+                        {!ad.socialLinks?.phone &&
+                          !ad.socialLinks?.visitUs &&
+                          !ad.socialLinks?.whatsapp &&
                           !ad.socialLinks?.facebook &&
                           !ad.socialLinks?.instagram &&
                           !ad.socialLinks?.youtube &&
                           !ad.socialLinks?.twitter &&
                           !ad.socialLinks?.website && (
-                            <span className="text-[11px] text-slate-400 italic">No social links added</span>
+                            <span className="text-[11px] text-slate-400 italic">No action or social links added</span>
                           )}
                       </div>
                     </div>
@@ -713,14 +743,50 @@ export default function ManageAdsPage() {
                 />
               </div>
 
-              {/* Social Media Links Section */}
+              {/* Social Media & Action Links Section */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900 uppercase tracking-wider">
                   <Share2 className="w-4 h-4 text-indigo-600" />
-                  <span>Social Media Icon Links (Displayed below ad container)</span>
+                  <span>Call, Visit Us & Social Media Links (Displayed below ad container)</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-emerald-700 font-bold flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5" /> Call / Phone Link:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.socialLinks.phone || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, phone: e.target.value },
+                        })
+                      }
+                      placeholder="+919876543210 or tel:+919876543210"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 outline-none focus:border-indigo-600 text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-purple-700 font-bold flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" /> Visit Us / Location URL:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.socialLinks.visitUs || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, visitUs: e.target.value },
+                        })
+                      }
+                      placeholder="https://mptmamravati.org/contact-us"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 outline-none focus:border-indigo-600 text-xs font-mono"
+                    />
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-emerald-700 font-bold">WhatsApp Link / Number:</label>
                     <input
@@ -989,14 +1055,38 @@ export default function ManageAdsPage() {
                 </div>
               )}
 
-              {/* Real Social Media Icons (No Circle BG) on Left Side Bottom Corner */}
-              {(previewAdModal.socialLinks?.whatsapp ||
+              {/* Real Call, Visit Us & Social Media Icons on Left Side Bottom Corner */}
+              {(previewAdModal.socialLinks?.phone ||
+                previewAdModal.socialLinks?.visitUs ||
+                previewAdModal.socialLinks?.whatsapp ||
                 previewAdModal.socialLinks?.facebook ||
                 previewAdModal.socialLinks?.instagram ||
                 previewAdModal.socialLinks?.youtube ||
                 previewAdModal.socialLinks?.twitter ||
                 previewAdModal.socialLinks?.website) && (
-                  <div className="flex items-center justify-start gap-3 py-1 px-1.5 min-h-[38px] w-full shrink-0">
+                  <div className="flex items-center justify-start gap-2.5 py-1 px-1.5 min-h-[38px] w-full shrink-0 flex-wrap">
+                    {previewAdModal.socialLinks?.phone && (
+                      <a
+                        href={previewAdModal.socialLinks.phone.startsWith("tel:") ? previewAdModal.socialLinks.phone : `tel:${previewAdModal.socialLinks.phone}`}
+                        className="p-1 text-emerald-600 hover:text-emerald-500 hover:scale-115 transition duration-200 cursor-pointer flex items-center gap-1 group"
+                        title="Call Us"
+                      >
+                        <Phone className="w-6 h-6" />
+                        <span className="text-[11px] font-bold text-emerald-700 hidden sm:inline group-hover:underline">Call Us</span>
+                      </a>
+                    )}
+                    {previewAdModal.socialLinks?.visitUs && (
+                      <a
+                        href={previewAdModal.socialLinks.visitUs}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1 text-purple-600 hover:text-purple-500 hover:scale-115 transition duration-200 cursor-pointer flex items-center gap-1 group"
+                        title="Visit Us"
+                      >
+                        <MapPin className="w-6 h-6" />
+                        <span className="text-[11px] font-bold text-purple-700 hidden sm:inline group-hover:underline">Visit Us</span>
+                      </a>
+                    )}
                     {previewAdModal.socialLinks?.whatsapp && (
                       <a
                         href={previewAdModal.socialLinks.whatsapp}
