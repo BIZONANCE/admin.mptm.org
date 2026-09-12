@@ -23,6 +23,10 @@ import {
   Link as LinkIcon,
   Phone,
   MapPin,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  Move,
 } from "lucide-react";
 
 // Authentic Real SVG Brand Icons
@@ -74,6 +78,9 @@ export default function ManageAdsPage() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Drag and Drop & Reordering State
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingAd, setEditingAd] = useState<AdItem | null>(null);
@@ -83,6 +90,71 @@ export default function ManageAdsPage() {
   const [deleting, setDeleting] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const saveReorderedAds = async (reorderedAds: AdItem[]) => {
+    try {
+      setActionSuccess(null);
+      const res = await fetch(`${API_URL}/api/ads/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ads: reorderedAds }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionSuccess("Ad positions updated successfully! Sequence synced to website frontend.");
+        setTimeout(() => setActionSuccess(null), 3500);
+      }
+    } catch (err) {
+      console.error("Save reordered ads error:", err);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    const newAds = [...ads];
+    const [movedItem] = newAds.splice(draggedIndex, 1);
+    newAds.splice(dropIndex, 0, movedItem);
+
+    setAds(newAds);
+    setDraggedIndex(null);
+    saveReorderedAds(newAds);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const newAds = [...ads];
+    const temp = newAds[index];
+    newAds[index] = newAds[index - 1];
+    newAds[index - 1] = temp;
+    setAds(newAds);
+    saveReorderedAds(newAds);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= ads.length - 1) return;
+    const newAds = [...ads];
+    const temp = newAds[index];
+    newAds[index] = newAds[index + 1];
+    newAds[index + 1] = temp;
+    setAds(newAds);
+    saveReorderedAds(newAds);
+  };
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -403,11 +475,20 @@ export default function ManageAdsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ads.map((ad) => (
+            {ads.map((ad, index) => (
               <div
                 key={ad.id}
-                className={`bg-white rounded-2xl border ${ad.isActive ? "border-indigo-300 ring-2 ring-indigo-500/20" : "border-slate-200 opacity-90"
-                  } shadow-sm overflow-hidden flex flex-col justify-between transition hover:shadow-md`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`bg-white rounded-2xl border ${draggedIndex === index
+                    ? "border-indigo-500 ring-4 ring-indigo-500/30 scale-[1.02] shadow-2xl opacity-70"
+                    : ad.isActive
+                      ? "border-indigo-300 ring-2 ring-indigo-500/20"
+                      : "border-slate-200 opacity-90"
+                  } shadow-sm overflow-hidden flex flex-col justify-between transition-all duration-200 hover:shadow-md group relative`}
               >
                 {/* Card Top / Banner Preview */}
                 <div>
@@ -425,7 +506,9 @@ export default function ManageAdsPage() {
                         <p className="text-xs font-semibold">No Image Banner</p>
                       </div>
                     )}
-                    <div className="absolute top-3 left-3">
+
+                    {/* Active Status Badge */}
+                    <div className="absolute top-3 left-3 z-10">
                       <button
                         onClick={() => handleToggleActive(ad)}
                         className={`px-3 py-1 rounded-full text-xs font-extrabold shadow-md flex items-center gap-1.5 transition cursor-pointer ${ad.isActive
@@ -436,6 +519,38 @@ export default function ManageAdsPage() {
                         <span className={`w-2 h-2 rounded-full ${ad.isActive ? "bg-white animate-pulse" : "bg-slate-400"}`} />
                         <span>{ad.isActive ? "ACTIVE POPUP" : "INACTIVE"}</span>
                       </button>
+                    </div>
+
+                    {/* Drag Handle & Position Reorder Overlay Controls */}
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+                      <div
+                        className="px-2.5 py-1 bg-slate-900/85 hover:bg-slate-900 text-white rounded-lg text-xs font-extrabold shadow-md flex items-center gap-1 border border-slate-700/80 backdrop-blur-md cursor-grab active:cursor-grabbing transition group-hover:border-amber-500/50"
+                        title="Drag and drop to reorder ad display position"
+                      >
+                        <GripVertical className="w-4 h-4 text-amber-400" />
+                        <span>Pos #{index + 1}</span>
+                      </div>
+
+                      <div className="flex flex-col bg-slate-900/85 rounded-lg border border-slate-700/80 backdrop-blur-md overflow-hidden shadow-md">
+                        <button
+                          onClick={() => handleMoveUp(index)}
+                          disabled={index === 0}
+                          className={`p-1 hover:bg-indigo-600 hover:text-white transition disabled:opacity-30 disabled:hover:bg-transparent ${index === 0 ? "cursor-not-allowed text-slate-500" : "text-white cursor-pointer"
+                            }`}
+                          title="Move position up"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleMoveDown(index)}
+                          disabled={index === ads.length - 1}
+                          className={`p-1 hover:bg-indigo-600 hover:text-white transition disabled:opacity-30 disabled:hover:bg-transparent border-t border-slate-700/50 ${index === ads.length - 1 ? "cursor-not-allowed text-slate-500" : "text-white cursor-pointer"
+                            }`}
+                          title="Move position down"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -566,7 +681,7 @@ export default function ManageAdsPage() {
                   </div>
                 </div>
 
-                {/* Card Actions */}
+                {/* Card Actions & Drag Hint Footer */}
                 <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
                   <button
                     onClick={() => setPreviewAdModal(ad)}
