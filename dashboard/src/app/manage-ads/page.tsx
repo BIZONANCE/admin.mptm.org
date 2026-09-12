@@ -1031,7 +1031,7 @@ export default function ManageAdsPage() {
                             setPreviewAspectRatio(naturalWidth / naturalHeight);
                           }
                         }}
-                        className="max-h-[75vh] w-full h-auto object-contain transition-all duration-300 group-hover:scale-[1.01] rounded-xl block mx-auto"
+                        className="max-h-[75vh] w-full h-auto object-contain rounded-xl block mx-auto"
                       />
                     </a>
                   ) : (
