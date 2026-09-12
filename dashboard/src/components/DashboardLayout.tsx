@@ -97,10 +97,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return false;
   }, [userRole, loggedUsername]);
 
-  // Route protection for non-super-admin users
+  // Route protection for non-super-admin users (Dashboard "/" is accessible to all users)
   useEffect(() => {
     if (isAuthenticated && !isSuperAdmin) {
-      if (pathname === "/" || pathname === "/manage-users" || pathname === "/manage-career" || pathname === "/manage-contact") {
+      if (pathname === "/manage-users" || pathname === "/manage-career" || pathname === "/manage-contact") {
         router.replace("/registrations");
       }
     }
@@ -391,35 +391,33 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           }`}
         >
           <div className={`py-3 space-y-1 ${sidebarOpen ? "px-0" : "px-2 flex flex-col items-center"}`}>
-            {/* Tab 1: Dashboard (Route "/") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/")}
-                title="Dashboard"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
+            {/* Tab 1: Dashboard (Route "/") - Visible to Everyone */}
+            <button
+              onClick={() => router.push("/")}
+              title="Dashboard"
+              className={`flex items-center transition-all duration-300 ease-in-out ${
+                sidebarOpen
+                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
+                      pathname === "/"
+                        ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
+                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                    }`
+                  : `w-10 h-10 justify-center rounded-full ${
+                      pathname === "/"
+                        ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
+                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                    }`
+              }`}
+            >
+              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+              <span
+                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
                 }`}
               >
-                <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Dashboard
-                </span>
-              </button>
-            )}
+                Dashboard
+              </span>
+            </button>
 
             {/* Tab 2: Member Registrations (Route "/registrations") - Visible to Everyone */}
             <button

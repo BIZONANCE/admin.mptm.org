@@ -17,6 +17,7 @@ import {
   Users,
   Briefcase,
   Mail,
+  UserCheck,
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { MemberRegistration } from "../types";
@@ -40,6 +41,8 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
+  const [loggedUserEmail, setLoggedUserEmail] = useState<string>("");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
 
@@ -116,20 +119,38 @@ export default function DashboardHome() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const role = localStorage.getItem("mptm_admin_role");
-      const username = localStorage.getItem("mptm_admin_username");
-      const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
-      if (!isSuper) {
-        router.replace("/registrations");
+      const loggedIn = localStorage.getItem("mptm_admin_logged_in");
+      if (!loggedIn) {
+        router.replace("/login");
         return;
       }
+
+      const role = localStorage.getItem("mptm_admin_role");
+      const username = localStorage.getItem("mptm_admin_username") || "";
+      const superAdminStatus =
+        role === "SUPER_ADMIN" ||
+        username === "mptmamravati.org" ||
+        username === "admin@mptmamravati.org";
+
+      setIsSuperAdmin(superAdminStatus);
+      setLoggedUserEmail(username);
     }
     fetchRegistrations();
   }, [router]);
 
   const primaryRegistrations = useMemo(() => {
-    return registrations.filter((r) => !isExecutiveRegistration(r));
-  }, [registrations]);
+    const userEmailClean = loggedUserEmail.trim().toLowerCase();
+    return registrations.filter((r) => {
+      if (isExecutiveRegistration(r)) return false;
+      if (!isSuperAdmin) {
+        const regRef = (r.referredBy || "").trim().toLowerCase();
+        if (!userEmailClean || regRef !== userEmailClean) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [registrations, isSuperAdmin, loggedUserEmail]);
 
   const stats = useMemo(() => {
     const totalRegs = primaryRegistrations.length;
@@ -173,20 +194,29 @@ export default function DashboardHome() {
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                 Dashboard
               </h1>
-              <span className="px-3 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 border border-blue-200 shadow-2xs flex items-center gap-1">
-                <Zap className="w-3 h-3 text-blue-700 fill-blue-700" />
-                <span>Super Admin</span>
-              </span>
+              {isSuperAdmin ? (
+                <span className="px-3 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 border border-blue-200 shadow-2xs flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-blue-700 fill-blue-700" />
+                  <span>Super Admin</span>
+                </span>
+              ) : (
+                <span className="px-3 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs flex items-center gap-1">
+                  <UserCheck className="w-3 h-3 text-emerald-700" />
+                  <span>{loggedUserEmail || "Executive Dashboard"}</span>
+                </span>
+              )}
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Overview of platform registrations and fee collections
+              {isSuperAdmin
+                ? "Overview of platform registrations and fee collections"
+                : "Overview of your own member registrations and fee collections"}
             </p>
           </div>
 
           <button
             onClick={fetchRegistrations}
             disabled={isRefreshing}
-            className="p-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-xl transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5 text-xs font-semibold"
+            className="p-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-xl transition shadow-2xs disabled:opacity-50 flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin text-blue-600" : ""}`} />
             <span className="hidden sm:inline">Refresh Data</span>
@@ -211,8 +241,14 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* 5 METRIC CARDS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+            {/* METRIC CARDS GRID - 3 Cards for Regular Users, All 6 Cards for Super Admin */}
+            <div
+              className={`grid gap-4 mb-8 ${
+                isSuperAdmin
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              }`}
+            >
               {/* Card 1: Overall Registrations & Fees */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
                 {/* Top: Total Members Registration */}
@@ -318,92 +354,97 @@ export default function DashboardHome() {
                 </div>
               </div>
 
-              {/* Card 4: Total Managed Users */}
-              <div
-                onClick={() => router.push("/manage-users")}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
-              >
-                {/* Top: Total Managed Users */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
-                    <Users className="w-6 h-6" />
+              {/* Super Admin Only Cards (Card 4, Card 5, Card 6) */}
+              {isSuperAdmin && (
+                <>
+                  {/* Card 4: Total Managed Users */}
+                  <div
+                    onClick={() => router.push("/manage-users")}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+                  >
+                    {/* Top: Total Managed Users */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Managed Users
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {managedUsersCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-100" />
+
+                    {/* Below: Quick Link to Manage Users */}
+                    <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                      <span>Manage Users List</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 block">
-                      Total Managed Users
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {managedUsersCount}
-                    </span>
+
+                  {/* Card 5: Total Career Applications */}
+                  <div
+                    onClick={() => router.push("/manage-career")}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+                  >
+                    {/* Top: Total Career Applications */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-slate-900 group-hover:text-white transition">
+                        <Briefcase className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Career Applications
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {careerAppsCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-100" />
+
+                    {/* Below: Quick Link to Manage Career */}
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 group-hover:text-slate-900">
+                      <span>Manage Career Applications</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
                   </div>
-                </div>
 
-                <div className="w-full h-[1px] bg-slate-100" />
+                  {/* Card 6: Total Contact Messages */}
+                  <div
+                    onClick={() => router.push("/manage-contact")}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+                  >
+                    {/* Top: Total Contact Messages */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+                        <Mail className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Contact Messages
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {contactMsgsCount}
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Below: Quick Link to Manage Users */}
-                <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
-                  <span>Manage Users List</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </div>
+                    <div className="w-full h-[1px] bg-slate-100" />
 
-              {/* Card 5: Total Career Applications */}
-              <div
-                onClick={() => router.push("/manage-career")}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
-              >
-                {/* Top: Total Career Applications */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-slate-900 group-hover:text-white transition">
-                    <Briefcase className="w-6 h-6" />
+                    {/* Below: Quick Link to Contact Messages */}
+                    <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                      <span>Manage Contact Messages</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 block">
-                      Total Career Applications
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {careerAppsCount}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full h-[1px] bg-slate-100" />
-
-                {/* Below: Quick Link to Manage Career */}
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 group-hover:text-slate-900">
-                  <span>Manage Career Applications</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </div>
-
-              {/* Card 6: Total Contact Messages */}
-              <div
-                onClick={() => router.push("/manage-contact")}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
-              >
-                {/* Top: Total Contact Messages */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
-                    <Mail className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 block">
-                      Total Contact Messages
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {contactMsgsCount}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full h-[1px] bg-slate-100" />
-
-                {/* Below: Quick Link to Contact Messages */}
-                <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
-                  <span>Manage Contact Messages</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             {/* RECENT REGISTRATIONS QUICK VIEW */}
@@ -414,13 +455,15 @@ export default function DashboardHome() {
                     Recent Member Registrations
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Latest member registration applications received
+                    {isSuperAdmin
+                      ? "Latest member registration applications received"
+                      : "Latest member registration applications referred by you"}
                   </p>
                 </div>
 
                 <button
                   onClick={() => router.push("/registrations")}
-                  className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-blue-200 transition"
+                  className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-blue-200 transition cursor-pointer"
                 >
                   <span>View All ({primaryRegistrations.length})</span>
                   <ChevronRight className="w-4 h-4" />
