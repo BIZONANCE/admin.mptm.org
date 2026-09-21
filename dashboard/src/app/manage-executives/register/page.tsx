@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getApiUrl } from "@/utils/config";
 import { convertNumberToMarathiWords } from "@/utils/formatters";
+import { downloadReceiptAsPdf } from "@/utils/pdfUtils";
+import { getDistrictOptions, getCityOptions } from "@/utils/locationData";
 import {
   ArrowLeft,
   UserCheck,
@@ -20,6 +22,7 @@ import {
   RefreshCw,
   FileText,
   X,
+  Download,
 } from "lucide-react";
 
 interface MainMember {
@@ -81,6 +84,8 @@ export default function ExecutiveMemberRegisterPage() {
     registrationFee: "1001", // Strictly locked to 1001
     amountInWords: "एक हजार एक रुपये फक्त",
     address: "",
+    city: "अमरावती",
+    district: "अमरावती",
     paymentMethod: "UPI",
     otherPaymentMethod: "",
     referredBy: "Super Admin",
@@ -111,6 +116,17 @@ export default function ExecutiveMemberRegisterPage() {
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string>("");
   const [submitErrorMsg, setSubmitErrorMsg] = useState<string>("");
   const [submittedReceipt, setSubmittedReceipt] = useState<any | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
+
+  const handleDownloadPdf = async () => {
+    if (!submittedReceipt) return;
+    try {
+      setDownloadingPdf(true);
+      await downloadReceiptAsPdf("printable-receipt-card", `Executive_Receipt_${submittedReceipt.receiptNo || "EM"}.pdf`);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const isPaymentVerified =
     (formData.paymentMethod === "रोख" && cashPaidStatus === "yes") ||
@@ -304,8 +320,8 @@ export default function ExecutiveMemberRegisterPage() {
                 fullName: primaryMain.fullName,
                 designation: "कार्यकारिणी सदस्य",
                 mobileNo: primaryMain.mobileNo,
-                city: "अमरावती",
-                district: "अमरावती",
+                city: formData.city || "अमरावती",
+                district: formData.district || "अमरावती",
                 status: "ACTIVE",
               }),
             });
@@ -320,6 +336,8 @@ export default function ExecutiveMemberRegisterPage() {
           registrationFee: "1001",
           amountInWords: "एक हजार एक रुपये फक्त",
           address: formData.address,
+          city: formData.city,
+          district: formData.district,
           paymentMethod: formData.paymentMethod,
           mainMembers: [...mainMembers],
           familyMembers: familyMembers.filter((f) => f.name.trim() !== ""),
@@ -344,7 +362,8 @@ export default function ExecutiveMemberRegisterPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-5xl mx-auto pb-12 print:p-0 font-sans">
-        {/* Top Action Bar */}
+        <div className={submittedReceipt ? "no-print" : ""}>
+          {/* Top Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4 print:hidden">
           <div className="flex items-center gap-3">
             <Link
@@ -373,7 +392,7 @@ export default function ExecutiveMemberRegisterPage() {
         </div>
 
         {/* Outer Receipt Form Card */}
-        <div className="bg-[#FFFDF9] border-2 border-amber-800/40 rounded-2xl shadow-xl overflow-hidden print:border-none print:shadow-none">
+        <div className={`bg-[#FFFDF9] border-2 border-amber-800/40 rounded-2xl shadow-xl overflow-hidden print:border-none print:shadow-none ${submittedReceipt ? "no-print" : ""}`}>
           <form onSubmit={handleSubmit}>
             {/* Header Title Banner */}
             <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-4 px-4 sm:px-6 relative text-center border-b-2 border-amber-400">
@@ -531,7 +550,7 @@ export default function ExecutiveMemberRegisterPage() {
                 </div>
               </div>
 
-              {/* SECTION BOX 3: ADDRESS & AMOUNT IN WORDS */}
+              {/* SECTION BOX 3: ADDRESS, CITY, DISTRICT & AMOUNT IN WORDS */}
               <div className="bg-white border-2 border-amber-200/80 rounded-2xl p-4 shadow-2xs space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -559,6 +578,78 @@ export default function ExecutiveMemberRegisterPage() {
                       className={inputReadOnly}
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-amber-200/60">
+                  <div className="flex items-center gap-2">
+                    <label className="font-bold text-stone-800 whitespace-nowrap text-xs sm:text-sm">
+                      जिल्हा :
+                    </label>
+                    <select
+                      value={formData.district}
+                      onChange={(e) => {
+                        const newDist = e.target.value;
+                        const cities = getCityOptions(newDist, "mr");
+                        setFormData((prev) => ({
+                          ...prev,
+                          district: newDist,
+                          city: cities[0] || "",
+                        }));
+                      }}
+                      className={inputBase}
+                    >
+                      {getDistrictOptions("mr").map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(() => {
+                    const cityOpts = getCityOptions(formData.district, "mr");
+                    const isCustomCity = formData.city && !cityOpts.includes(formData.city) && formData.city !== "OTHER";
+                    const selectValue = isCustomCity ? "OTHER" : formData.city;
+
+                    return (
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <div className="flex items-center gap-2">
+                          <label className="font-bold text-stone-800 whitespace-nowrap text-xs sm:text-sm">
+                            शहर / गाव :
+                          </label>
+                          <select
+                            value={selectValue}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "OTHER") {
+                                setFormData((prev) => ({ ...prev, city: "" }));
+                              } else {
+                                setFormData((prev) => ({ ...prev, city: val }));
+                              }
+                            }}
+                            className={inputBase}
+                          >
+                            {cityOpts.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                            <option value="OTHER">इतर (इथे नाव लिहा...)</option>
+                          </select>
+                        </div>
+
+                        {(selectValue === "OTHER" || isCustomCity) && (
+                          <input
+                            type="text"
+                            value={formData.city}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
+                            placeholder="आपल्या शहराचे / गावाचे नाव लिहा"
+                            className={inputBase}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -869,10 +960,11 @@ export default function ExecutiveMemberRegisterPage() {
             </div>
           </form>
         </div>
+      </div>
 
         {/* SUBMITTED EXECUTIVE RECEIPT MODAL & PRINT PREVIEW */}
         {submittedReceipt && (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 my-auto font-sans">
               
               {/* Modal Action Header */}
@@ -892,11 +984,21 @@ export default function ExecutiveMemberRegisterPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Download className={`w-4 h-4 ${downloadingPdf ? "animate-bounce" : ""}`} />
+                    <span>{downloadingPdf ? "डाऊनलोड होत आहे..." : "पावती PDF डाऊनलोड करा"}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => window.print()}
                     className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>पावती प्रिंट काढा (Print)</span>
+                    <span className="hidden sm:inline">पावती प्रिंट काढा (Print)</span>
                   </button>
 
                   <button
@@ -971,11 +1073,16 @@ export default function ExecutiveMemberRegisterPage() {
                   </div>
                 </div>
 
-                {/* Address & Amount in Words */}
+                {/* Address, City, District & Amount in Words */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
                   <div>
                     <span className="font-bold text-stone-800">संपूर्ण पत्ता : </span>
-                    <span className="font-semibold text-stone-900">{submittedReceipt.address}</span>
+                    <span className="font-semibold text-stone-900">
+                      {submittedReceipt.address}
+                      {(submittedReceipt.city || submittedReceipt.district) && (
+                        <span> ({[submittedReceipt.city, submittedReceipt.district].filter(Boolean).join(", ")})</span>
+                      )}
+                    </span>
                   </div>
                   <div>
                     <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
@@ -1064,6 +1171,8 @@ export default function ExecutiveMemberRegisterPage() {
                         registrationFee: "1001",
                         amountInWords: "एक हजार एक रुपये फक्त",
                         address: "",
+                        city: "अमरावती",
+                        district: "अमरावती",
                         paymentMethod: "UPI",
                         otherPaymentMethod: "",
                         referredBy: "Super Admin",

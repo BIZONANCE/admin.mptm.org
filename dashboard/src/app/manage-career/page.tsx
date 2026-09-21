@@ -136,7 +136,9 @@ export default function ManageCareerPage() {
         !q ||
         app.name.toLowerCase().includes(q) ||
         app.email.toLowerCase().includes(q) ||
-        app.phone.includes(q);
+        app.phone.includes(q) ||
+        (app.city && app.city.toLowerCase().includes(q)) ||
+        (app.district && app.district.toLowerCase().includes(q));
       return matchStatus && matchSearch;
     });
   }, [applications, searchQuery, statusFilter]);
@@ -339,6 +341,11 @@ export default function ManageCareerPage() {
                             {app.phone}
                           </a>
                         </div>
+                        {(app.city || app.district) && (
+                          <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                            📍 {[app.city, app.district].filter(Boolean).join(", ")}
+                          </div>
+                        )}
                       </td>
 
                       {/* Date */}
@@ -467,12 +474,19 @@ export default function ManageCareerPage() {
                   </a>
                 </div>
 
-                {/* Date & Resume */}
+                {/* Date, Location & Resume */}
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span className="font-semibold text-slate-500">Submitted On:</span>
                     <span className="font-bold text-slate-800">{new Date(viewingApp.createdAt).toLocaleString("en-IN")}</span>
                   </div>
+
+                  {(viewingApp.city || viewingApp.district) && (
+                    <div className="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-200">
+                      <span className="font-semibold text-slate-500">City / District:</span>
+                      <span className="font-bold text-slate-800">{[viewingApp.city, viewingApp.district].filter(Boolean).join(", ")}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                     <span className="font-semibold text-slate-500">Uploaded Resume:</span>

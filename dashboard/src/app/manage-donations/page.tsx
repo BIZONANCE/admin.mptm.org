@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DonationItem } from "@/types";
 import { getApiUrl } from "@/utils/config";
+import { formatDistrictInEnglish, formatCityInEnglish } from "@/utils/locationData";
 import {
   Heart,
   Search,
@@ -34,6 +35,7 @@ export default function ManageDonationsPage() {
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>("ALL");
   const [selectedCityFilter, setSelectedCityFilter] = useState<string>("ALL");
 
   // Modal State for Viewing Payment Screenshot
@@ -71,14 +73,29 @@ export default function ManageDonationsPage() {
     fetchDonations();
   }, [API_URL]);
 
+  // Unique districts for filter dropdown
+  const uniqueDistricts = useMemo(() => {
+    const dists = new Set<string>();
+    donations.forEach((item) => {
+      const distEng = formatDistrictInEnglish(item.district);
+      if (distEng && distEng !== "-") dists.add(distEng);
+    });
+    return Array.from(dists).sort();
+  }, [donations]);
+
   // Unique cities for filter dropdown
   const uniqueCities = useMemo(() => {
     const cities = new Set<string>();
     donations.forEach((item) => {
-      if (item.city) cities.add(item.city.trim());
+      if (selectedDistrictFilter !== "ALL") {
+        const distEng = formatDistrictInEnglish(item.district);
+        if (distEng !== selectedDistrictFilter) return;
+      }
+      const cityEng = formatCityInEnglish(item.city);
+      if (cityEng && cityEng !== "-") cities.add(cityEng);
     });
     return Array.from(cities).sort();
-  }, [donations]);
+  }, [donations, selectedDistrictFilter]);
 
   // Filtered donations
   const filteredDonations = useMemo(() => {
@@ -90,15 +107,22 @@ export default function ManageDonationsPage() {
         item.name.toLowerCase().includes(q) ||
         item.mobileNo.toLowerCase().includes(q) ||
         item.city.toLowerCase().includes(q) ||
+        formatCityInEnglish(item.city).toLowerCase().includes(q) ||
+        (item.district || "").toLowerCase().includes(q) ||
+        formatDistrictInEnglish(item.district).toLowerCase().includes(q) ||
         String(item.amount).includes(q);
+
+      const matchesDistrict =
+        selectedDistrictFilter === "ALL" ||
+        formatDistrictInEnglish(item.district).toLowerCase() === selectedDistrictFilter.toLowerCase();
 
       const matchesCity =
         selectedCityFilter === "ALL" ||
-        item.city.trim().toLowerCase() === selectedCityFilter.toLowerCase();
+        formatCityInEnglish(item.city).toLowerCase() === selectedCityFilter.toLowerCase();
 
-      return matchesSearch && matchesCity;
+      return matchesSearch && matchesDistrict && matchesCity;
     });
-  }, [donations, searchQuery, selectedCityFilter]);
+  }, [donations, searchQuery, selectedDistrictFilter, selectedCityFilter]);
 
   // Calculate premium statistics
   const stats = useMemo(() => {
@@ -176,52 +200,78 @@ export default function ManageDonationsPage() {
         {/* SEARCH, FILTER & TABLE CONTAINER */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden">
           
-          {/* FILTER TOOLBAR */}
-          <div className="p-5 sm:p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* FILTER TOOLBAR (2 ROWS) */}
+          <div className="p-4 sm:p-5 border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50 space-y-3">
             
-            {/* Search Input */}
-            <div className="relative w-full md:w-96">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            {/* ROW 1: SEARCH BAR (Full Width) */}
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search donor name, receipt no, mobile, city..."
+                placeholder="Search donor name, receipt no, mobile, city, district..."
                 className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition shadow-inner font-medium"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 w-5 h-5 rounded-full flex items-center justify-center hover:bg-slate-100 transition cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 w-5 h-5 rounded-full flex items-center justify-center hover:bg-slate-100 transition cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-              {/* City Filter Dropdown */}
-              {uniqueCities.length > 0 && (
-                <div className="flex items-center gap-2 bg-white border border-slate-300/80 rounded-2xl px-3 py-1.5 shadow-2xs">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-xs font-bold text-slate-500">City:</span>
-                  <select
-                    value={selectedCityFilter}
-                    onChange={(e) => setSelectedCityFilter(e.target.value)}
-                    className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer pr-1"
-                  >
-                    <option value="ALL">All Cities ({donations.length})</option>
-                    {uniqueCities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            {/* ROW 2: FILTER DROPDOWNS & RECORDS COUNTER */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* District Filter Dropdown */}
+                {uniqueDistricts.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white border border-slate-300/80 rounded-2xl px-3 py-1.5 shadow-2xs">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500">District:</span>
+                    <select
+                      value={selectedDistrictFilter}
+                      onChange={(e) => {
+                        setSelectedDistrictFilter(e.target.value);
+                        setSelectedCityFilter("ALL");
+                      }}
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer pr-1"
+                    >
+                      <option value="ALL">All Districts ({uniqueDistricts.length})</option>
+                      {uniqueDistricts.map((dist) => (
+                        <option key={dist} value={dist}>
+                          {dist}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* City Filter Dropdown */}
+                {uniqueCities.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white border border-slate-300/80 rounded-2xl px-3 py-1.5 shadow-2xs">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500">City:</span>
+                    <select
+                      value={selectedCityFilter}
+                      onChange={(e) => setSelectedCityFilter(e.target.value)}
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer pr-1"
+                    >
+                      <option value="ALL">All Cities ({uniqueCities.length})</option>
+                      {uniqueCities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
 
               {/* Records Counter Badge */}
-              <div className="px-4 py-2 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 shrink-0">
+              <div className="px-3.5 py-1.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 shrink-0">
                 Showing <span className="text-indigo-600 font-extrabold">{filteredDonations.length}</span> of {donations.length} Records
               </div>
             </div>
@@ -324,11 +374,16 @@ export default function ManageDonationsPage() {
                         </div>
                       </td>
 
-                      {/* City */}
+                      {/* City & District */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-slate-700">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-semibold">{item.city}</span>
+                          <span className="font-semibold">
+                            {formatCityInEnglish(item.city)}
+                            {item.district && (
+                              <span className="text-slate-500 font-normal"> ({formatDistrictInEnglish(item.district)})</span>
+                            )}
+                          </span>
                         </div>
                       </td>
 

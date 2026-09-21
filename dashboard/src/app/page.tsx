@@ -241,11 +241,11 @@ export default function DashboardHome() {
           </div>
         ) : (
           <>
-            {/* METRIC CARDS GRID - 3 Cards for Regular Users, All 6 Cards for Super Admin */}
+            {/* METRIC CARDS GRID - 3 Cards for Regular Users, Max 4 Cards per row for Super Admin */}
             <div
               className={`grid gap-4 mb-8 ${
                 isSuperAdmin
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               }`}
             >

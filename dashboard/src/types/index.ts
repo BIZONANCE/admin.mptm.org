@@ -26,6 +26,8 @@ export interface MemberRegistration {
   registrationFee: number;
   amountInWords: string;
   address: string;
+  city?: string | null;
+  district?: string | null;
   paymentMethod: string;
   paymentScreenshot?: string | null;
   referredBy?: string | null;
@@ -55,9 +57,24 @@ export interface CareerApplicationItem {
   phone: string;
   position: string;
   message?: string;
+  city?: string | null;
+  district?: string | null;
   resumeName?: string;
   resumeData?: string;
   status: "PENDING" | "REVIEWED" | "SHORTLISTED" | "REJECTED";
+  createdAt: string;
+}
+
+export interface ContactMessageItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject?: string;
+  message: string;
+  city?: string | null;
+  district?: string | null;
+  status: "UNREAD" | "READ";
   createdAt: string;
 }
 
@@ -67,6 +84,7 @@ export interface DonationItem {
   name: string;
   mobileNo: string;
   city: string;
+  district?: string | null;
   amount: number;
   amountInWords: string;
   paymentScreenshot?: string | null;
@@ -85,6 +103,8 @@ export interface ExecutiveMemberItem {
   photoUrl?: string | null;
   status: string;
   receiptNo?: string | null;
+  memberNo?: string | null;
+  seriesNo?: string | null;
   registrationFee?: number | string | null;
   paymentMethod?: string | null;
   paymentScreenshot?: string | null;

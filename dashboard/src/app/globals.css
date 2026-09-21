@@ -38,6 +38,18 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span {
     display: none !important;
   }
 
+  /* Reset fixed modal containers during print */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+
   .print-only {
     display: block !important;
     position: absolute !important;
@@ -46,6 +58,19 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span {
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  #printable-receipt-card {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 6mm !important;
+    background: #FFFDF9 !important;
+    box-shadow: none !important;
+    border: none !important;
+    display: block !important;
+    color: #1c1917 !important;
   }
 
   .print-page-wrapper {

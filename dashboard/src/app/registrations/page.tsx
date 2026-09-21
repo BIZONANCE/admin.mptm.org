@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { downloadReceiptAsPdf } from "@/utils/pdfUtils";
 import {
   Search,
   RefreshCw,
@@ -15,6 +16,7 @@ import {
   ImageIcon,
   UserPlus,
   ChevronRight,
+  ChevronDown,
   Trash2,
   AlertTriangle,
   Link as LinkIcon,
@@ -33,6 +35,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
 import { formatDateToDDMMYYYY, getDatePart, getTimePart, formatPaymentMethod, convertNumberToMarathiWords } from "../../utils/formatters";
 import { getApiUrl, getMainSiteUrl } from "../../utils/config";
+import { formatDistrictInEnglish, formatCityInEnglish, formatAddressInEnglish } from "../../utils/locationData";
 
 function isExecutiveRegistration(reg: MemberRegistration): boolean {
   const receipt = (reg.receiptNo || "").toUpperCase();
@@ -55,6 +58,8 @@ export default function RegistrationsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
   const [referrerFilter, setReferrerFilter] = useState<string>("ALL");
+  const [districtFilter, setDistrictFilter] = useState<string>("ALL");
+  const [cityFilter, setCityFilter] = useState<string>("ALL");
 
   const [selectedReg, setSelectedReg] = useState<MemberRegistration | null>(null);
   const [deleteConfirmReg, setDeleteConfirmReg] = useState<MemberRegistration | null>(null);
@@ -76,8 +81,20 @@ export default function RegistrationsPage() {
   const API_URL = getApiUrl();
   const MAIN_SITE_URL = getMainSiteUrl();
 
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!selectedReg) return;
+    try {
+      setDownloadingPdf(true);
+      await downloadReceiptAsPdf("printable-receipt-card", `Receipt_${selectedReg.receiptNo || "Member"}.pdf`);
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleSendRegWhatsApp = (reg: MemberRegistration) => {
@@ -96,6 +113,8 @@ ${title}
 👤 *सदस्याचे नाव* : ${main?.fullName || "-"}
 📱 *मोबाईल क्र.* : ${main?.mobileNo || "-"}
 📍 *पत्ता* : ${reg.address || "-"}
+🏙️ *शहर/गाव* : ${reg.city || "-"}
+🏛️ *जिल्हा* : ${reg.district || "-"}
 💰 *नोंदणी शुल्क* : ₹${reg.registrationFee}/- (${reg.amountInWords || convertNumberToMarathiWords(reg.registrationFee)})
 💳 *देयक पद्धत* : ${formatPaymentMethod(reg.paymentMethod)}
 ✅ *स्थिती* : प्राप्त व सत्यापित (Payment Verified)
@@ -171,6 +190,30 @@ mptmamravati.org`;
     return Array.from(refsSet);
   }, [registrations, managedUsers]);
 
+  const uniqueDistrictsList = useMemo(() => {
+    const distSet = new Set<string>();
+    registrations.forEach((r) => {
+      if (isExecutiveRegistration(r)) return;
+      const distEng = formatDistrictInEnglish(r.district);
+      if (distEng && distEng !== "-") distSet.add(distEng);
+    });
+    return Array.from(distSet).sort();
+  }, [registrations]);
+
+  const uniqueCitiesList = useMemo(() => {
+    const citySet = new Set<string>();
+    registrations.forEach((r) => {
+      if (isExecutiveRegistration(r)) return;
+      if (districtFilter !== "ALL") {
+        const distEng = formatDistrictInEnglish(r.district);
+        if (distEng !== districtFilter) return;
+      }
+      const cityEng = formatCityInEnglish(r.city);
+      if (cityEng && cityEng !== "-") citySet.add(cityEng);
+    });
+    return Array.from(citySet).sort();
+  }, [registrations, districtFilter]);
+
   const handleDeleteRegistration = async (id: string) => {
     setIsDeleting(true);
     try {
@@ -228,6 +271,8 @@ mptmamravati.org`;
         const matchesGeneral =
           reg.receiptNo.toLowerCase().includes(query) ||
           reg.address.toLowerCase().includes(query) ||
+          (reg.city || "").toLowerCase().includes(query) ||
+          (reg.district || "").toLowerCase().includes(query) ||
           reg.paymentMethod.toLowerCase().includes(query) ||
           reg.registrationFee.toString().includes(query) ||
           (reg.referredBy || "").toLowerCase().includes(query) ||
@@ -319,6 +364,16 @@ mptmamravati.org`;
         }
       }
 
+      // 3. District & City Filter
+      if (districtFilter !== "ALL") {
+        const distEng = formatDistrictInEnglish(reg.district);
+        if (distEng.toLowerCase() !== districtFilter.toLowerCase()) return false;
+      }
+      if (cityFilter !== "ALL") {
+        const cityEng = formatCityInEnglish(reg.city);
+        if (cityEng.toLowerCase() !== cityFilter.toLowerCase()) return false;
+      }
+
       if (!searchQuery) return true;
 
       const query = searchQuery.toLowerCase().trim();
@@ -326,6 +381,8 @@ mptmamravati.org`;
       if (
         reg.receiptNo.toLowerCase().includes(query) ||
         reg.address.toLowerCase().includes(query) ||
+        (reg.city || "").toLowerCase().includes(query) ||
+        (reg.district || "").toLowerCase().includes(query) ||
         reg.paymentMethod.toLowerCase().includes(query) ||
         reg.registrationFee.toString().includes(query) ||
         (reg.referredBy || "").toLowerCase().includes(query) ||
@@ -366,6 +423,8 @@ mptmamravati.org`;
       "Prabhag No",
       "Mobile No",
       "Address",
+      "City",
+      "District",
       "Referrer",
       "Payment Method",
       "Registration Fee",
@@ -386,7 +445,9 @@ mptmamravati.org`;
         `"${main.memberNo || ""}"`,
         `"${main.prabhagNo || ""}"`,
         `"${main.mobileNo || ""}"`,
-        `"${reg.address.replace(/"/g, '""')}"`,
+        `"${(reg.address || "").replace(/"/g, '""')}"`,
+        `"${(reg.city || "").replace(/"/g, '""')}"`,
+        `"${(reg.district || "").replace(/"/g, '""')}"`,
         `"${reg.referredBy || "Direct Website"}"`,
         `"${formatPaymentMethod(reg.paymentMethod)}"`,
         `"${reg.registrationFee}"`,
@@ -435,9 +496,9 @@ mptmamravati.org`;
 
   return (
     <DashboardLayout>
-      <div>
+      <div className={selectedReg ? "no-print" : ""}>
         {/* Page Title & Subtitle Toolbar */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${selectedReg ? "no-print" : ""}`}>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <User className="w-6 h-6 text-slate-800" />
@@ -475,23 +536,23 @@ mptmamravati.org`;
 
         {/* Toast Alert */}
         {toastMessage && (
-          <div className="mb-4 p-3 bg-slate-100 border border-slate-300 text-slate-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs">
+          <div className={`mb-4 p-3 bg-slate-100 border border-slate-300 text-slate-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs ${selectedReg ? "no-print" : ""}`}>
             <span>{toastMessage}</span>
             <button onClick={() => setToastMessage(null)} className="text-slate-600 hover:text-slate-900 font-bold text-base">×</button>
           </div>
         )}
 
-        {/* SEARCH & FILTER TOOLBAR */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Search Bar Input */}
-          <div className="relative w-full sm:w-96">
+        {/* SEARCH & FILTER TOOLBAR (2 ROWS) */}
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 mb-6 space-y-3 ${selectedReg ? "no-print" : ""}`}>
+          {/* ROW 1: SEARCH BAR (Full Width) */}
+          <div className="relative w-full">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search receipt no, name, mobile, or prabhag..."
+              placeholder="Search receipt no, name, mobile, address, or prabhag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
             />
             {searchQuery && (
               <button
@@ -503,8 +564,9 @@ mptmamravati.org`;
             )}
           </div>
 
-          {/* Filter Pills & Referrer Dropdown */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+          {/* ROW 2: FILTER DROPDOWNS & CONTROL PILLS */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+            <div className="flex flex-wrap items-center gap-2.5">
             {/* Referrer Filter Dropdown */}
             {isSuperAdmin && (
               <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
@@ -531,6 +593,50 @@ mptmamravati.org`;
                 </select>
               </div>
             )}
+
+            {/* District Filter Dropdown */}
+            {uniqueDistrictsList.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                <span className="text-xs font-bold text-slate-700 shrink-0">District:</span>
+                <select
+                  value={districtFilter}
+                  onChange={(e) => {
+                    setDistrictFilter(e.target.value);
+                    setCityFilter("ALL");
+                  }}
+                  className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                >
+                  <option value="ALL">All Districts ({uniqueDistrictsList.length})</option>
+                  {uniqueDistrictsList.map((dist) => (
+                    <option key={dist} value={dist}>
+                      {dist}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* City Filter Dropdown */}
+            {uniqueCitiesList.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                <span className="text-xs font-bold text-slate-700 shrink-0">City:</span>
+                <select
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                >
+                  <option value="ALL">All Cities ({uniqueCitiesList.length})</option>
+                  {uniqueCitiesList.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            </div>
 
             {/* Payment Method Filter Pills */}
             <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
@@ -582,7 +688,7 @@ mptmamravati.org`;
         </div>
 
         {/* REGISTRATION DATA TABLE CARD */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden ${selectedReg ? "no-print" : ""}`}>
           {loading ? (
             <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="w-8 h-8 text-slate-600 animate-spin" />
@@ -670,20 +776,40 @@ mptmamravati.org`;
                         </td>
 
                         <td className="py-3.5 px-4 align-top max-w-xs">
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-1.5">
                             {main.mobileNo && (
                               <a
                                 href={`tel:${main.mobileNo}`}
-                                className="text-xs font-semibold text-slate-800 hover:text-slate-900 flex items-center gap-1"
+                                className="text-xs font-bold text-slate-800 hover:text-slate-900 flex items-center gap-1"
                               >
-                                <Phone className="w-3 h-3 text-slate-400" />
+                                <Phone className="w-3.5 h-3.5 text-slate-500" />
                                 {main.mobileNo}
                               </a>
                             )}
-                            <span className="text-[11px] text-slate-600 line-clamp-2 flex items-start gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                              {reg.address || "Address not provided"}
-                            </span>
+                            <details className="group relative">
+                              <summary className="list-none inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 px-2.5 py-1 rounded-lg cursor-pointer select-none transition">
+                                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Address</span>
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-open:rotate-180" />
+                              </summary>
+                              <div className="mt-1.5 text-[11px] text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-2xs animate-in fade-in duration-150">
+                                <div>
+                                  <span className="font-bold text-slate-800">Address: </span>
+                                  <span>{formatAddressInEnglish(reg.address)}</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-2 text-[11px] pt-1 border-t border-slate-200/80">
+                                  <span>
+                                    <span className="font-bold text-slate-800">City: </span>
+                                    <span className="font-bold text-indigo-900">{formatCityInEnglish(reg.city)}</span>
+                                  </span>
+                                  <span>•</span>
+                                  <span>
+                                    <span className="font-bold text-slate-800">District: </span>
+                                    <span className="font-bold text-indigo-900">{formatDistrictInEnglish(reg.district)}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </details>
                           </div>
                         </td>
 
@@ -803,7 +929,7 @@ mptmamravati.org`;
 
         {/* REGISTRATION DETAILS RECEIPT MODAL */}
         {selectedReg && (
-          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
+          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
               <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
                 <div className="flex items-center gap-3">
@@ -827,7 +953,17 @@ mptmamravati.org`;
                     title="Send Receipt to WhatsApp"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>WhatsApp</span>
+                    <span className="hidden sm:inline">WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer disabled:opacity-50"
+                    title="Download Receipt PDF file"
+                  >
+                    <Download className={`w-4 h-4 ${downloadingPdf ? "animate-bounce" : ""}`} />
+                    <span>{downloadingPdf ? "Downloading..." : "Download PDF"}</span>
                   </button>
 
                   <button
@@ -835,7 +971,7 @@ mptmamravati.org`;
                     className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
                   >
                     <Printer className="w-4 h-4" />
-                    <span>Print Receipt</span>
+                    <span className="hidden sm:inline">Print Receipt</span>
                   </button>
 
                   <button
@@ -910,13 +1046,23 @@ mptmamravati.org`;
                   </div>
                 </div>
 
-                {/* Address & Amount in Words */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
-                  <div>
-                    <span className="font-bold text-stone-800">संपूर्ण पत्ता : </span>
-                    <span className="font-semibold text-stone-900">{selectedReg.address}</span>
+                {/* Address, City, District & Amount in Words */}
+                <div className="space-y-2 p-3.5 bg-amber-50/70 rounded-xl border border-amber-300 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="sm:col-span-3">
+                      <span className="font-bold text-stone-800">संपूर्ण पत्ता (Address) : </span>
+                      <span className="font-semibold text-stone-900">{formatAddressInEnglish(selectedReg.address)}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">शहर / गाव (City / Village) : </span>
+                      <span className="font-extrabold text-[#7A0C0C]">{formatCityInEnglish(selectedReg.city)}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">जिल्हा (District) : </span>
+                      <span className="font-extrabold text-[#7A0C0C]">{formatDistrictInEnglish(selectedReg.district)}</span>
+                    </div>
                   </div>
-                  <div>
+                  <div className="border-t border-amber-300/80 pt-2">
                     <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
                     <span className="font-extrabold text-[#7A0C0C]">{selectedReg.amountInWords || convertNumberToMarathiWords(selectedReg.registrationFee)}</span>
                   </div>

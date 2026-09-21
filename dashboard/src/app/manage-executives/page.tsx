@@ -7,6 +7,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { ExecutiveMemberItem, MemberRegistration } from "@/types";
 import { getApiUrl } from "@/utils/config";
 import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod } from "@/utils/formatters";
+import { downloadReceiptAsPdf } from "@/utils/pdfUtils";
+import { formatDistrictInEnglish, formatCityInEnglish, formatAddressInEnglish } from "@/utils/locationData";
 import {
   UserCheck,
   Search,
@@ -28,6 +30,7 @@ import {
   Printer,
   ImageIcon,
   MessageSquare,
+  Download,
 } from "lucide-react";
 
 const designationMap: Record<string, string> = {
@@ -49,9 +52,7 @@ function formatDesignationInEnglish(desig: string | null | undefined): string {
 
 function formatEnglishText(text: string | null | undefined): string {
   if (!text) return "";
-  const trimmed = text.trim();
-  if (trimmed === "अमरावती") return "Amravati";
-  return trimmed;
+  return formatCityInEnglish(text);
 }
 
 function convertNumberToEnglishWords(amountStr: string | number): string {
@@ -72,6 +73,8 @@ export default function ManageExecutivesPage() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [designationFilter, setDesignationFilter] = useState<string>("ALL");
+  const [districtFilter, setDistrictFilter] = useState<string>("ALL");
+  const [cityFilter, setCityFilter] = useState<string>("ALL");
 
   // Modal State for View Details & Receipt
   const [selectedViewExec, setSelectedViewExec] = useState<ExecutiveMemberItem | null>(null);
@@ -142,13 +145,51 @@ export default function ManageExecutivesPage() {
     return Array.from(set).sort();
   }, [executives]);
 
+  const uniqueDistricts = useMemo(() => {
+    const set = new Set<string>();
+    executives.forEach((e) => {
+      const distEng = formatDistrictInEnglish(e.district);
+      if (distEng && distEng !== "-") set.add(distEng);
+    });
+    return Array.from(set).sort();
+  }, [executives]);
+
+  const uniqueCities = useMemo(() => {
+    const set = new Set<string>();
+    executives.forEach((e) => {
+      if (districtFilter !== "ALL") {
+        const distEng = formatDistrictInEnglish(e.district);
+        if (distEng !== districtFilter) return;
+      }
+      const cityEng = formatCityInEnglish(e.city);
+      if (cityEng && cityEng !== "-") set.add(cityEng);
+    });
+    return Array.from(set).sort();
+  }, [executives, districtFilter]);
+
   // Filtered list
   const filteredExecutives = useMemo(() => {
-    return executives.filter((item) => {
+    return executives.filter((item, index) => {
       const q = searchQuery.toLowerCase().trim();
       const desigEng = formatDesignationInEnglish(item.designation).toLowerCase();
-      const cityEng = formatEnglishText(item.city).toLowerCase();
-      const distEng = formatEnglishText(item.district).toLowerCase();
+      const cityEng = formatCityInEnglish(item.city).toLowerCase();
+      const distEng = formatDistrictInEnglish(item.district).toLowerCase();
+
+      const match = registrations.find((r) => {
+        const main = r.mainMembers[0];
+        if (!main) return false;
+        const cleanMob = item.mobileNo.replace(/\D/g, "");
+        const regMob = (main.mobileNo || "").replace(/\D/g, "");
+        return (
+          (cleanMob && regMob && cleanMob === regMob) ||
+          (main.fullName && main.fullName.trim().toLowerCase() === item.fullName.trim().toLowerCase())
+        );
+      });
+
+      const execIdx = executives.findIndex((e) => e.id === item.id);
+      const seqNum = execIdx >= 0 ? execIdx + 1 : index + 1;
+      const recNo = item.receiptNo || match?.receiptNo || `MPTM-EM-R${String(seqNum).padStart(3, "0")}`;
+      const serNo = item.memberNo || item.seriesNo || match?.mainMembers[0]?.memberNo || `MPTM-EM-S${String(seqNum).padStart(3, "0")}`;
 
       const matchesSearch =
         !q ||
@@ -159,15 +200,25 @@ export default function ManageExecutivesPage() {
         item.city.toLowerCase().includes(q) ||
         cityEng.includes(q) ||
         item.district.toLowerCase().includes(q) ||
-        distEng.includes(q);
+        distEng.includes(q) ||
+        recNo.toLowerCase().includes(q) ||
+        serNo.toLowerCase().includes(q);
 
       const matchesDesignation =
         designationFilter === "ALL" ||
         item.designation.trim().toLowerCase() === designationFilter.toLowerCase();
 
-      return matchesSearch && matchesDesignation;
+      const matchesDistrict =
+        districtFilter === "ALL" ||
+        formatDistrictInEnglish(item.district).toLowerCase() === districtFilter.toLowerCase();
+
+      const matchesCity =
+        cityFilter === "ALL" ||
+        formatCityInEnglish(item.city).toLowerCase() === cityFilter.toLowerCase();
+
+      return matchesSearch && matchesDesignation && matchesDistrict && matchesCity;
     });
-  }, [executives, searchQuery, designationFilter]);
+  }, [executives, registrations, searchQuery, designationFilter, districtFilter, cityFilter]);
 
   // Find matching registration for view modal
   const matchedReg = useMemo(() => {
@@ -187,7 +238,10 @@ export default function ManageExecutivesPage() {
   const handleSendWhatsApp = (exec: ExecutiveMemberItem, regMatch?: MemberRegistration | null) => {
     const mobile = exec.mobileNo.replace(/\D/g, "");
     const cleanPhone = mobile.length === 10 ? `91${mobile}` : mobile;
-    const receiptNo = regMatch?.receiptNo || exec.receiptNo || `MPTM-EM-${exec.id.replace(/\D/g, "").slice(-4) || "101"}`;
+    const execIdx = executives.findIndex((e) => e.id === exec.id);
+    const idx = execIdx >= 0 ? execIdx : 0;
+    const receiptNo = regMatch?.receiptNo || exec.receiptNo || `MPTM-EM-R${String(idx + 1).padStart(3, "0")}`;
+    const seriesNo = regMatch?.mainMembers[0]?.memberNo || exec.memberNo || exec.seriesNo || `MPTM-EM-S${String(idx + 1).padStart(3, "0")}`;
     const dateStr = regMatch ? getDatePart(regMatch) : formatDateToDDMMYYYY(exec.createdAt);
     const fee = regMatch?.registrationFee || exec.registrationFee || 1001;
     const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "Cash");
@@ -209,6 +263,7 @@ export default function ManageExecutivesPage() {
 
 ----------------------------------
 📄 *Receipt No.* : ${receiptNo}
+🔢 *Series No.* : ${seriesNo}
 📅 *Date* : ${dateStr}
 👤 *Member Name* : ${exec.fullName}
 🏅 *Designation* : ${formatDesignationInEnglish(exec.designation)}
@@ -229,8 +284,21 @@ mptmamravati.org`;
     window.open(waUrl, "_blank");
   };
 
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!selectedViewExec) return;
+    try {
+      setDownloadingPdf(true);
+      const receiptNo = matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`;
+      await downloadReceiptAsPdf("printable-receipt-card", `Executive_Receipt_${receiptNo}.pdf`);
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -327,10 +395,10 @@ mptmamravati.org`;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      <div className={`space-y-6 max-w-7xl mx-auto pb-10 ${selectedViewExec ? "no-print" : ""}`}>
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4 ${selectedViewExec ? "no-print" : ""}`}>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <UserCheck className="w-6 h-6 text-indigo-600" />
@@ -363,58 +431,105 @@ mptmamravati.org`;
 
         {/* Success Alert */}
         {actionSuccess && (
-          <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xs animate-in fade-in">
+          <div className={`p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xs animate-in fade-in ${selectedViewExec ? "no-print" : ""}`}>
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{actionSuccess}</span>
           </div>
         )}
 
         {/* Search & Table Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 ${selectedViewExec ? "no-print" : ""}`}>
 
-          {/* Filter Bar */}
-          <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:w-96">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          {/* Filter Bar (2 ROWS) */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/50 space-y-3">
+            {/* ROW 1: SEARCH BAR (Full Width) */}
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name, designation, city, mobile..."
-                className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
+                placeholder="Search name, designation, city, mobile, prabhag..."
+                className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 transition"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-              {uniqueDesignations.length > 0 && (
-                <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-xs font-bold text-slate-500">Designation:</span>
-                  <select
-                    value={designationFilter}
-                    onChange={(e) => setDesignationFilter(e.target.value)}
-                    className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
-                  >
-                    <option value="ALL">All ({executives.length})</option>
-                    {uniqueDesignations.map((desig) => (
-                      <option key={desig} value={desig}>
-                        {formatDesignationInEnglish(desig)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            {/* ROW 2: FILTER DROPDOWNS & COUNTER BADGE */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-200/60">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {uniqueDesignations.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500">Designation:</span>
+                    <select
+                      value={designationFilter}
+                      onChange={(e) => setDesignationFilter(e.target.value)}
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">All ({executives.length})</option>
+                      {uniqueDesignations.map((desig) => (
+                        <option key={desig} value={desig}>
+                          {formatDesignationInEnglish(desig)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              <div className="text-xs font-bold text-slate-500 whitespace-nowrap">
-                Showing: <span className="text-slate-900 font-extrabold">{filteredExecutives.length}</span> of {executives.length}
+                {/* District Filter */}
+                {uniqueDistricts.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500">District:</span>
+                    <select
+                      value={districtFilter}
+                      onChange={(e) => {
+                        setDistrictFilter(e.target.value);
+                        setCityFilter("ALL");
+                      }}
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">All Districts ({uniqueDistricts.length})</option>
+                      {uniqueDistricts.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* City Filter */}
+                {uniqueCities.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500">City:</span>
+                    <select
+                      value={cityFilter}
+                      onChange={(e) => setCityFilter(e.target.value)}
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="ALL">All Cities ({uniqueCities.length})</option>
+                      {uniqueCities.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs font-bold text-slate-500 whitespace-nowrap px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/80">
+                Showing: <span className="text-slate-900 font-extrabold">{filteredExecutives.length}</span> of {executives.length} Records
               </div>
             </div>
           </div>
@@ -441,6 +556,7 @@ mptmamravati.org`;
                 <thead>
                   <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
                     <th className="py-3 px-4">Member Name</th>
+                    <th className="py-3 px-4">Receipt &amp; Series No.</th>
                     <th className="py-3 px-4">Designation</th>
                     <th className="py-3 px-4">Mobile Number</th>
                     <th className="py-3 px-4">City / District</th>
@@ -449,98 +565,133 @@ mptmamravati.org`;
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
-                  {filteredExecutives.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                  {filteredExecutives.map((item, index) => {
+                    const match = registrations.find((r) => {
+                      const main = r.mainMembers[0];
+                      if (!main) return false;
+                      const cleanMob = item.mobileNo.replace(/\D/g, "");
+                      const regMob = (main.mobileNo || "").replace(/\D/g, "");
+                      return (
+                        (cleanMob && regMob && cleanMob === regMob) ||
+                        (main.fullName && main.fullName.trim().toLowerCase() === item.fullName.trim().toLowerCase())
+                      );
+                    });
+                    const execIdx = executives.findIndex((e) => e.id === item.id);
+                    const seqNum = execIdx >= 0 ? execIdx + 1 : index + 1;
+                    const receiptNo = item.receiptNo || match?.receiptNo || `MPTM-EM-R${String(seqNum).padStart(3, "0")}`;
+                    const seriesNo = item.memberNo || item.seriesNo || match?.mainMembers[0]?.memberNo || `MPTM-EM-S${String(seqNum).padStart(3, "0")}`;
 
-                      {/* Name */}
-                      <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
-                            {item.fullName.charAt(0).toUpperCase()}
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+
+                        {/* Name */}
+                        <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
+                              {item.fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <span>{item.fullName}</span>
                           </div>
-                          <span>{item.fullName}</span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Designation */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-                          <Award className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          <span>{formatDesignationInEnglish(item.designation)}</span>
-                        </span>
-                      </td>
+                        {/* Receipt & Series No. */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-slate-400">R:</span>
+                              <span className="font-mono font-extrabold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                {receiptNo}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-slate-400">S:</span>
+                              <span className="font-mono font-extrabold text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                {seriesNo}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
 
-                      {/* Mobile */}
-                      <td className="py-3.5 px-4 font-bold text-slate-700 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <a href={`tel:${item.mobileNo}`} className="hover:underline font-mono">
-                            {item.mobileNo}
-                          </a>
-                        </div>
-                      </td>
+                        {/* Designation */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                            <Award className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            <span>{formatDesignationInEnglish(item.designation)}</span>
+                          </span>
+                        </td>
 
-                      {/* Location */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 text-slate-700">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{formatEnglishText(item.city)}{item.district ? `, ${formatEnglishText(item.district)}` : ""}</span>
-                        </div>
-                      </td>
+                        {/* Mobile */}
+                        <td className="py-3.5 px-4 font-bold text-slate-700 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <a href={`tel:${item.mobileNo}`} className="hover:underline font-mono">
+                              {item.mobileNo}
+                            </a>
+                          </div>
+                        </td>
 
-                      {/* Status */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${item.status === "ACTIVE"
-                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                          : "bg-slate-100 text-slate-600 border-slate-200"
-                          }`}>
-                          ● {item.status}
-                        </span>
-                      </td>
+                        {/* Location */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-slate-700">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{formatCityInEnglish(item.city)}{item.district ? `, ${formatDistrictInEnglish(item.district)}` : ""}</span>
+                          </div>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedViewExec(item)}
-                            title="View Detailed Receipt & Payment Proof"
-                            className="p-1.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const match = registrations.find((r) => r.mainMembers[0]?.mobileNo?.replace(/\D/g, "") === item.mobileNo.replace(/\D/g, ""));
-                              handleSendWhatsApp(item, match);
-                            }}
-                            title="Send Receipt on WhatsApp"
-                            className="p-1.5 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
-                          >
-                            <MessageSquare className="w-4 h-4 text-emerald-600" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(item)}
-                            title="Edit Member"
-                            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteCandidate(item)}
-                            title="Delete Member"
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                        {/* Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${item.status === "ACTIVE"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
+                            }`}>
+                            ● {item.status}
+                          </span>
+                        </td>
 
-                    </tr>
-                  ))}
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedViewExec(item)}
+                              title="View Detailed Receipt & Payment Proof"
+                              className="p-1.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const match = registrations.find((r) => r.mainMembers[0]?.mobileNo?.replace(/\D/g, "") === item.mobileNo.replace(/\D/g, ""));
+                                handleSendWhatsApp(item, match);
+                              }}
+                              title="Send Receipt on WhatsApp"
+                              className="p-1.5 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
+                            >
+                              <MessageSquare className="w-4 h-4 text-emerald-600" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(item)}
+                              title="Edit Member"
+                              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteCandidate(item)}
+                              title="Delete Member"
+                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -722,122 +873,157 @@ mptmamravati.org`;
       )}
 
       {/* MODAL 3: View Executive Details & Official Receipt */}
-      {selectedViewExec && (
-        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
-          <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
+      {selectedViewExec && (() => {
+        const match = matchedReg;
+        const execIdx = executives.findIndex((e) => e.id === selectedViewExec.id);
+        const idx = execIdx >= 0 ? execIdx : 0;
+        const receiptNo = selectedViewExec.receiptNo || match?.receiptNo || `MPTM-EM-R${String(idx + 1).padStart(3, "0")}`;
+        const seriesNo = selectedViewExec.memberNo || selectedViewExec.seriesNo || match?.mainMembers[0]?.memberNo || `MPTM-EM-S${String(idx + 1).padStart(3, "0")}`;
+        const dateStr = match ? getDatePart(match) : formatDateToDDMMYYYY(selectedViewExec.createdAt);
+        const fee = match?.registrationFee || selectedViewExec.registrationFee || "1001";
 
-            {/* Modal Top Header */}
-            <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40 text-amber-300 text-lg font-bold">
-                  🚩
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-amber-200 tracking-wide drop-shadow-md">
-                    Maharashtra Prantik Tailik Mahasabha (Amravati)
-                  </h3>
-                  <p className="text-xs text-amber-300 font-bold">
-                    Receipt No: <span className="font-mono text-amber-100 font-bold">{matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`}</span> | Date: <span className="text-amber-100">{matchedReg ? getDatePart(matchedReg) : formatDateToDDMMYYYY(selectedViewExec.createdAt)}</span>
-                  </p>
-                </div>
-              </div>
+        return (
+          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleSendWhatsApp(selectedViewExec, matchedReg)}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                  title="Send Receipt to WhatsApp"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>WhatsApp</span>
-                </button>
-
-                <button
-                  onClick={handlePrint}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Print Receipt</span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedViewExec(null)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body Printable Official Receipt */}
-            <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
-
-              {/* Header Title Banner */}
-              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
-                <p className="text-xs font-bold text-amber-400">❖ Jai Santaji ❖</p>
-                <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
-                  Maharashtra Prantik Tailik Mahasabha
-                </h2>
-                <p className="text-xs text-sky-200 font-bold">Amravati Division, Amravati.</p>
-                <div className="inline-block mt-1">
-                  <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
-                    ★ Executive Member Registration Receipt
-                  </span>
-                </div>
-              </div>
-
-              {/* Top Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
-                <div>
-                  <span className="font-bold text-stone-700 text-xs">Receipt No. : </span>
-                  <span className="font-mono font-black text-stone-900 text-sm">
-                    {matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-bold text-stone-700 text-xs">Date : </span>
-                  <span className="font-bold text-stone-900 text-xs">
-                    {matchedReg ? getDatePart(matchedReg) : formatDateToDDMMYYYY(selectedViewExec.createdAt)}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-bold text-stone-700 text-xs">Registration Fee : </span>
-                  <span className="font-black text-[#7A0C0C] text-sm">
-                    ₹{matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Member Details */}
-              <div className="p-4 rounded-xl bg-white border border-amber-300 space-y-3">
-                <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1.5 flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-amber-800" />
-                  <span>Executive Member Details</span>
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="font-bold text-stone-600">Full Name : </span>
-                    <span className="font-black text-stone-900 text-sm">{selectedViewExec.fullName}</span>
+              {/* Modal Top Header */}
+              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40 text-amber-300 text-lg font-bold">
+                    🚩
                   </div>
                   <div>
-                    <span className="font-bold text-stone-600">Designation : </span>
-                    <span className="font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-block">
-                      {formatDesignationInEnglish(selectedViewExec.designation)}
+                    <h3 className="text-base sm:text-lg font-black text-amber-200 tracking-wide drop-shadow-md">
+                      Maharashtra Prantik Tailik Mahasabha (Amravati)
+                    </h3>
+                    <p className="text-xs text-amber-300 font-bold flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span>Receipt: <span className="font-mono text-amber-100 font-bold">{receiptNo}</span></span>
+                      <span>•</span>
+                      <span>Series: <span className="font-mono text-amber-100 font-bold">{seriesNo}</span></span>
+                      <span>•</span>
+                      <span>Date: <span className="text-amber-100">{dateStr}</span></span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSendWhatsApp(selectedViewExec, match)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    title="Send Receipt to WhatsApp"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="hidden sm:inline">WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer disabled:opacity-50"
+                    title="Download Receipt PDF file"
+                  >
+                    <Download className={`w-4 h-4 ${downloadingPdf ? "animate-bounce" : ""}`} />
+                    <span>{downloadingPdf ? "Downloading..." : "Download PDF"}</span>
+                  </button>
+
+                  <button
+                    onClick={handlePrint}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span className="hidden sm:inline">Print Receipt</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedViewExec(null)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body Printable Official Receipt */}
+              <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
+
+                {/* Header Title Banner */}
+                <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
+                  <p className="text-xs font-bold text-amber-400">❖ Jai Santaji ❖</p>
+                  <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
+                    Maharashtra Prantik Tailik Mahasabha
+                  </h2>
+                  <p className="text-xs text-sky-200 font-bold">Amravati Division, Amravati.</p>
+                  <div className="inline-block mt-1">
+                    <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
+                      ★ Executive Member Registration Receipt
+                    </span>
+                  </div>
+                </div>
+
+                {/* Top Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs block">Receipt No. : </span>
+                    <span className="font-mono font-black text-amber-950 text-sm">
+                      {receiptNo}
                     </span>
                   </div>
                   <div>
-                    <span className="font-bold text-stone-600">Mobile Number : </span>
-                    <a href={`tel:${selectedViewExec.mobileNo}`} className="font-mono font-bold text-stone-900 hover:underline">
-                      {selectedViewExec.mobileNo}
-                    </a>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-600">City / District : </span>
-                    <span className="font-bold text-stone-900">
-                      {formatEnglishText(selectedViewExec.city)}{selectedViewExec.district ? `, ${formatEnglishText(selectedViewExec.district)}` : ""}
+                    <span className="font-bold text-stone-700 text-xs block">Series / Member No. : </span>
+                    <span className="font-mono font-black text-indigo-950 text-sm">
+                      {seriesNo}
                     </span>
                   </div>
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs block">Date : </span>
+                    <span className="font-bold text-stone-900 text-xs">
+                      {dateStr}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-stone-700 text-xs block">Registration Fee : </span>
+                    <span className="font-black text-[#7A0C0C] text-sm">
+                      ₹{fee}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Member Details */}
+                <div className="p-4 rounded-xl bg-white border border-amber-300 space-y-3">
+                  <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1.5 flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-amber-800" />
+                    <span>Executive Member Details</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="font-bold text-stone-600">Full Name : </span>
+                      <span className="font-black text-stone-900 text-sm">{selectedViewExec.fullName}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">Designation : </span>
+                      <span className="font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-block">
+                        {formatDesignationInEnglish(selectedViewExec.designation)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">Member Series No : </span>
+                      <span className="font-mono font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
+                        {seriesNo}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">Mobile Number : </span>
+                      <a href={`tel:${selectedViewExec.mobileNo}`} className="font-mono font-bold text-stone-900 hover:underline">
+                        {selectedViewExec.mobileNo}
+                      </a>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">City / District : </span>
+                      <span className="font-bold text-stone-900">
+                        {formatEnglishText(selectedViewExec.city)}{selectedViewExec.district ? `, ${formatEnglishText(selectedViewExec.district)}` : ""}
+                      </span>
+                    </div>
                   {matchedReg?.address && (
                     <div className="sm:col-span-2">
                       <span className="font-bold text-stone-600">Full Address : </span>
@@ -934,7 +1120,7 @@ mptmamravati.org`;
             </div>
           </div>
         </div>
-      )}
+      ); })()}
 
       {/* ZOOMED PAYMENT SCREENSHOT MODAL */}
       {screenshotZoom && (

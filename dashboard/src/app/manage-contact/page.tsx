@@ -34,6 +34,8 @@ interface ContactMessageItem {
   name: string;
   email: string;
   phone: string;
+  city?: string;
+  district?: string;
   subject?: string;
   message: string;
   status: "UNREAD" | "READ";
@@ -228,6 +230,8 @@ export default function ManageContactPage() {
         m.name.toLowerCase().includes(q) ||
         m.email.toLowerCase().includes(q) ||
         m.phone.includes(q) ||
+        (m.city && m.city.toLowerCase().includes(q)) ||
+        (m.district && m.district.toLowerCase().includes(q)) ||
         (m.subject && m.subject.toLowerCase().includes(q));
       return matchStatus && matchSearch;
     });
@@ -505,6 +509,11 @@ export default function ManageContactPage() {
                                 {msg.phone}
                               </a>
                             </div>
+                            {(msg.city || msg.district) && (
+                              <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                📍 {[msg.city, msg.district].filter(Boolean).join(", ")}
+                              </div>
+                            )}
                           </td>
 
                           {/* Subject & Message */}
@@ -629,10 +638,18 @@ export default function ManageContactPage() {
                   </a>
                 </div>
 
-                {/* Date */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">Submitted On:</span>
-                  <span className="font-bold text-slate-800">{new Date(viewingMsg.createdAt).toLocaleString("en-IN")}</span>
+                {/* Date & Location */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-500">Submitted On:</span>
+                    <span className="font-bold text-slate-800">{new Date(viewingMsg.createdAt).toLocaleString("en-IN")}</span>
+                  </div>
+                  {(viewingMsg.city || viewingMsg.district) && (
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                      <span className="font-semibold text-slate-500">Location:</span>
+                      <span className="font-bold text-slate-800">{[viewingMsg.city, viewingMsg.district].filter(Boolean).join(", ")}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Message Body */}
