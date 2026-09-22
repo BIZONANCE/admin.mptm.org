@@ -88,8 +88,14 @@ export interface DonationItem {
   receiptNo: string;
   name: string;
   mobileNo: string;
+  address?: string | null;
+  gaav?: string | null;
+  taluka?: string | null;
   city: string;
   district?: string | null;
+  state?: string | null;
+  country?: string | null;
+  pincode?: string | null;
   amount: number;
   amountInWords: string;
   paymentScreenshot?: string | null;
@@ -103,8 +109,14 @@ export interface ExecutiveMemberItem {
   fullName: string;
   designation: string;
   mobileNo: string;
+  address?: string | null;
+  gaav?: string | null;
+  taluka?: string | null;
   city: string;
   district: string;
+  state?: string | null;
+  country?: string | null;
+  pincode?: string | null;
   photoUrl?: string | null;
   status: string;
   receiptNo?: string | null;
@@ -114,7 +126,6 @@ export interface ExecutiveMemberItem {
   paymentMethod?: string | null;
   paymentScreenshot?: string | null;
   transactionId?: string | null;
-  address?: string | null;
   createdAt: string;
   updatedAt: string;
 }

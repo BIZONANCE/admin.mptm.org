@@ -107,10 +107,16 @@ export default function ManageDonationsPage() {
         item.receiptNo.toLowerCase().includes(q) ||
         item.name.toLowerCase().includes(q) ||
         item.mobileNo.toLowerCase().includes(q) ||
+        (item.address || "").toLowerCase().includes(q) ||
+        (item.gaav || "").toLowerCase().includes(q) ||
+        (item.taluka || "").toLowerCase().includes(q) ||
         item.city.toLowerCase().includes(q) ||
         formatCityInEnglish(item.city).toLowerCase().includes(q) ||
         (item.district || "").toLowerCase().includes(q) ||
         distEng.toLowerCase().includes(q) ||
+        (item.state || "").toLowerCase().includes(q) ||
+        (item.country || "").toLowerCase().includes(q) ||
+        (item.pincode || "").toLowerCase().includes(q) ||
         String(item.amount).includes(q);
 
       const matchesDistrict =
@@ -326,17 +332,20 @@ export default function ManageDonationsPage() {
                 )}
               </div>
             ) : (
-              <table className="w-full text-left border-collapse min-w-[900px]">
+              <table className="w-full text-left border-collapse min-w-[1100px]">
                 <thead>
                   <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-extrabold border-b border-slate-300">
-                    <th className="py-4 px-5">Receipt No.</th>
-                    <th className="py-4 px-5">Donor Name</th>
-                    <th className="py-4 px-5">Mobile Number</th>
-                    <th className="py-4 px-5">City / Location</th>
-                    <th className="py-4 px-5">Amount</th>
-                    <th className="py-4 px-5">Payment Proof</th>
-                    <th className="py-4 px-5">Date</th>
-                    <th className="py-4 px-5 text-center">Action</th>
+                    <th className="py-4 px-4">Receipt No.</th>
+                    <th className="py-4 px-4">Donor Name</th>
+                    <th className="py-4 px-4">Mobile Number</th>
+                    <th className="py-4 px-4">Address</th>
+                    <th className="py-4 px-4">Village / Taluka</th>
+                    <th className="py-4 px-4">City / District</th>
+                    <th className="py-4 px-4">State / Pin</th>
+                    <th className="py-4 px-4">Amount</th>
+                    <th className="py-4 px-4">Payment Proof</th>
+                    <th className="py-4 px-4">Date</th>
+                    <th className="py-4 px-4 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
@@ -344,14 +353,14 @@ export default function ManageDonationsPage() {
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors duration-150 group">
                       
                       {/* Receipt No */}
-                      <td className="py-4 px-5 font-mono font-bold text-indigo-700 whitespace-nowrap">
-                        <span className="bg-indigo-50/90 text-indigo-800 px-3 py-1 rounded-xl border border-indigo-200/80 shadow-2xs">
+                      <td className="py-4 px-4 font-mono font-bold text-indigo-700 whitespace-nowrap">
+                        <span className="bg-indigo-50/90 text-indigo-800 px-2.5 py-1 rounded-xl border border-indigo-200/80 shadow-2xs">
                           {item.receiptNo}
                         </span>
                       </td>
 
                       {/* Donor Name */}
-                      <td className="py-4 px-5 font-bold text-slate-900 whitespace-nowrap">
+                      <td className="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                             {item.name.charAt(0).toUpperCase()}
@@ -363,7 +372,7 @@ export default function ManageDonationsPage() {
                       </td>
 
                       {/* Mobile */}
-                      <td className="py-4 px-5 font-bold text-slate-700 whitespace-nowrap">
+                      <td className="py-4 px-4 font-bold text-slate-700 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <a
@@ -375,8 +384,18 @@ export default function ManageDonationsPage() {
                         </div>
                       </td>
 
+                      {/* Address */}
+                      <td className="py-4 px-4 text-slate-700 max-w-[180px] truncate" title={item.address || "-"}>
+                        {item.address || <span className="text-slate-400 italic">-</span>}
+                      </td>
+
+                      {/* Village / Taluka */}
+                      <td className="py-4 px-4 text-slate-700 whitespace-nowrap">
+                        {[item.gaav, item.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
+                      </td>
+
                       {/* City & District */}
-                      <td className="py-4 px-5 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-slate-700">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-semibold">
@@ -387,6 +406,11 @@ export default function ManageDonationsPage() {
                             </span>
                           </span>
                         </div>
+                      </td>
+
+                      {/* State & Pincode */}
+                      <td className="py-4 px-4 text-slate-700 whitespace-nowrap">
+                        {[item.state, item.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400 italic">-</span>}
                       </td>
 
                       {/* Amount */}

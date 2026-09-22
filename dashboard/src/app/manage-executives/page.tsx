@@ -87,8 +87,14 @@ export default function ManageExecutivesPage() {
     fullName: "",
     designation: "Executive Member",
     mobileNo: "",
+    address: "",
+    gaav: "",
+    taluka: "",
     city: "Amravati",
     district: "Amravati",
+    state: "Maharashtra",
+    country: "India",
+    pincode: "",
     photoUrl: "",
     status: "ACTIVE",
   });
@@ -197,10 +203,16 @@ export default function ManageExecutivesPage() {
         item.designation.toLowerCase().includes(q) ||
         desigEng.includes(q) ||
         item.mobileNo.includes(q) ||
+        (item.address || "").toLowerCase().includes(q) ||
+        (item.gaav || "").toLowerCase().includes(q) ||
+        (item.taluka || "").toLowerCase().includes(q) ||
         item.city.toLowerCase().includes(q) ||
         cityEng.includes(q) ||
         item.district.toLowerCase().includes(q) ||
         distEng.includes(q) ||
+        (item.state || "").toLowerCase().includes(q) ||
+        (item.country || "").toLowerCase().includes(q) ||
+        (item.pincode || "").toLowerCase().includes(q) ||
         recNo.toLowerCase().includes(q) ||
         serNo.toLowerCase().includes(q);
 
@@ -307,8 +319,14 @@ mptmamravati.org`;
       fullName: "",
       designation: "Executive Member",
       mobileNo: "",
+      address: "",
+      gaav: "",
+      taluka: "",
       city: "Amravati",
       district: "Amravati",
+      state: "Maharashtra",
+      country: "India",
+      pincode: "",
       photoUrl: "",
       status: "ACTIVE",
     });
@@ -321,8 +339,14 @@ mptmamravati.org`;
       fullName: member.fullName,
       designation: member.designation,
       mobileNo: member.mobileNo,
+      address: member.address || "",
+      gaav: member.gaav || "",
+      taluka: member.taluka || "",
       city: member.city,
       district: member.district,
+      state: member.state || "Maharashtra",
+      country: member.country || "India",
+      pincode: member.pincode || "",
       photoUrl: member.photoUrl || "",
       status: member.status || "ACTIVE",
     });
@@ -552,14 +576,17 @@ mptmamravati.org`;
                 <p className="text-xs text-slate-500">Click "Add Executive Member" to create new committee entries.</p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse min-w-[850px]">
+              <table className="w-full text-left border-collapse min-w-[1100px]">
                 <thead>
                   <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
                     <th className="py-3 px-4">Member Name</th>
                     <th className="py-3 px-4">Receipt &amp; Series No.</th>
                     <th className="py-3 px-4">Designation</th>
                     <th className="py-3 px-4">Mobile Number</th>
+                    <th className="py-3 px-4">Address</th>
+                    <th className="py-3 px-4">Village / Taluka</th>
                     <th className="py-3 px-4">City / District</th>
+                    <th className="py-3 px-4">State / Pin</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
@@ -630,12 +657,27 @@ mptmamravati.org`;
                           </div>
                         </td>
 
-                        {/* Location */}
+                        {/* Address */}
+                        <td className="py-3.5 px-4 text-slate-700 max-w-[160px] truncate" title={item.address || match?.address || "-"}>
+                          {item.address || match?.address || <span className="text-slate-400 italic">-</span>}
+                        </td>
+
+                        {/* Village / Taluka */}
+                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">
+                          {[item.gaav || match?.gaav, item.taluka || match?.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
+                        </td>
+
+                        {/* City / District */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-slate-700">
                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{formatCityInEnglish(item.city)}, {formatDistrictInEnglish(item.district, item.city)}</span>
                           </div>
+                        </td>
+
+                        {/* State & Pincode */}
+                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">
+                          {[item.state || match?.state, item.pincode || match?.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400 italic">-</span>}
                         </td>
 
                         {/* Status */}
@@ -772,6 +814,42 @@ mptmamravati.org`;
                 />
               </div>
 
+              {/* Address */}
+              <div className="space-y-1">
+                <label className="block">Address:</label>
+                <textarea
+                  rows={2}
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Full address"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600 text-xs resize-none"
+                />
+              </div>
+
+              {/* Gaav & Taluka */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block">Village / Gaav:</label>
+                  <input
+                    type="text"
+                    value={formData.gaav}
+                    onChange={(e) => setFormData({ ...formData, gaav: e.target.value })}
+                    placeholder="Village name"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block">Taluka:</label>
+                  <input
+                    type="text"
+                    value={formData.taluka}
+                    onChange={(e) => setFormData({ ...formData, taluka: e.target.value })}
+                    placeholder="Taluka name"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
               {/* City & District */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -792,6 +870,42 @@ mptmamravati.org`;
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
                     placeholder="e.g. Amravati"
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              {/* State, Country & Pincode */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="block">State:</label>
+                  <input
+                    type="text"
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="State"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block">Country:</label>
+                  <input
+                    type="text"
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    placeholder="Country"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block">Pincode:</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={formData.pincode}
+                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                    placeholder="Pincode"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600 font-mono"
                   />
                 </div>
               </div>
