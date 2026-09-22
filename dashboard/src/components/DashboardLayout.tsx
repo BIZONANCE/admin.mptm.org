@@ -232,110 +232,112 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <RefreshCw className={`w-5 h-5 ${isRefreshing ? "animate-spin text-red-600" : ""}`} />
             </button>
 
-            {/* Notification Bell Icon */}
-            <div className="relative" ref={notificationRef}>
-              <button
-                onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
-                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition focus:outline-none relative"
-                title="Website Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </button>
+            {/* Notification Bell Icon (Super Admin Only) */}
+            {isSuperAdmin && (
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={() => setNotificationDropdownOpen(!notificationDropdownOpen)}
+                  className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition focus:outline-none relative"
+                  title="Website Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-              {/* Notification Popover Dropdown */}
-              {notificationDropdownOpen && (
-                <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-blue-600" />
-                      <h4 className="text-xs font-bold text-slate-800">
-                        Website Application Notifications
-                      </h4>
+                {/* Notification Popover Dropdown */}
+                {notificationDropdownOpen && (
+                  <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        <h4 className="text-xs font-bold text-slate-800">
+                          Website Application Notifications
+                        </h4>
+                      </div>
+
+                      {unreadCount > 0 ? (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1 transition"
+                        >
+                          <CheckCheck className="w-3 h-3" />
+                          Mark All Read ({unreadCount})
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <CheckCheck className="w-3 h-3" />
+                          All Read
+                        </span>
+                      )}
                     </div>
 
-                    {unreadCount > 0 ? (
+                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                      {unreadRegistrations.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                          <p className="font-semibold text-slate-700">No Pending Notifications</p>
+                          <p className="text-[11px] text-slate-400">All new applications have been read.</p>
+                        </div>
+                      ) : (
+                        unreadRegistrations.slice(0, 6).map((reg) => {
+                          const main = reg.mainMembers[0] || { fullName: "New Member", memberNo: "" };
+                          return (
+                            <div
+                              key={reg.id}
+                              onClick={() => handleMarkAsRead(reg.id)}
+                              className="p-3 bg-blue-50/40 hover:bg-blue-50/80 transition cursor-pointer flex items-start gap-3 group border-l-2 border-blue-500"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5 border border-amber-200">
+                                <Globe className="w-4 h-4 text-amber-700" />
+                              </div>
+                              <div className="flex-1 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-slate-900 group-hover:text-blue-700">
+                                    {main.fullName}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                    {reg.receiptNo}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 mt-0.5">
+                                  New member registration application received from main website.
+                                </p>
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    {getDatePart(reg)} {getTimePart(reg)}
+                                  </span>
+                                  <span className="font-semibold text-emerald-700">
+                                    ₹{reg.registrationFee} ({reg.paymentMethod})
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="p-2 border-t border-slate-100 bg-slate-50">
                       <button
-                        onClick={handleMarkAllAsRead}
-                        className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1 transition"
+                        onClick={() => {
+                          router.push("/registrations");
+                          setNotificationDropdownOpen(false);
+                        }}
+                        className="w-full text-center text-xs font-bold text-blue-700 hover:text-blue-900 py-1.5 rounded-lg hover:bg-blue-100/60 transition flex items-center justify-center gap-1"
                       >
-                        <CheckCheck className="w-3 h-3" />
-                        Mark All Read ({unreadCount})
+                        <span>View All Registrations ({registrations.length})</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </button>
-                    ) : (
-                      <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                        <CheckCheck className="w-3 h-3" />
-                        All Read
-                      </span>
-                    )}
+                    </div>
                   </div>
-
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                    {unreadRegistrations.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-2">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                        <p className="font-semibold text-slate-700">No Pending Notifications</p>
-                        <p className="text-[11px] text-slate-400">All new applications have been read.</p>
-                      </div>
-                    ) : (
-                      unreadRegistrations.slice(0, 6).map((reg) => {
-                        const main = reg.mainMembers[0] || { fullName: "New Member", memberNo: "" };
-                        return (
-                          <div
-                            key={reg.id}
-                            onClick={() => handleMarkAsRead(reg.id)}
-                            className="p-3 bg-blue-50/40 hover:bg-blue-50/80 transition cursor-pointer flex items-start gap-3 group border-l-2 border-blue-500"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5 border border-amber-200">
-                              <Globe className="w-4 h-4 text-amber-700" />
-                            </div>
-                            <div className="flex-1 text-xs">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900 group-hover:text-blue-700">
-                                  {main.fullName}
-                                </span>
-                                <span className="text-[10px] font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
-                                  {reg.receiptNo}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-600 mt-0.5">
-                                New member registration application received from main website.
-                              </p>
-                              <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  {getDatePart(reg)} {getTimePart(reg)}
-                                </span>
-                                <span className="font-semibold text-emerald-700">
-                                  ₹{reg.registrationFee} ({reg.paymentMethod})
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  <div className="p-2 border-t border-slate-100 bg-slate-50">
-                    <button
-                      onClick={() => {
-                        router.push("/registrations");
-                        setNotificationDropdownOpen(false);
-                      }}
-                      className="w-full text-center text-xs font-bold text-blue-700 hover:text-blue-900 py-1.5 rounded-lg hover:bg-blue-100/60 transition flex items-center justify-center gap-1"
-                    >
-                      <span>View All Registrations ({registrations.length})</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Profile Logo Avatar */}
             <div className="relative" ref={profileRef}>
