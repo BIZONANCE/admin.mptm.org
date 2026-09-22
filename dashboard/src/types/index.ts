@@ -26,8 +26,13 @@ export interface MemberRegistration {
   registrationFee: number;
   amountInWords: string;
   address: string;
+  gaav?: string | null;
+  taluka?: string | null;
   city?: string | null;
   district?: string | null;
+  state?: string | null;
+  country?: string | null;
+  pincode?: string | null;
   paymentMethod: string;
   paymentScreenshot?: string | null;
   referredBy?: string | null;

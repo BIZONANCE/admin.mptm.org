@@ -271,8 +271,13 @@ mptmamravati.org`;
         const matchesGeneral =
           reg.receiptNo.toLowerCase().includes(query) ||
           reg.address.toLowerCase().includes(query) ||
+          (reg.gaav || "").toLowerCase().includes(query) ||
+          (reg.taluka || "").toLowerCase().includes(query) ||
           (reg.city || "").toLowerCase().includes(query) ||
           (reg.district || "").toLowerCase().includes(query) ||
+          (reg.state || "").toLowerCase().includes(query) ||
+          (reg.country || "").toLowerCase().includes(query) ||
+          (reg.pincode || "").toLowerCase().includes(query) ||
           reg.paymentMethod.toLowerCase().includes(query) ||
           reg.registrationFee.toString().includes(query) ||
           (reg.referredBy || "").toLowerCase().includes(query) ||
@@ -381,8 +386,13 @@ mptmamravati.org`;
       if (
         reg.receiptNo.toLowerCase().includes(query) ||
         reg.address.toLowerCase().includes(query) ||
+        (reg.gaav || "").toLowerCase().includes(query) ||
+        (reg.taluka || "").toLowerCase().includes(query) ||
         (reg.city || "").toLowerCase().includes(query) ||
         (reg.district || "").toLowerCase().includes(query) ||
+        (reg.state || "").toLowerCase().includes(query) ||
+        (reg.country || "").toLowerCase().includes(query) ||
+        (reg.pincode || "").toLowerCase().includes(query) ||
         reg.paymentMethod.toLowerCase().includes(query) ||
         reg.registrationFee.toString().includes(query) ||
         (reg.referredBy || "").toLowerCase().includes(query) ||
@@ -423,8 +433,13 @@ mptmamravati.org`;
       "Prabhag No",
       "Mobile No",
       "Address",
+      "Gaav",
+      "Taluka",
       "City",
       "District",
+      "State",
+      "Country",
+      "Pincode",
       "Referrer",
       "Payment Method",
       "Registration Fee",
@@ -446,8 +461,13 @@ mptmamravati.org`;
         `"${main.prabhagNo || ""}"`,
         `"${main.mobileNo || ""}"`,
         `"${(reg.address || "").replace(/"/g, '""')}"`,
+        `"${(reg.gaav || "").replace(/"/g, '""')}"`,
+        `"${(reg.taluka || "").replace(/"/g, '""')}"`,
         `"${(reg.city || "").replace(/"/g, '""')}"`,
         `"${(reg.district || "").replace(/"/g, '""')}"`,
+        `"${(reg.state || "महाराष्ट्र").replace(/"/g, '""')}"`,
+        `"${(reg.country || "भारत").replace(/"/g, '""')}"`,
+        `"${(reg.pincode || "").replace(/"/g, '""')}"`,
         `"${reg.referredBy || "Direct Website"}"`,
         `"${formatPaymentMethod(reg.paymentMethod)}"`,
         `"${reg.registrationFee}"`,
@@ -714,16 +734,24 @@ mptmamravati.org`;
               <table className="w-full text-left border-collapse min-w-[1050px]">
                 <thead>
                   <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
-                    <th className="py-3.5 px-4 w-12 text-center">Sr. No.</th>
-                    <th className="py-3.5 px-4">Date & Time</th>
-                    <th className="py-3.5 px-4">Receipt No.</th>
-                    <th className="py-3.5 px-4">Main Member & Member No.</th>
-                    <th className="py-3.5 px-4">Mobile & Address</th>
-                    <th className="py-3.5 px-4">Prabhag</th>
-                    <th className="py-3.5 px-4">Referrer</th>
-                    <th className="py-3.5 px-4">Fee & Payment</th>
-                    <th className="py-3.5 px-4 text-center">Family</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+                    <th className="py-3.5 px-3 w-10 text-center">Sr. No.</th>
+                    <th className="py-3.5 px-3">Date & Time</th>
+                    <th className="py-3.5 px-3">Receipt No.</th>
+                    <th className="py-3.5 px-3">Main Member & Member No.</th>
+                    <th className="py-3.5 px-3">Mobile No.</th>
+                    <th className="py-3.5 px-3">Address (पत्ता)</th>
+                    <th className="py-3.5 px-3">Gaav (गाव)</th>
+                    <th className="py-3.5 px-3">Taluka (तालुका)</th>
+                    <th className="py-3.5 px-3">City (शहर)</th>
+                    <th className="py-3.5 px-3">District (जिल्हा)</th>
+                    <th className="py-3.5 px-3">State (राज्य)</th>
+                    <th className="py-3.5 px-3">Country (देश)</th>
+                    <th className="py-3.5 px-3">Pincode (पिनकोड)</th>
+                    <th className="py-3.5 px-3">Prabhag</th>
+                    <th className="py-3.5 px-3">Referrer</th>
+                    <th className="py-3.5 px-3">Fee & Payment</th>
+                    <th className="py-3.5 px-3 text-center">Family</th>
+                    <th className="py-3.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
@@ -738,12 +766,12 @@ mptmamravati.org`;
 
                     return (
                       <tr key={reg.id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-500 align-top">
+                        <td className="py-3.5 px-3 text-center font-bold text-slate-500 align-top">
                           {index + 1}
                         </td>
 
                         {/* 1. DATE & TIME COLUMN */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
                           <div className="flex flex-col gap-0.5">
                             <span className="font-bold text-slate-900 text-xs sm:text-sm">
                               {getDatePart(reg)}
@@ -754,15 +782,15 @@ mptmamravati.org`;
                           </div>
                         </td>
 
-                        {/* 2. RECEIPT NO COLUMN (BESIDE DATE) */}
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        {/* 2. RECEIPT NO COLUMN */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
                           <span className="font-mono font-bold text-slate-900 text-xs bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs inline-block">
                             {reg.receiptNo}
                           </span>
                         </td>
 
-                        {/* 3. MAIN MEMBER & MEMBER NO COLUMN (BESIDE RECEIPT NO) */}
-                        <td className="py-3.5 px-4 align-top">
+                        {/* 3. MAIN MEMBER & MEMBER NO COLUMN */}
+                        <td className="py-3.5 px-3 align-top">
                           <div className="flex flex-col gap-0.5">
                             <span className="font-bold text-slate-900 text-xs sm:text-sm">
                               {main.fullName}
@@ -775,42 +803,57 @@ mptmamravati.org`;
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4 align-top max-w-xs">
-                          <div className="flex flex-col gap-1.5">
-                            {main.mobileNo && (
-                              <a
-                                href={`tel:${main.mobileNo}`}
-                                className="text-xs font-bold text-slate-800 hover:text-slate-900 flex items-center gap-1"
-                              >
-                                <Phone className="w-3.5 h-3.5 text-slate-500" />
-                                {main.mobileNo}
-                              </a>
-                            )}
-                            <details className="group relative">
-                              <summary className="list-none inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 px-2.5 py-1 rounded-lg cursor-pointer select-none transition">
-                                <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Address</span>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-open:rotate-180" />
-                              </summary>
-                              <div className="mt-1.5 text-[11px] text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-2xs animate-in fade-in duration-150">
-                                <div>
-                                  <span className="font-bold text-slate-800">Address: </span>
-                                  <span>{formatAddressInEnglish(reg.address)}</span>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-x-2 text-[11px] pt-1 border-t border-slate-200/80">
-                                  <span>
-                                    <span className="font-bold text-slate-800">City: </span>
-                                    <span className="font-bold text-indigo-900">{formatCityInEnglish(reg.city)}</span>
-                                  </span>
-                                  <span>•</span>
-                                  <span>
-                                    <span className="font-bold text-slate-800">District: </span>
-                                    <span className="font-bold text-indigo-900">{formatDistrictInEnglish(reg.district, reg.city)}</span>
-                                  </span>
-                                </div>
-                              </div>
-                            </details>
-                          </div>
+                        {/* 4. MOBILE NO */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
+                          {main.mobileNo ? (
+                            <a
+                              href={`tel:${main.mobileNo}`}
+                              className="text-xs font-bold text-slate-800 hover:text-slate-900 flex items-center gap-1"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-slate-500" />
+                              {main.mobileNo}
+                            </a>
+                          ) : "-"}
+                        </td>
+
+                        {/* 5. ADDRESS (पत्ता) */}
+                        <td className="py-3.5 px-3 align-top min-w-[130px] text-xs font-semibold text-slate-800">
+                          {reg.address || "-"}
+                        </td>
+
+                        {/* 6. GAAV (गाव) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
+                          {reg.gaav || "-"}
+                        </td>
+
+                        {/* 7. TALUKA (तालुका) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
+                          {reg.taluka || "-"}
+                        </td>
+
+                        {/* 8. CITY (शहर) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-bold text-indigo-900">
+                          {reg.city || "-"}
+                        </td>
+
+                        {/* 9. DISTRICT (जिल्हा) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-bold text-indigo-900">
+                          {reg.district || "-"}
+                        </td>
+
+                        {/* 10. STATE (राज्य) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
+                          {reg.state || "महाराष्ट्र"}
+                        </td>
+
+                        {/* 11. COUNTRY (देश) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
+                          {reg.country || "भारत"}
+                        </td>
+
+                        {/* 12. PINCODE (पिनकोड) */}
+                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-mono font-bold text-slate-800">
+                          {reg.pincode || "-"}
                         </td>
 
                         <td className="py-3.5 px-4 align-top">
@@ -1046,20 +1089,40 @@ mptmamravati.org`;
                   </div>
                 </div>
 
-                {/* Address, City, District & Amount in Words */}
-                <div className="space-y-2 p-3.5 bg-amber-50/70 rounded-xl border border-amber-300 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="sm:col-span-3">
+                {/* Address, Gaav, Taluka, City, District, State, Country, Pincode & Amount in Words */}
+                <div className="space-y-2.5 p-3.5 bg-amber-50/70 rounded-xl border border-amber-300 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                    <div className="sm:col-span-2 lg:col-span-4">
                       <span className="font-bold text-stone-800">संपूर्ण पत्ता (Address) : </span>
-                      <span className="font-semibold text-stone-900">{formatAddressInEnglish(selectedReg.address)}</span>
+                      <span className="font-semibold text-stone-900">{selectedReg.address || "-"}</span>
                     </div>
                     <div>
-                      <span className="font-bold text-stone-800">शहर / गाव (City / Village) : </span>
-                      <span className="font-extrabold text-[#7A0C0C]">{formatCityInEnglish(selectedReg.city)}</span>
+                      <span className="font-bold text-stone-800">गाव (Gaav) : </span>
+                      <span className="font-semibold text-stone-900">{selectedReg.gaav || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">तालुका (Taluka) : </span>
+                      <span className="font-semibold text-stone-900">{selectedReg.taluka || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">शहर / गाव (City) : </span>
+                      <span className="font-extrabold text-[#7A0C0C]">{selectedReg.city || "-"}</span>
                     </div>
                     <div>
                       <span className="font-bold text-stone-800">जिल्हा (District) : </span>
-                      <span className="font-extrabold text-[#7A0C0C]">{formatDistrictInEnglish(selectedReg.district, selectedReg.city)}</span>
+                      <span className="font-extrabold text-[#7A0C0C]">{selectedReg.district || "-"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">राज्य (State) : </span>
+                      <span className="font-semibold text-stone-900">{selectedReg.state || "महाराष्ट्र"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">देश (Country) : </span>
+                      <span className="font-semibold text-stone-900">{selectedReg.country || "भारत"}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-800">पिनकोड (Pincode) : </span>
+                      <span className="font-mono font-bold text-stone-900">{selectedReg.pincode || "-"}</span>
                     </div>
                   </div>
                   <div className="border-t border-amber-300/80 pt-2">
