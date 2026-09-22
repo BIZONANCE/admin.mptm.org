@@ -562,15 +562,50 @@ export function getCityOptions(districtName: string, lang: "mr" | "en" = "mr"): 
   return [];
 }
 
-export function formatDistrictInEnglish(mrDistrict: string | null | undefined): string {
-  if (!mrDistrict) return "-";
-  const clean = mrDistrict.trim();
-  if (!clean) return "-";
-  const distObj = MAHARASHTRA_DISTRICTS.find(
-    (d) => d.district.mr.toLowerCase() === clean.toLowerCase() || d.district.en.toLowerCase() === clean.toLowerCase()
+export function getDistrictForCity(city: string | null | undefined): DistrictData | undefined {
+  if (!city) return undefined;
+  const cleanCity = city.trim().toLowerCase();
+  if (!cleanCity) return undefined;
+  return MAHARASHTRA_DISTRICTS.find((d) =>
+    d.cities.some(
+      (c) => c.mr.toLowerCase() === cleanCity || c.en.toLowerCase() === cleanCity
+    )
   );
-  if (distObj) return distObj.district.en;
-  return clean;
+}
+
+export function formatDistrictInEnglish(
+  mrDistrict: string | null | undefined,
+  mrCity?: string | null | undefined
+): string {
+  const cleanCity = mrCity?.trim();
+  const inferredDistObj = cleanCity ? getDistrictForCity(cleanCity) : undefined;
+
+  const cleanDist = mrDistrict?.trim();
+
+  if (cleanDist) {
+    const distObj = MAHARASHTRA_DISTRICTS.find(
+      (d) =>
+        d.district.mr.toLowerCase() === cleanDist.toLowerCase() ||
+        d.district.en.toLowerCase() === cleanDist.toLowerCase()
+    );
+
+    if (distObj) {
+      if (
+        (distObj.district.en === "Amravati" || distObj.district.mr === "अमरावती") &&
+        inferredDistObj &&
+        inferredDistObj.district.en !== "Amravati"
+      ) {
+        return inferredDistObj.district.en;
+      }
+      return distObj.district.en;
+    }
+  }
+
+  if (inferredDistObj) {
+    return inferredDistObj.district.en;
+  }
+
+  return cleanDist || "-";
 }
 
 export function formatCityInEnglish(mrCity: string | null | undefined): string {

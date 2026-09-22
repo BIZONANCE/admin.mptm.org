@@ -77,7 +77,7 @@ export default function ManageDonationsPage() {
   const uniqueDistricts = useMemo(() => {
     const dists = new Set<string>();
     donations.forEach((item) => {
-      const distEng = formatDistrictInEnglish(item.district);
+      const distEng = formatDistrictInEnglish(item.district, item.city);
       if (distEng && distEng !== "-") dists.add(distEng);
     });
     return Array.from(dists).sort();
@@ -88,7 +88,7 @@ export default function ManageDonationsPage() {
     const cities = new Set<string>();
     donations.forEach((item) => {
       if (selectedDistrictFilter !== "ALL") {
-        const distEng = formatDistrictInEnglish(item.district);
+        const distEng = formatDistrictInEnglish(item.district, item.city);
         if (distEng !== selectedDistrictFilter) return;
       }
       const cityEng = formatCityInEnglish(item.city);
@@ -101,6 +101,7 @@ export default function ManageDonationsPage() {
   const filteredDonations = useMemo(() => {
     return donations.filter((item) => {
       const q = searchQuery.toLowerCase().trim();
+      const distEng = formatDistrictInEnglish(item.district, item.city);
       const matchesSearch =
         !q ||
         item.receiptNo.toLowerCase().includes(q) ||
@@ -109,12 +110,12 @@ export default function ManageDonationsPage() {
         item.city.toLowerCase().includes(q) ||
         formatCityInEnglish(item.city).toLowerCase().includes(q) ||
         (item.district || "").toLowerCase().includes(q) ||
-        formatDistrictInEnglish(item.district).toLowerCase().includes(q) ||
+        distEng.toLowerCase().includes(q) ||
         String(item.amount).includes(q);
 
       const matchesDistrict =
         selectedDistrictFilter === "ALL" ||
-        formatDistrictInEnglish(item.district).toLowerCase() === selectedDistrictFilter.toLowerCase();
+        distEng.toLowerCase() === selectedDistrictFilter.toLowerCase();
 
       const matchesCity =
         selectedCityFilter === "ALL" ||
@@ -380,9 +381,10 @@ export default function ManageDonationsPage() {
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-semibold">
                             {formatCityInEnglish(item.city)}
-                            {item.district && (
-                              <span className="text-slate-500 font-normal"> ({formatDistrictInEnglish(item.district)})</span>
-                            )}
+                            <span className="text-slate-500 font-normal">
+                              {" "}
+                              ({formatDistrictInEnglish(item.district, item.city)})
+                            </span>
                           </span>
                         </div>
                       </td>

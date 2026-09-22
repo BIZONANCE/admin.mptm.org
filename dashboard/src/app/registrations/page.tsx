@@ -194,7 +194,7 @@ mptmamravati.org`;
     const distSet = new Set<string>();
     registrations.forEach((r) => {
       if (isExecutiveRegistration(r)) return;
-      const distEng = formatDistrictInEnglish(r.district);
+      const distEng = formatDistrictInEnglish(r.district, r.city);
       if (distEng && distEng !== "-") distSet.add(distEng);
     });
     return Array.from(distSet).sort();
@@ -205,7 +205,7 @@ mptmamravati.org`;
     registrations.forEach((r) => {
       if (isExecutiveRegistration(r)) return;
       if (districtFilter !== "ALL") {
-        const distEng = formatDistrictInEnglish(r.district);
+        const distEng = formatDistrictInEnglish(r.district, r.city);
         if (distEng !== districtFilter) return;
       }
       const cityEng = formatCityInEnglish(r.city);
@@ -366,7 +366,7 @@ mptmamravati.org`;
 
       // 3. District & City Filter
       if (districtFilter !== "ALL") {
-        const distEng = formatDistrictInEnglish(reg.district);
+        const distEng = formatDistrictInEnglish(reg.district, reg.city);
         if (distEng.toLowerCase() !== districtFilter.toLowerCase()) return false;
       }
       if (cityFilter !== "ALL") {
@@ -805,7 +805,7 @@ mptmamravati.org`;
                                   <span>•</span>
                                   <span>
                                     <span className="font-bold text-slate-800">District: </span>
-                                    <span className="font-bold text-indigo-900">{formatDistrictInEnglish(reg.district)}</span>
+                                    <span className="font-bold text-indigo-900">{formatDistrictInEnglish(reg.district, reg.city)}</span>
                                   </span>
                                 </div>
                               </div>
@@ -1059,7 +1059,7 @@ mptmamravati.org`;
                     </div>
                     <div>
                       <span className="font-bold text-stone-800">जिल्हा (District) : </span>
-                      <span className="font-extrabold text-[#7A0C0C]">{formatDistrictInEnglish(selectedReg.district)}</span>
+                      <span className="font-extrabold text-[#7A0C0C]">{formatDistrictInEnglish(selectedReg.district, selectedReg.city)}</span>
                     </div>
                   </div>
                   <div className="border-t border-amber-300/80 pt-2">

@@ -148,7 +148,7 @@ export default function ManageExecutivesPage() {
   const uniqueDistricts = useMemo(() => {
     const set = new Set<string>();
     executives.forEach((e) => {
-      const distEng = formatDistrictInEnglish(e.district);
+      const distEng = formatDistrictInEnglish(e.district, e.city);
       if (distEng && distEng !== "-") set.add(distEng);
     });
     return Array.from(set).sort();
@@ -158,7 +158,7 @@ export default function ManageExecutivesPage() {
     const set = new Set<string>();
     executives.forEach((e) => {
       if (districtFilter !== "ALL") {
-        const distEng = formatDistrictInEnglish(e.district);
+        const distEng = formatDistrictInEnglish(e.district, e.city);
         if (distEng !== districtFilter) return;
       }
       const cityEng = formatCityInEnglish(e.city);
@@ -173,7 +173,7 @@ export default function ManageExecutivesPage() {
       const q = searchQuery.toLowerCase().trim();
       const desigEng = formatDesignationInEnglish(item.designation).toLowerCase();
       const cityEng = formatCityInEnglish(item.city).toLowerCase();
-      const distEng = formatDistrictInEnglish(item.district).toLowerCase();
+      const distEng = formatDistrictInEnglish(item.district, item.city).toLowerCase();
 
       const match = registrations.find((r) => {
         const main = r.mainMembers[0];
@@ -210,7 +210,7 @@ export default function ManageExecutivesPage() {
 
       const matchesDistrict =
         districtFilter === "ALL" ||
-        formatDistrictInEnglish(item.district).toLowerCase() === districtFilter.toLowerCase();
+        distEng === districtFilter.toLowerCase();
 
       const matchesCity =
         cityFilter === "ALL" ||
@@ -634,7 +634,7 @@ mptmamravati.org`;
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-slate-700">
                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{formatCityInEnglish(item.city)}{item.district ? `, ${formatDistrictInEnglish(item.district)}` : ""}</span>
+                            <span>{formatCityInEnglish(item.city)}, {formatDistrictInEnglish(item.district, item.city)}</span>
                           </div>
                         </td>
 
