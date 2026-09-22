@@ -592,7 +592,7 @@ export default function ExecutiveMemberRegisterPage() {
                 </div>
 
                 <div className="space-y-3 pt-3 border-t border-amber-200/60">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex items-center gap-2">
                       <label className="font-bold text-stone-800 whitespace-nowrap text-xs sm:text-sm">
                         गाव :
@@ -615,19 +615,6 @@ export default function ExecutiveMemberRegisterPage() {
                         value={formData.taluka}
                         onChange={(e) => setFormData((prev) => ({ ...prev, taluka: e.target.value }))}
                         placeholder="तालुक्याचे नाव प्रविष्ट करा"
-                        className={inputBase}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <label className="font-bold text-stone-800 whitespace-nowrap text-xs sm:text-sm">
-                        शहर / गाव :
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.city}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
-                        placeholder="शहर / गावाचे नाव प्रविष्ट करा"
                         className={inputBase}
                       />
                     </div>

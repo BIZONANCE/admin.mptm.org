@@ -585,7 +585,7 @@ mptmamravati.org`;
                     <th className="py-3 px-4">Mobile Number</th>
                     <th className="py-3 px-4">Address</th>
                     <th className="py-3 px-4">Village / Taluka</th>
-                    <th className="py-3 px-4">City / District</th>
+                    <th className="py-3 px-4">District</th>
                     <th className="py-3 px-4">State / Pin</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4 text-center">Actions</th>
@@ -667,11 +667,11 @@ mptmamravati.org`;
                           {[item.gaav || match?.gaav, item.taluka || match?.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
                         </td>
 
-                        {/* City / District */}
+                        {/* District */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-slate-700">
                             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{formatCityInEnglish(item.city)}, {formatDistrictInEnglish(item.district, item.city)}</span>
+                            <span>{formatDistrictInEnglish(item.district, item.city)}</span>
                           </div>
                         </td>
 
@@ -850,28 +850,16 @@ mptmamravati.org`;
                 </div>
               </div>
 
-              {/* City & District */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="block">City / Town:</label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="e.g. Amravati"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block">District:</label>
-                  <input
-                    type="text"
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="e.g. Amravati"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
-                  />
-                </div>
+              {/* District */}
+              <div className="space-y-1">
+                <label className="block">District:</label>
+                <input
+                  type="text"
+                  value={formData.district}
+                  onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                  placeholder="e.g. Amravati"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-indigo-600"
+                />
               </div>
 
               {/* State, Country & Pincode */}

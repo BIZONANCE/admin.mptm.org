@@ -340,7 +340,7 @@ export default function ManageDonationsPage() {
                     <th className="py-4 px-4">Mobile Number</th>
                     <th className="py-4 px-4">Address</th>
                     <th className="py-4 px-4">Village / Taluka</th>
-                    <th className="py-4 px-4">City / District</th>
+                    <th className="py-4 px-4">District</th>
                     <th className="py-4 px-4">State / Pin</th>
                     <th className="py-4 px-4">Amount</th>
                     <th className="py-4 px-4">Payment Proof</th>
@@ -394,16 +394,12 @@ export default function ManageDonationsPage() {
                         {[item.gaav, item.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
                       </td>
 
-                      {/* City & District */}
+                      {/* District */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-slate-700">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span className="font-semibold">
-                            {formatCityInEnglish(item.city)}
-                            <span className="text-slate-500 font-normal">
-                              {" "}
-                              ({formatDistrictInEnglish(item.district, item.city)})
-                            </span>
+                            {formatDistrictInEnglish(item.district, item.city)}
                           </span>
                         </div>
                       </td>

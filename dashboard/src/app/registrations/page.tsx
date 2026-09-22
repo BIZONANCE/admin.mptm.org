@@ -742,7 +742,6 @@ mptmamravati.org`;
                     <th className="py-3.5 px-3">Address (पत्ता)</th>
                     <th className="py-3.5 px-3">Gaav (गाव)</th>
                     <th className="py-3.5 px-3">Taluka (तालुका)</th>
-                    <th className="py-3.5 px-3">City (शहर)</th>
                     <th className="py-3.5 px-3">District (जिल्हा)</th>
                     <th className="py-3.5 px-3">State (राज्य)</th>
                     <th className="py-3.5 px-3">Country (देश)</th>
@@ -829,11 +828,6 @@ mptmamravati.org`;
                         {/* 7. TALUKA (तालुका) */}
                         <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
                           {reg.taluka || "-"}
-                        </td>
-
-                        {/* 8. CITY (शहर) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-bold text-indigo-900">
-                          {reg.city || "-"}
                         </td>
 
                         {/* 9. DISTRICT (जिल्हा) */}
