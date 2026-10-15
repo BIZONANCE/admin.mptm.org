@@ -25,6 +25,7 @@ import { getApiUrl } from "../../utils/config";
 interface ContactInfoData {
   address: string;
   phone: string;
+  alternatePhone?: string;
   email: string;
   hours: string;
 }
@@ -53,6 +54,7 @@ export default function ManageContactPage() {
   const [contactInfo, setContactInfo] = useState<ContactInfoData>({
     address: "",
     phone: "",
+    alternatePhone: "",
     email: "",
     hours: "",
   });
@@ -153,6 +155,12 @@ export default function ManageContactPage() {
       return;
     }
 
+    const cleanAltPhone = (contactInfo.alternatePhone || "").replace(/\D/g, "").slice(0, 10);
+    if (contactInfo.alternatePhone && cleanAltPhone.length > 0 && cleanAltPhone.length !== 10) {
+      alert("Alternate phone number must be a valid 10-digit number if provided!");
+      return;
+    }
+
     setIsSavingInfo(true);
     try {
       const res = await fetch(`${API_URL}/api/contact/info`, {
@@ -161,6 +169,7 @@ export default function ManageContactPage() {
         body: JSON.stringify({
           ...contactInfo,
           phone: cleanPhone,
+          alternatePhone: cleanAltPhone,
         }),
       });
       const data = await res.json();
@@ -328,6 +337,29 @@ export default function ManageContactPage() {
                   pattern="[0-9]{10}"
                   inputMode="numeric"
                   placeholder="10-Digit Phone Number (e.g. 9876543210)"
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 font-mono outline-none focus:ring-2 focus:ring-slate-900 transition"
+                />
+              </div>
+
+              {/* Alternate Phone */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Alternate Mobile Phone (10-Digit) <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  value={contactInfo.alternatePhone || ""}
+                  onChange={(e) =>
+                    setContactInfo((prev) => ({
+                      ...prev,
+                      alternatePhone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                    }))
+                  }
+                  maxLength={10}
+                  minLength={10}
+                  pattern="[0-9]{10}"
+                  inputMode="numeric"
+                  placeholder="Optional 10-Digit Alternate Number (e.g. 9876543211)"
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 font-mono outline-none focus:ring-2 focus:ring-slate-900 transition"
                 />
               </div>
