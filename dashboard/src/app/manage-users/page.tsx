@@ -77,7 +77,7 @@ export default function ManageUsersPage() {
   // Delete confirmation modal state
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5015";
 
   // Fetch managed users from backend API on component mount and sync with localStorage
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function ManageUsersPage() {
         if (res.ok && data.success && Array.isArray(data.data)) {
           const savedStr = typeof window !== "undefined" ? localStorage.getItem("mptm_managed_users") : null;
           const savedList: ManagedUser[] = savedStr ? JSON.parse(savedStr) : [];
-          
+
           const mergedData = data.data.map((bu: ManagedUser) => {
             const local = savedList.find((l) => l.id === bu.id || l.email.toLowerCase() === bu.email.toLowerCase());
             return {
@@ -362,11 +362,10 @@ export default function ManageUsersPage() {
                 />
                 <label
                   htmlFor="newEmailInput"
-                  className={`absolute left-3.5 pointer-events-none transition-all duration-200 ease-in-out rounded-sm ${
-                    isEmailFocused || newEmailInput.length > 0
+                  className={`absolute left-3.5 pointer-events-none transition-all duration-200 ease-in-out rounded-sm ${isEmailFocused || newEmailInput.length > 0
                       ? "-top-2.5 text-[11px] font-bold text-blue-600 bg-white px-1.5 shadow-2xs"
                       : "top-3 text-xs sm:text-sm font-medium text-slate-400"
-                  }`}
+                    }`}
                 >
                   Enter Email Address <span className="text-red-500">*</span>
                 </label>

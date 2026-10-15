@@ -44,7 +44,7 @@ export default function DashboardHome() {
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
   const [loggedUserEmail, setLoggedUserEmail] = useState<string>("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5007";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5015";
 
   const [managedUsersCount, setManagedUsersCount] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -52,7 +52,7 @@ export default function DashboardHome() {
       if (saved) {
         try {
           return JSON.parse(saved).length;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
     return 1;
@@ -243,11 +243,10 @@ export default function DashboardHome() {
           <>
             {/* METRIC CARDS GRID - 3 Cards for Regular Users, Max 4 Cards per row for Super Admin */}
             <div
-              className={`grid gap-4 mb-8 ${
-                isSuperAdmin
+              className={`grid gap-4 mb-8 ${isSuperAdmin
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}
+                }`}
             >
               {/* Card 1: Overall Registrations & Fees */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
