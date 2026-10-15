@@ -22,6 +22,7 @@ import {
 import DashboardLayout from "../components/DashboardLayout";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart, formatPaymentMethod } from "../utils/formatters";
+import { getApiUrl } from "../utils/config";
 
 function isExecutiveRegistration(reg: MemberRegistration): boolean {
   const receipt = (reg.receiptNo || "").toUpperCase();
@@ -44,7 +45,7 @@ export default function DashboardHome() {
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(true);
   const [loggedUserEmail, setLoggedUserEmail] = useState<string>("");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5015";
+  const API_URL = getApiUrl();
 
   const [managedUsersCount, setManagedUsersCount] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -65,9 +66,11 @@ export default function DashboardHome() {
     const fetchCounts = async () => {
       try {
         const resUsers = await fetch(`${API_URL}/api/users`);
-        const dataUsers = await resUsers.json();
-        if (resUsers.ok && dataUsers.success && Array.isArray(dataUsers.data)) {
-          setManagedUsersCount(dataUsers.data.length);
+        if (resUsers.ok) {
+          const dataUsers = await resUsers.json();
+          if (dataUsers.success && Array.isArray(dataUsers.data)) {
+            setManagedUsersCount(dataUsers.data.length);
+          }
         }
       } catch (e) {
         console.error("Fetch users count error:", e);
@@ -75,9 +78,11 @@ export default function DashboardHome() {
 
       try {
         const resCareer = await fetch(`${API_URL}/api/career/applications`);
-        const dataCareer = await resCareer.json();
-        if (resCareer.ok && dataCareer.success && typeof dataCareer.count === "number") {
-          setCareerAppsCount(dataCareer.count);
+        if (resCareer.ok) {
+          const dataCareer = await resCareer.json();
+          if (dataCareer.success && typeof dataCareer.count === "number") {
+            setCareerAppsCount(dataCareer.count);
+          }
         }
       } catch (e) {
         console.error("Fetch career apps count error:", e);
@@ -85,9 +90,11 @@ export default function DashboardHome() {
 
       try {
         const resContact = await fetch(`${API_URL}/api/contact/messages`);
-        const dataContact = await resContact.json();
-        if (resContact.ok && dataContact.success && typeof dataContact.count === "number") {
-          setContactMsgsCount(dataContact.count);
+        if (resContact.ok) {
+          const dataContact = await resContact.json();
+          if (dataContact.success && typeof dataContact.count === "number") {
+            setContactMsgsCount(dataContact.count);
+          }
         }
       } catch (e) {
         console.error("Fetch contact msgs count error:", e);

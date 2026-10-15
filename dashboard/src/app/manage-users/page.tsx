@@ -19,6 +19,7 @@ import {
 import DashboardLayout from "../../components/DashboardLayout";
 import { ManagedUser } from "../../types";
 import { formatDateToDDMMYYYY } from "../../utils/formatters";
+import { getApiUrl } from "../../utils/config";
 
 export default function ManageUsersPage() {
   const router = useRouter();
@@ -77,13 +78,17 @@ export default function ManageUsersPage() {
   // Delete confirmation modal state
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5015";
+  const API_URL = getApiUrl();
 
   // Fetch managed users from backend API on component mount and sync with localStorage
   useEffect(() => {
     const syncBackendUsers = async () => {
       try {
         const res = await fetch(`${API_URL}/api/users`);
+        if (!res.ok) {
+          console.warn(`Fetch managed users responded with status: ${res.status}`);
+          return;
+        }
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.data)) {
           const savedStr = typeof window !== "undefined" ? localStorage.getItem("mptm_managed_users") : null;

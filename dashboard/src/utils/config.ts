@@ -1,11 +1,12 @@
 export function getApiUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== "undefined") {
+  let url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!url && typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host.includes("mptmamravati.org")) return "https://api.mptmamravati.org";
-    if (host.includes("mptm.org")) return "https://api.mptm.org";
+    if (host.includes("mptmamravati.org")) url = "https://api.mptmamravati.org";
+    else if (host.includes("mptm.org")) url = "https://api.mptm.org";
   }
-  return "http://localhost:5015";
+  if (!url) url = "http://localhost:5015";
+  return url.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
 }
 
 export function getMainSiteUrl(): string {

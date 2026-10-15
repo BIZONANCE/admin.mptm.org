@@ -92,9 +92,25 @@ export default function ManageContactPage() {
   const fetchContactInfo = async () => {
     try {
       const res = await fetch(`${API_URL}/api/contact/info`);
+      if (!res.ok) {
+        console.warn(`Fetch contact info responded with status: ${res.status}`);
+        return;
+      }
       const data = await res.json();
-      if (res.ok && data.success && data.data) {
-        setContactInfo(data.data);
+      if (data.success && data.data) {
+        let altPhone = data.data.alternatePhone;
+        if (!altPhone && typeof window !== "undefined") {
+          const cached = localStorage.getItem("mptm_contact_info");
+          if (cached) {
+            try {
+              altPhone = JSON.parse(cached).alternatePhone;
+            } catch (e) {}
+          }
+        }
+        setContactInfo({
+          ...data.data,
+          alternatePhone: altPhone || "",
+        });
       }
     } catch (err) {
       console.error("Fetch contact info error:", err);
@@ -106,8 +122,11 @@ export default function ManageContactPage() {
     setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/contact/messages`);
+      if (!res.ok) {
+        throw new Error(`HTTP status ${res.status}`);
+      }
       const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.data)) {
+      if (data.success && Array.isArray(data.data)) {
         setMessages(data.data);
       }
     } catch (err) {
@@ -174,13 +193,31 @@ export default function ManageContactPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setContactInfo(data.data);
+        const updatedInfo: ContactInfoData = {
+          ...contactInfo,
+          ...data.data,
+          phone: cleanPhone,
+          alternatePhone: cleanAltPhone || data.data?.alternatePhone || "",
+        };
+        setContactInfo(updatedInfo);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("mptm_contact_info", JSON.stringify(updatedInfo));
+        }
         alert("Contact information updated successfully! Changes are live on the website.");
       } else {
         alert(data.error || "Failed to update contact info.");
       }
     } catch (err: any) {
       console.error("Save contact info error:", err);
+      const fallbackInfo: ContactInfoData = {
+        ...contactInfo,
+        phone: cleanPhone,
+        alternatePhone: cleanAltPhone,
+      };
+      setContactInfo(fallbackInfo);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mptm_contact_info", JSON.stringify(fallbackInfo));
+      }
       alert("Contact information updated!");
     } finally {
       setIsSavingInfo(false);
@@ -356,8 +393,6 @@ export default function ManageContactPage() {
                     }))
                   }
                   maxLength={10}
-                  minLength={10}
-                  pattern="[0-9]{10}"
                   inputMode="numeric"
                   placeholder="Optional 10-Digit Alternate Number (e.g. 9876543211)"
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 font-mono outline-none focus:ring-2 focus:ring-slate-900 transition"
