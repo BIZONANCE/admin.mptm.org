@@ -22,6 +22,7 @@ import {
   Heart,
   UserCheck,
   Megaphone,
+  CreditCard,
 } from "lucide-react";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart } from "../utils/formatters";
@@ -80,7 +81,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     } else {
       setIsAuthenticated(true);
       const uName = queryUsername || localStorage.getItem("mptm_admin_username") || "";
-      const isSuperCreds = uName === "mptmamravati.org" || uName === "admin@mptmamravati.org";
+      const lowerUName = uName.toLowerCase();
+      const isSuperCreds =
+        lowerUName === "mptmamravati.org" ||
+        lowerUName === "admin@mptmamravati.org" ||
+        lowerUName === "admin" ||
+        lowerUName === "superadmin";
       const savedRole = localStorage.getItem("mptm_admin_role");
       const role = queryRole || savedRole || (isSuperCreds ? "SUPER_ADMIN" : "USER");
 
@@ -92,7 +98,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [router]);
 
   const isSuperAdmin = useMemo(() => {
-    if (loggedUsername === "mptmamravati.org" || loggedUsername === "admin@mptmamravati.org") return true;
+    const lower = loggedUsername.toLowerCase();
+    if (
+      lower === "mptmamravati.org" ||
+      lower === "admin@mptmamravati.org" ||
+      lower === "admin" ||
+      lower === "superadmin"
+    ) return true;
     if (userRole === "SUPER_ADMIN") return true;
     return false;
   }, [userRole, loggedUsername]);
@@ -100,7 +112,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Route protection for non-super-admin users (Dashboard "/" is accessible to all users)
   useEffect(() => {
     if (isAuthenticated && !isSuperAdmin) {
-      if (pathname === "/manage-users" || pathname === "/manage-career" || pathname === "/manage-contact") {
+      if (
+        pathname === "/manage-users" ||
+        pathname === "/manage-career" ||
+        pathname === "/manage-contact" ||
+        pathname === "/manage-donations" ||
+        pathname === "/manage-executives" ||
+        pathname.startsWith("/manage-executives") ||
+        pathname === "/manage-ads"
+      ) {
         router.replace("/registrations");
       }
     }
@@ -110,7 +130,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const fetchRegistrations = async () => {
     try {
       setIsRefreshing(true);
-      const res = await fetch(`${API_URL}/api/register`);
+      const role = localStorage.getItem("mptm_admin_role") || "USER";
+      const username = localStorage.getItem("mptm_admin_username") || "";
+      const params = new URLSearchParams({
+        userEmail: username,
+        userRole: role,
+      });
+      const res = await fetch(`${API_URL}/api/register?${params.toString()}`, {
+        headers: {
+          "x-user-email": username,
+          "x-user-role": role,
+        },
+      });
       const data = await res.json();
       if (res.ok && data.success && Array.isArray(data.data)) {
         setRegistrations(data.data);
@@ -151,10 +182,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push("/login");
   };
 
-  // Filter unread notifications
+  // Filter unread notifications (strictly scoped to user if not super admin)
+  const scopedRegistrations = useMemo(() => {
+    if (isSuperAdmin) return registrations;
+    const userClean = (loggedUsername || "").trim().toLowerCase();
+    return registrations.filter((r) => {
+      const regRef = (r.referredBy || "").trim().toLowerCase();
+      return regRef === userClean;
+    });
+  }, [registrations, isSuperAdmin, loggedUsername]);
+
   const unreadRegistrations = useMemo(() => {
-    return registrations.filter((r) => !readNotificationIds.includes(r.id));
-  }, [registrations, readNotificationIds]);
+    return scopedRegistrations.filter((r) => !readNotificationIds.includes(r.id));
+  }, [scopedRegistrations, readNotificationIds]);
 
   const unreadCount = unreadRegistrations.length;
 
@@ -446,6 +486,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }`}
               >
                 Member Registrations
+              </span>
+            </button>
+
+            {/* Tab: Payments (Route "/payments") - Visible to Everyone */}
+            <button
+              onClick={() => router.push("/payments")}
+              title="Payments"
+              className={`flex items-center transition-all duration-300 ease-in-out ${
+                sidebarOpen
+                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
+                      pathname === "/payments"
+                        ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
+                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
+                    }`
+                  : `w-10 h-10 justify-center rounded-full ${
+                      pathname === "/payments"
+                        ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
+                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
+                    }`
+              }`}
+            >
+              <CreditCard className={`w-5 h-5 shrink-0 ${pathname === "/payments" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
+              <span
+                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
+                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
+                }`}
+              >
+                Payments
               </span>
             </button>
 

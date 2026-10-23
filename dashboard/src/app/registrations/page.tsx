@@ -30,6 +30,21 @@ import {
   Globe,
   Users,
   MessageSquare,
+  Columns3,
+  SlidersHorizontal,
+  ShieldCheck,
+  CheckCircle2,
+  Mail,
+  Calendar,
+  FileText,
+  Plus,
+  Pencil,
+  Landmark,
+  Flag,
+  Wallet,
+  CreditCard,
+  ChevronUp,
+  Building,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { MemberRegistration } from "../../types";
@@ -48,8 +63,144 @@ function isExecutiveRegistration(reg: MemberRegistration): boolean {
   return false;
 }
 
+function getInitials(name?: string): string {
+  if (!name) return "M";
+  const clean = name.trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    const f = parts[0][0] || "";
+    const l = parts[parts.length - 1][0] || "";
+    return (f + l).toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+// ── Official Organization Seal (मुद्रा / शिक्का with Navbar Logo) ──
+function OfficialSeal({ className = "" }: { className?: string }) {
+  return (
+    <div className={`relative flex items-center justify-center select-none w-28 h-28 sm:w-32 sm:h-32 ${className}`}>
+      {/* Outer circular SVG ring with curved Marathi text */}
+      <svg
+        viewBox="0 0 160 160"
+        className="absolute inset-0 w-full h-full text-[#7A0C0C] drop-shadow-xs transform -rotate-3"
+      >
+        <circle cx="80" cy="80" r="76" fill="#FFFDF9" stroke="#7A0C0C" strokeWidth="2.5" />
+        <circle cx="80" cy="80" r="71" fill="none" stroke="#7A0C0C" strokeWidth="1" strokeDasharray="3,2" />
+        <circle cx="80" cy="80" r="50" fill="none" stroke="#7A0C0C" strokeWidth="1.5" />
+
+        <defs>
+          <path id="regSealTopArc" d="M 22,80 A 58,58 0 1,1 138,80" fill="none" />
+          <path id="regSealBottomArc" d="M 138,80 A 58,58 0 0,1 22,80" fill="none" />
+        </defs>
+
+        <text fontSize="7.5" fontWeight="900" fill="#7A0C0C" letterSpacing="0.4">
+          <textPath href="#regSealTopArc" startOffset="50%" textAnchor="middle">
+            ★ महाराष्ट्र प्रांतिक तैलिक महासभा ★
+          </textPath>
+        </text>
+
+        <text fontSize="7" fontWeight="800" fill="#7A0C0C" letterSpacing="0.3">
+          <textPath href="#regSealBottomArc" startOffset="50%" textAnchor="middle">
+            • अमरावती विभाग, अमरावती •
+          </textPath>
+        </text>
+      </svg>
+
+      {/* Center Official Nav Logo (Santaji Maharaj Emblem) */}
+      <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-amber-500 shadow-sm bg-[#4A0404]">
+        <img
+          src="/Navlogo.png"
+          alt="महाराष्ट्र प्रांतिक तैलिक महासभा मुद्रा"
+          className="w-full h-full object-cover rounded-full"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Clean Address Formatter without Duplicates ──
+function formatDisplayAddress(addrData: {
+  address?: string | null;
+  gaav?: string | null;
+  taluka?: string | null;
+  city?: string | null;
+  district?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+}): string {
+  const parts: string[] = [];
+  const fullAddr = (addrData.address || "").trim();
+
+  if (fullAddr) {
+    parts.push(fullAddr);
+  }
+
+  const addrLower = fullAddr.toLowerCase();
+
+  const addIfNew = (val?: string | null) => {
+    if (!val) return;
+    const v = val.trim();
+    if (!v) return;
+    const vLower = v.toLowerCase();
+
+    const alreadyInAddr = addrLower.includes(vLower);
+    const alreadyInParts = parts.some((p) => p.toLowerCase() === vLower || p.toLowerCase().includes(vLower));
+
+    const isAmravatiSynonym =
+      (vLower === "amravati" || v === "अमरावती") &&
+      (addrLower.includes("amravati") || addrLower.includes("अमरावती"));
+    const isMaharashtraSynonym =
+      (vLower === "maharashtra" || v === "महाराष्ट्र") &&
+      (addrLower.includes("maharashtra") || addrLower.includes("महाराष्ट्र"));
+
+    if (!alreadyInAddr && !alreadyInParts && !isAmravatiSynonym && !isMaharashtraSynonym) {
+      parts.push(v);
+    }
+  };
+
+  addIfNew(addrData.gaav);
+  addIfNew(addrData.taluka);
+  addIfNew(addrData.city);
+  addIfNew(addrData.district);
+
+  if (addrData.state && addrData.state.trim() && !parts.some((p) => p.toLowerCase().includes("maharashtra") || p.includes("महाराष्ट्र"))) {
+    parts.push(addrData.state.trim());
+  }
+
+  if (addrData.pincode && addrData.pincode.trim() && !parts.some((p) => p.includes(addrData.pincode!.trim()))) {
+    parts.push(`पिन: ${addrData.pincode.trim()}`);
+  }
+
+  return parts.length > 0 ? parts.join(", ") : "अमरावती विभाग, महाराष्ट्र";
+}
+
+type Language = "mr" | "en";
+
 export default function RegistrationsPage() {
   const router = useRouter();
+
+  // Language state: 'mr' (Marathi) | 'en' (English)
+  const [lang, setLang] = useState<Language>("mr");
+
+  useEffect(() => {
+    try {
+      const savedLang = localStorage.getItem("mptm_registrations_lang") as Language;
+      if (savedLang === "mr" || savedLang === "en") {
+        setLang(savedLang);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleLang = (newLang: Language) => {
+    setLang(newLang);
+    try {
+      localStorage.setItem("mptm_registrations_lang", newLang);
+    } catch {
+      // ignore
+    }
+  };
 
   const [registrations, setRegistrations] = useState<MemberRegistration[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,8 +211,12 @@ export default function RegistrationsPage() {
   const [referrerFilter, setReferrerFilter] = useState<string>("ALL");
   const [districtFilter, setDistrictFilter] = useState<string>("ALL");
   const [cityFilter, setCityFilter] = useState<string>("ALL");
+  const [viewMode, setViewMode] = useState<"essential" | "all">("essential");
 
-  const [selectedReg, setSelectedReg] = useState<MemberRegistration | null>(null);
+  // Separate states: Entry details popup vs official printable pavati modal
+  const [selectedDetailsReg, setSelectedDetailsReg] = useState<MemberRegistration | null>(null);
+  const [selectedPavatiReg, setSelectedPavatiReg] = useState<MemberRegistration | null>(null);
+
   const [deleteConfirmReg, setDeleteConfirmReg] = useState<MemberRegistration | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -77,21 +232,37 @@ export default function RegistrationsPage() {
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
   const [selectedUserForLink, setSelectedUserForLink] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [copiedPopupLink, setCopiedPopupLink] = useState<boolean>(false);
 
   const API_URL = getApiUrl();
   const MAIN_SITE_URL = getMainSiteUrl();
 
   const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
-  const handlePrint = () => {
+  const handlePrint = (receiptNo?: string) => {
+    const rNo = receiptNo || selectedPavatiReg?.receiptNo || selectedDetailsReg?.receiptNo;
+    const originalTitle = document.title;
+    if (rNo) {
+      document.title = rNo.trim().replace(/[/\\?%*:|"<>]/g, "-");
+    }
     window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1500);
   };
 
-  const handleDownloadPdf = async () => {
-    if (!selectedReg) return;
+  const handleDownloadPdf = async (receiptNo?: string) => {
+    const rNo = receiptNo || selectedPavatiReg?.receiptNo || selectedDetailsReg?.receiptNo;
+    if (!rNo) return;
     try {
       setDownloadingPdf(true);
-      await downloadReceiptAsPdf("printable-receipt-card", `Receipt_${selectedReg.receiptNo || "Member"}.pdf`);
+      const safeReceiptId = rNo.trim().replace(/[/\\?%*:|"<>]/g, "-");
+      const originalTitle = document.title;
+      document.title = safeReceiptId;
+      await downloadReceiptAsPdf("printable-receipt-card", `${safeReceiptId}.pdf`);
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1500);
     } finally {
       setDownloadingPdf(false);
     }
@@ -133,7 +304,21 @@ mptmamravati.org`;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/api/register`);
+      const role = localStorage.getItem("mptm_admin_role") || "USER";
+      const username = localStorage.getItem("mptm_admin_username") || "";
+      const lowerUser = username.toLowerCase();
+      const isSuper = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "admin" || lowerUser === "superadmin";
+      const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
+      const params = new URLSearchParams({
+        userEmail: username,
+        userRole: effectiveRole,
+      });
+      const res = await fetch(`${API_URL}/api/register?${params.toString()}`, {
+        headers: {
+          "x-user-email": username,
+          "x-user-role": effectiveRole,
+        },
+      });
       const data = await res.json();
 
       if (res.ok && data.success && Array.isArray(data.data)) {
@@ -161,7 +346,8 @@ mptmamravati.org`;
       const role = localStorage.getItem("mptm_admin_role");
       const username = localStorage.getItem("mptm_admin_username") || "";
 
-      const superAdminStatus = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
+      const lowerUser = username.toLowerCase();
+      const superAdminStatus = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "admin" || lowerUser === "superadmin";
       setIsSuperAdmin(superAdminStatus);
       setLoggedUserEmail(username);
 
@@ -516,60 +702,92 @@ mptmamravati.org`;
 
   return (
     <DashboardLayout>
-      <div className={selectedReg ? "no-print" : ""}>
+      <div className={selectedPavatiReg ? "no-print" : ""}>
         {/* Page Title & Subtitle Toolbar */}
-        <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${selectedReg ? "no-print" : ""}`}>
+        <div className={`mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${selectedPavatiReg ? "no-print" : ""}`}>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <User className="w-6 h-6 text-slate-800" />
-              <span>Member Registrations</span>
+              <span>{lang === "mr" ? "सदस्य नोंदणी यादी" : "Member Registrations"}</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              {isSuperAdmin
-                ? "Maharashtra Prantik Tailik Mahasabha - Amravati Division (All Member Registrations)"
-                : `Maharashtra Prantik Tailik Mahasabha (Registrations Referred by ${loggedUserEmail})`}
+              {lang === "mr"
+                ? (isSuperAdmin
+                    ? "महाराष्ट्र प्रांतिक तैलिक महासभा - अमरावती विभाग (सर्व सदस्य नोंदणी)"
+                    : `महाराष्ट्र प्रांतिक तैलिक महासभा (${loggedUserEmail} द्वारे संदर्भित नोंदणी)`)
+                : (isSuperAdmin
+                    ? "Maharashtra Prantik Tailik Mahasabha - Amravati Division (All Member Registrations)"
+                    : `Maharashtra Prantik Tailik Mahasabha (Registrations Referred by ${loggedUserEmail})`)}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            {/* Marathi / English Language Toggle */}
+            <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleToggleLang("mr")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
+                  lang === "mr"
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>मराठी</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleLang("en")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
+                  lang === "en"
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>English</span>
+              </button>
+            </div>
+
             <a
               href={getActiveFormLink()}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 shrink-0"
-              title="Open Member Registration Form"
+              title={lang === "mr" ? "सदस्य नोंदणी फॉर्म उघडा" : "Open Member Registration Form"}
             >
               <ExternalLink className="w-4 h-4" />
-              <span>Member Registration Form</span>
+              <span>{lang === "mr" ? "सदस्य नोंदणी फॉर्म" : "Member Registration Form"}</span>
             </a>
 
             <button
               onClick={exportToCSV}
               disabled={filteredRegistrations.length === 0}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 disabled:opacity-50 shrink-0"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-2 disabled:opacity-50 shrink-0 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <span>{lang === "mr" ? "CSV निर्यात" : "Export CSV"}</span>
             </button>
           </div>
         </div>
 
         {/* Toast Alert */}
         {toastMessage && (
-          <div className={`mb-4 p-3 bg-slate-100 border border-slate-300 text-slate-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs ${selectedReg ? "no-print" : ""}`}>
+          <div className={`mb-4 p-3 bg-slate-100 border border-slate-300 text-slate-900 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between shadow-2xs ${selectedPavatiReg ? "no-print" : ""}`}>
             <span>{toastMessage}</span>
             <button onClick={() => setToastMessage(null)} className="text-slate-600 hover:text-slate-900 font-bold text-base">×</button>
           </div>
         )}
 
         {/* SEARCH & FILTER TOOLBAR (2 ROWS) */}
-        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 mb-6 space-y-3 ${selectedReg ? "no-print" : ""}`}>
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 mb-6 space-y-3 ${selectedPavatiReg ? "no-print" : ""}`}>
           {/* ROW 1: SEARCH BAR (Full Width) */}
           <div className="relative w-full">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search receipt no, name, mobile, address, or prabhag..."
+              placeholder={lang === "mr" ? "पावती क्र., नाव, मोबाईल, पत्ता, किंवा प्रभाग शोधा..." : "Search receipt no, name, mobile, address, or prabhag..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
@@ -591,14 +809,14 @@ mptmamravati.org`;
             {isSuperAdmin && (
               <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
                 <User className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
-                <span className="text-xs font-bold text-slate-700 shrink-0">Referrer:</span>
+                <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "रेफरर:" : "Referrer:"}</span>
                 <select
                   value={referrerFilter}
                   onChange={(e) => setReferrerFilter(e.target.value)}
                   className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                 >
-                  <option value="ALL">All Referrers</option>
-                  <option value="DIRECT">Direct Website</option>
+                  <option value="ALL">{lang === "mr" ? "सर्व रेफरर" : "All Referrers"}</option>
+                  <option value="DIRECT">{lang === "mr" ? "थेट वेबसाईट" : "Direct Website"}</option>
                   {uniqueReferrersList.map((refEmail) => {
                     const matchedUser = managedUsers.find((u) => u.email.toLowerCase() === refEmail.toLowerCase());
                     const labelName = matchedUser && matchedUser.name && matchedUser.name.trim() 
@@ -618,7 +836,7 @@ mptmamravati.org`;
             {uniqueDistrictsList.length > 0 && (
               <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
                 <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
-                <span className="text-xs font-bold text-slate-700 shrink-0">District:</span>
+                <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "जिल्हा:" : "District:"}</span>
                 <select
                   value={districtFilter}
                   onChange={(e) => {
@@ -627,7 +845,7 @@ mptmamravati.org`;
                   }}
                   className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                 >
-                  <option value="ALL">All Districts ({uniqueDistrictsList.length})</option>
+                  <option value="ALL">{lang === "mr" ? `सर्व जिल्हे (${uniqueDistrictsList.length})` : `All Districts (${uniqueDistrictsList.length})`}</option>
                   {uniqueDistrictsList.map((dist) => (
                     <option key={dist} value={dist}>
                       {dist}
@@ -641,13 +859,13 @@ mptmamravati.org`;
             {uniqueCitiesList.length > 0 && (
               <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
                 <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
-                <span className="text-xs font-bold text-slate-700 shrink-0">City:</span>
+                <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "शहर:" : "City:"}</span>
                 <select
                   value={cityFilter}
                   onChange={(e) => setCityFilter(e.target.value)}
                   className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                 >
-                  <option value="ALL">All Cities ({uniqueCitiesList.length})</option>
+                  <option value="ALL">{lang === "mr" ? `सर्व शहरे (${uniqueCitiesList.length})` : `All Cities (${uniqueCitiesList.length})`}</option>
                   {uniqueCitiesList.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -662,13 +880,13 @@ mptmamravati.org`;
             <div className="flex items-center gap-1.5 w-full sm:w-auto bg-slate-100 p-1 rounded-xl border border-slate-200/60">
               <button
                 onClick={() => setPaymentFilter("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentFilter === "ALL"
                     ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <span>All</span>
+                <span>{lang === "mr" ? "सर्व" : "All"}</span>
                 <span className="bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
                   {paymentCounts.all}
                 </span>
@@ -676,14 +894,14 @@ mptmamravati.org`;
 
               <button
                 onClick={() => setPaymentFilter("CASH")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentFilter === "CASH"
                     ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <Banknote className="w-3.5 h-3.5 text-emerald-700" />
-                <span>Cash</span>
+                <span>{lang === "mr" ? "रोख" : "Cash"}</span>
                 <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
                   {paymentCounts.cash}
                 </span>
@@ -691,69 +909,124 @@ mptmamravati.org`;
 
               <button
                 onClick={() => setPaymentFilter("ONLINE")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-1 sm:flex-initial text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                   paymentFilter === "ONLINE"
                     ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <QrCode className="w-3.5 h-3.5 text-slate-700" />
-                <span>Online UPI</span>
+                <span>{lang === "mr" ? "ऑनलाइन UPI" : "Online UPI"}</span>
                 <span className="bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-full text-[11px] font-mono">
                   {paymentCounts.online}
                 </span>
               </button>
             </div>
+
+            {/* View Mode Toggle (Essential vs All Columns) */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/60 ml-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode("essential")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === "essential"
+                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title={lang === "mr" ? "महत्त्वाचे स्तंभ (कमी जागा, कॉम्पॅक्ट)" : "Essential Columns View"}
+              >
+                <Columns3 className="w-3.5 h-3.5 text-amber-600" />
+                <span>{lang === "mr" ? "महत्त्वाचे" : "Essential"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("all")}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === "all"
+                    ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title={lang === "mr" ? "सर्व १७ स्तंभ दाखवा" : "All Columns View"}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                <span>{lang === "mr" ? "सर्व स्तंभ" : "All Columns"}</span>
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Helper Hint */}
+        <div className={`flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2 ${selectedPavatiReg ? "no-print" : ""}`}>
+          <span className="flex items-center gap-1.5 text-slate-600">
+            <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>
+              {lang === "mr"
+                ? "नोंदणीचे संपूर्ण तपशील पाहण्यासाठी ओळीवर क्लिक करा • पावतीसाठी 👁️ आयकॉन दाबा"
+                : "Click on any row to view full details • Click 👁️ icon for receipt"}
+            </span>
+          </span>
+          <span className="text-[11px] text-slate-400 font-semibold">
+            {filteredRegistrations.length} {lang === "mr" ? "नोंदणी" : "registrations"}
+          </span>
+        </div>
+
         {/* REGISTRATION DATA TABLE CARD */}
-        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden ${selectedReg ? "no-print" : ""}`}>
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden ${selectedPavatiReg ? "no-print" : ""}`}>
           {loading ? (
             <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
               <RefreshCw className="w-8 h-8 text-slate-600 animate-spin" />
-              <p className="font-semibold text-sm">Loading registration data...</p>
+              <p className="font-semibold text-sm">
+                {lang === "mr" ? "नोंदणी माहिती लोड होत आहे..." : "Loading registration data..."}
+              </p>
             </div>
           ) : error ? (
             <div className="p-8 text-center text-red-600 flex flex-col items-center justify-center gap-2">
               <AlertTriangle className="w-8 h-8 text-red-500" />
               <p className="font-bold">{error}</p>
               <button
+                type="button"
                 onClick={fetchRegistrations}
-                className="mt-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition"
+                className="mt-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
               >
-                Try Again
+                {lang === "mr" ? "पुन्हा प्रयत्न करा" : "Try Again"}
               </button>
             </div>
           ) : filteredRegistrations.length === 0 ? (
             <div className="p-12 text-center text-slate-500 italic">
-              No matching registrations found.
+              {lang === "mr" ? "कोणतीही नोंदणी सापडली नाही." : "No matching registrations found."}
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[1050px]">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
-                    <th className="py-3.5 px-3 w-10 text-center">Sr. No.</th>
-                    <th className="py-3.5 px-3">Date & Time</th>
-                    <th className="py-3.5 px-3">Receipt No.</th>
-                    <th className="py-3.5 px-3">Main Member & Member No.</th>
-                    <th className="py-3.5 px-3">Mobile No.</th>
-                    <th className="py-3.5 px-3">Address (पत्ता)</th>
-                    <th className="py-3.5 px-3">Gaav (गाव)</th>
-                    <th className="py-3.5 px-3">Taluka (तालुका)</th>
-                    <th className="py-3.5 px-3">District (जिल्हा)</th>
-                    <th className="py-3.5 px-3">State (राज्य)</th>
-                    <th className="py-3.5 px-3">Country (देश)</th>
-                    <th className="py-3.5 px-3">Pincode (पिनकोड)</th>
-                    <th className="py-3.5 px-3">Prabhag</th>
-                    <th className="py-3.5 px-3">Referrer</th>
-                    <th className="py-3.5 px-3">Fee & Payment</th>
-                    <th className="py-3.5 px-3 text-center">Family</th>
-                    <th className="py-3.5 px-3 text-right">Actions</th>
+                  <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                    <th className="py-2.5 px-2.5 w-8 text-center">{lang === "mr" ? "अ.क्र." : "#"}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "दिनांक व वेळ" : "Date & Time"}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "पावती क्र." : "Receipt No."}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "सदस्याचे नाव व आयडी" : "Member Name & ID"}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "मोबाईल क्र." : "Mobile No."}</th>
+                    {viewMode === "all" ? (
+                      <>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "पत्ता" : "Address"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "गाव" : "Village/Town"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "तालुका" : "Taluka"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "जिल्हा" : "District"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "राज्य" : "State"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "देश" : "Country"}</th>
+                        <th className="py-2.5 px-3">{lang === "mr" ? "पिनकोड" : "Pincode"}</th>
+                      </>
+                    ) : (
+                      <th className="py-2.5 px-3">{lang === "mr" ? "स्थान (गाव/शहर)" : "(Town/City)"}</th>
+                    )}
+                    <th className="py-2.5 px-2 text-center">{lang === "mr" ? "प्रभाग" : "Prabhag"}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "शुल्क व पेमेंट" : "Fee & Payment"}</th>
+                    <th className="py-2.5 px-2 text-center">{lang === "mr" ? "मुख्य" : "Main"}</th>
+                    <th className="py-2.5 px-2 text-center">{lang === "mr" ? "कुटुंब" : "Family"}</th>
+                    <th className="py-2.5 px-3">{lang === "mr" ? "रेफरर" : "Referrer"}</th>
+                    <th className="py-2.5 px-3 text-right">{lang === "mr" ? "कृती" : "Actions"}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
+                <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                   {filteredRegistrations.map((reg, index) => {
                     const main = reg.mainMembers[0] || {
                       fullName: "No Details Available",
@@ -764,178 +1037,175 @@ mptmamravati.org`;
                     const timeString = getTimePart(reg);
 
                     return (
-                      <tr key={reg.id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3.5 px-3 text-center font-bold text-slate-500 align-top">
+                      <tr
+                        key={reg.id}
+                        onClick={() => setSelectedDetailsReg(reg)}
+                        className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80"
+                        title={lang === "mr" ? "नोंदणीचे संपूर्ण तपशील पाहण्यासाठी क्लिक करा" : "Click to view full details"}
+                      >
+                        {/* 1. SR NO */}
+                        <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
                           {index + 1}
                         </td>
 
-                        {/* 1. DATE & TIME COLUMN */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                              {getDatePart(reg)}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-500">
-                              {timeString || "-"}
-                            </span>
+                        {/* 2. DATE & TIME (Time stacked directly below date) */}
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <div className="flex flex-col leading-tight">
+                            <span className="font-bold text-slate-900 text-xs">{getDatePart(reg)}</span>
+                            {timeString && (
+                              <span className="text-[11px] font-normal text-slate-500 mt-0.5">{timeString}</span>
+                            )}
                           </div>
                         </td>
 
-                        {/* 2. RECEIPT NO COLUMN */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
-                          <span className="font-mono font-bold text-slate-900 text-xs bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md shadow-2xs inline-block">
+                        {/* 3. RECEIPT NO (Simple clean text, no capsule) */}
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <span className="font-mono font-bold text-xs text-slate-900">
                             {reg.receiptNo}
                           </span>
                         </td>
 
-                        {/* 3. MAIN MEMBER & MEMBER NO COLUMN */}
-                        <td className="py-3.5 px-3 align-top">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                        {/* 4. MAIN MEMBER & MEMBER NO (Simple text, no capsules) */}
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={main.fullName}>
                               {main.fullName}
                             </span>
+                            {reg.mainMembers && reg.mainMembers.length > 1 && (
+                              <span
+                                className="text-[11px] font-medium text-amber-800 shrink-0"
+                                title={`एकूण ${reg.mainMembers.length} मुख्य सदस्य: ${reg.mainMembers.map((m) => m.fullName).join(", ")}`}
+                              >
+                                (+{reg.mainMembers.length - 1} {lang === "mr" ? "मुख्य" : "Main"})
+                              </span>
+                            )}
                             {main.memberNo && main.memberNo !== "-" && (
-                              <span className="font-mono text-[11px] text-slate-600 font-semibold bg-slate-50 border border-slate-200 px-1.5 py-0.2 rounded w-max">
-                                {main.memberNo}
+                              <span className="font-mono text-[11px] text-slate-500 font-medium shrink-0">
+                                ({main.memberNo})
                               </span>
                             )}
                           </div>
                         </td>
 
-                        {/* 4. MOBILE NO */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap">
+                        {/* 5. MOBILE NO */}
+                        <td className="py-2 px-3 whitespace-nowrap">
                           {main.mobileNo ? (
                             <a
                               href={`tel:${main.mobileNo}`}
-                              className="text-xs font-bold text-slate-800 hover:text-slate-900 flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs font-medium text-slate-700 hover:text-blue-700 flex items-center gap-1"
                             >
-                              <Phone className="w-3.5 h-3.5 text-slate-500" />
-                              {main.mobileNo}
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              <span>{main.mobileNo}</span>
                             </a>
-                          ) : "-"}
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
                         </td>
 
-                        {/* 5. ADDRESS (पत्ता) */}
-                        <td className="py-3.5 px-3 align-top min-w-[130px] text-xs font-semibold text-slate-800">
-                          {reg.address || "-"}
+                        {/* 6. LOCATION / ADDRESS */}
+                        {viewMode === "all" ? (
+                          <>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700 truncate max-w-[150px]" title={reg.address}>
+                              {reg.address || "-"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                              {reg.gaav || "-"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                              {reg.taluka || "-"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs font-bold text-indigo-900">
+                              {reg.district || "-"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                              {reg.state || "महाराष्ट्र"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                              {reg.country || "भारत"}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap text-xs font-mono text-slate-700">
+                              {reg.pincode || "-"}
+                            </td>
+                          </>
+                        ) : (
+                          <td className="py-2 px-3 whitespace-nowrap text-xs font-medium text-slate-700 truncate max-w-[150px]" title={`${reg.gaav || ""}, ${reg.taluka || ""}, ${reg.district || ""}`}>
+                            {reg.gaav || reg.city || reg.taluka || reg.district || "-"}
+                          </td>
+                        )}
+
+                        {/* 7. PRABHAG (Simple text, no capsule) */}
+                        <td className="py-2 px-2 text-center whitespace-nowrap text-xs font-medium text-slate-700">
+                          {main.prabhagNo || "-"}
                         </td>
 
-                        {/* 6. GAAV (गाव) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
-                          {reg.gaav || "-"}
+                        {/* 8. FEE & PAYMENT (Simple text, no capsule badge) */}
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 text-xs">
+                              ₹{reg.registrationFee}
+                            </span>
+                            <span className="text-xs font-medium text-slate-600">
+                              • {formatPaymentMethod(reg.paymentMethod)}
+                            </span>
+                            {reg.paymentScreenshot && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setScreenshotZoom(reg.paymentScreenshot || null);
+                                }}
+                                className="text-slate-400 hover:text-slate-800 p-0.5 transition cursor-pointer"
+                                title="View Screenshot"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
 
-                        {/* 7. TALUKA (तालुका) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
-                          {reg.taluka || "-"}
+                        {/* 9. MUKHYA MEMBERS (Simple text, no capsule) */}
+                        <td className="py-2 px-2 text-center whitespace-nowrap text-xs font-medium text-slate-800">
+                          {reg.mainMembers?.length || 1} {lang === "mr" ? "मुख्य" : "Main"}
                         </td>
 
-                        {/* 9. DISTRICT (जिल्हा) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-bold text-indigo-900">
-                          {reg.district || "-"}
+                        {/* 10. KUTUMB MEMBERS (Simple text, no capsule) */}
+                        <td className="py-2 px-2 text-center whitespace-nowrap text-xs font-medium text-slate-800">
+                          {reg.familyMembers && reg.familyMembers.length > 0 ? (
+                            <span>{reg.familyMembers.length} {lang === "mr" ? "कुटुंब" : "Family"}</span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
                         </td>
 
-                        {/* 10. STATE (राज्य) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
-                          {reg.state || "महाराष्ट्र"}
-                        </td>
-
-                        {/* 11. COUNTRY (देश) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-semibold text-slate-700">
-                          {reg.country || "भारत"}
-                        </td>
-
-                        {/* 12. PINCODE (पिनकोड) */}
-                        <td className="py-3.5 px-3 align-top whitespace-nowrap text-xs font-mono font-bold text-slate-800">
-                          {reg.pincode || "-"}
-                        </td>
-
-                        <td className="py-3.5 px-4 align-top">
-                          <span className="inline-block text-xs font-medium bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded border border-slate-200">
-                            {main.prabhagNo || "-"}
-                          </span>
-                        </td>
-
-                        {/* REFERRER COLUMN (SHOWING NAME + EMAIL) */}
-                        <td className="py-3.5 px-4 align-top min-w-[170px]">
+                        {/* 11. REFERRER (Simple text, no capsule) */}
+                        <td className="py-2 px-3 whitespace-nowrap text-xs font-medium">
                           {(() => {
                             const refInfo = getReferrerDetails(reg.referredBy);
                             if (refInfo.isDirect) {
                               return (
-                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                                  <Globe className="w-3.5 h-3.5 text-slate-400" />
-                                  <span>Direct Website</span>
+                                <span className="text-slate-500">
+                                  {lang === "mr" ? "थेट वेबसाईट" : "Direct"}
                                 </span>
                               );
                             }
                             return (
-                              <div className="flex flex-col gap-0.5">
-                                {refInfo.name ? (
-                                  <>
-                                    <span className="font-bold text-slate-900 text-xs flex items-center gap-1">
-                                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                      {refInfo.name}
-                                    </span>
-                                    <span className="font-mono text-[11px] text-slate-500 pl-4">
-                                      {refInfo.email}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="font-mono font-bold text-slate-800 text-xs flex items-center gap-1">
-                                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    {refInfo.email}
-                                  </span>
-                                )}
-                              </div>
+                              <span className="text-slate-700 truncate max-w-[130px] inline-block" title={refInfo.email}>
+                                {refInfo.name || refInfo.email}
+                              </span>
                             );
                           })()}
                         </td>
 
-                        <td className="py-3.5 px-4 align-top whitespace-nowrap">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-bold text-slate-900 text-xs">
-                              ₹{reg.registrationFee}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <span
-                                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                                  reg.paymentMethod.toLowerCase().includes("रोख") ||
-                                  reg.paymentMethod.toLowerCase().includes("cash")
-                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                    : "bg-slate-100 text-slate-800 border-slate-200"
-                                }`}
-                              >
-                                {formatPaymentMethod(reg.paymentMethod)}
-                              </span>
-
-                              {reg.paymentScreenshot && (
-                                <button
-                                  onClick={() => setScreenshotZoom(reg.paymentScreenshot || null)}
-                                  className="text-slate-600 hover:text-slate-900 bg-slate-100 p-1 rounded-md border border-slate-200 transition"
-                                  title="View Screenshot"
-                                >
-                                  <ImageIcon className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-4 align-top text-center whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full">
-                            <UserPlus className="w-3.5 h-3.5 text-slate-500" />
-                            {reg.familyMembers.length} {reg.familyMembers.length === 1 ? "Member" : "Members"}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                        {/* 12. ACTIONS */}
+                        <td className="py-2 px-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => setSelectedReg(reg)}
-                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
-                              title="View Detailed Receipt"
+                              onClick={() => setSelectedDetailsReg(reg)}
+                              className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                              title="नोंदणी तपशील पहा (View Details)"
                             >
-                              <Eye className="w-4 h-4 text-slate-600" />
+                              <Eye className="w-4 h-4 text-amber-800" />
                             </button>
 
                             <button
@@ -964,239 +1234,885 @@ mptmamravati.org`;
           )}
         </div>
 
-        {/* REGISTRATION DETAILS RECEIPT MODAL */}
-        {selectedReg && (
-          <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="bg-[#FFFDF9] rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border-2 border-amber-800/40 animate-in fade-in zoom-in-95 duration-200 my-auto font-sans">
-              <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white p-4 sm:p-5 flex items-center justify-between border-b-2 border-amber-400 no-print">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-400/20 flex items-center justify-center border border-amber-400/40 text-amber-300 text-lg font-bold">
-                    🚩
-                  </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-amber-200 tracking-wide drop-shadow-md">
-                      Maharashtra Prantik Tailik Mahasabha (Amravati)
-                    </h3>
-                    <p className="text-xs text-amber-300 font-bold">
-                      Receipt No: <span className="font-mono text-amber-100 font-bold">{selectedReg.receiptNo}</span> | Date: <span className="text-amber-100">{getDatePart(selectedReg)}</span>
-                    </p>
-                  </div>
-                </div>
+        {/* ======================================================== */}
+        {/* 1. ENTRY DETAILS POPUP MODAL (MATCHING REFERENCE UI)     */}
+        {/* ======================================================== */}
+        {selectedDetailsReg && (() => {
+          const mainMembersList = (selectedDetailsReg.mainMembers && selectedDetailsReg.mainMembers.length > 0)
+            ? selectedDetailsReg.mainMembers
+            : [{
+                id: "fallback-main",
+                registrationId: selectedDetailsReg.id,
+                srNo: 1,
+                fullName: "नाव उपलब्ध नाही",
+                memberNo: "-",
+                mobileNo: "-",
+                prabhagNo: "-",
+              }];
+          const refInfo = getReferrerDetails(selectedDetailsReg.referredBy);
+          const isExec = isExecutiveRegistration(selectedDetailsReg);
+          const regDateStr = getDatePart(selectedDetailsReg);
+          const regTimeStr = getTimePart(selectedDetailsReg);
+          const fullDateTimeStr = regTimeStr ? `${regDateStr} • ${regTimeStr}` : regDateStr;
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleSendRegWhatsApp(selectedReg)}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                    title="Send Receipt to WhatsApp"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </button>
-
-                  <button
-                    onClick={handleDownloadPdf}
-                    disabled={downloadingPdf}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer disabled:opacity-50"
-                    title="Download Receipt PDF file"
-                  >
-                    <Download className={`w-4 h-4 ${downloadingPdf ? "animate-bounce" : ""}`} />
-                    <span>{downloadingPdf ? "Downloading..." : "Download PDF"}</span>
-                  </button>
-
-                  <button
-                    onClick={handlePrint}
-                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span className="hidden sm:inline">Print Receipt</span>
-                  </button>
-
-                  <button
-                    onClick={() => setSelectedReg(null)}
-                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Body Printable Official Marathi Receipt */}
-              <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
+          return (
+            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+              <div className="bg-[#FAF8F5] rounded-3xl shadow-2xl max-w-5xl w-full border border-amber-900/20 overflow-hidden flex flex-col max-h-[92vh] my-auto animate-in zoom-in-95 duration-200">
                 
-                {/* Header Title Banner */}
-                <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
-                  <p className="text-xs font-bold text-amber-400">❖ जय संताजी ❖</p>
-                  <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
-                    महाराष्ट्र प्रांतिक तैलिक महासभा
-                  </h2>
-                  <p className="text-xs text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
-                  <div className="inline-block mt-1">
-                    <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
-                      {selectedReg.receiptNo.startsWith("MPTM-EM-") || Number(selectedReg.registrationFee) === 1001
-                        ? "★ कार्यकारिणी सदस्य नोंदणी पावती"
-                        : "★ प्राथमिक सदस्य नोंदणी पावती"}
+                {/* 1. TOP HEADER (Deep Maroon with Gold Accents & Navlogo) */}
+                <div className="bg-gradient-to-r from-[#4A0303] via-[#650808] to-[#4A0303] px-5 sm:px-7 py-4 text-white flex items-center justify-between border-b-2 border-amber-500/40 shrink-0">
+                  <div className="flex items-center gap-3.5">
+                    {/* Official Circular Logo with Gold Border */}
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 shadow-md bg-amber-50/10 flex items-center justify-center shrink-0">
+                      <Image
+                        src="/Navlogo.png"
+                        alt="MPTM Official Logo"
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-amber-300 tracking-wider block">
+                        जय संताजी
+                      </span>
+                      <h2 className="text-base sm:text-lg font-black tracking-wide text-white drop-shadow-xs leading-tight">
+                        महाराष्ट्र प्रांतिक तैलिक महासभा
+                      </h2>
+                      <p className="text-[11px] font-medium text-amber-200/90 leading-tight">
+                        अमरावती विभाग, अमरावती
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Header Badges & Close Button */}
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <span className="bg-black/35 border border-amber-400/40 text-amber-100 font-mono text-xs font-semibold px-3 py-1 rounded-full shadow-inner hidden sm:inline-block">
+                      पावती क्र. : {selectedDetailsReg.receiptNo}
                     </span>
+                    <span className="bg-emerald-600/90 text-white border border-emerald-400/40 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Verified</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDetailsReg(null)}
+                      className="w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white/90 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/20 active:scale-95 ml-1"
+                      title="बंद करा"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Top Info Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs">पावती क्र. : </span>
-                    <span className="font-mono font-black text-stone-900 text-sm">{selectedReg.receiptNo}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs">दिनांक : </span>
-                    <span className="font-bold text-stone-900 text-xs">{getDatePart(selectedReg)}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs">नोंदणी शुल्क : </span>
-                    <span className="font-black text-[#7A0C0C] text-sm">₹{selectedReg.registrationFee}</span>
-                  </div>
-                </div>
-
-                {/* Main Member Details */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-amber-800" />
-                    <span>मुख्य सदस्यांची माहिती ({selectedReg.mainMembers.length})</span>
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedReg.mainMembers.map((m) => (
-                      <div key={m.id || m.memberNo} className="p-3 rounded-xl bg-white border border-amber-300/80 space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between border-b border-stone-200 pb-1 font-bold">
-                          <span className="font-mono text-amber-950 bg-amber-200/80 px-2 py-0.5 rounded border border-amber-300">{m.memberNo}</span>
-                          <span className="text-stone-700">प्रभाग क्र. / गाव: {m.prabhagNo}</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-semibold">
-                          <div>
-                            <span className="text-stone-600">संपूर्ण नाव : </span>
-                            <span className="font-extrabold text-stone-900">{m.fullName}</span>
+                {/* 2. MODAL BODY (Scrollable Container) */}
+                <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 text-slate-800">
+                  
+                  {/* TWO-COLUMN TOP SECTION */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    
+                    {/* LEFT COLUMN: 8 COLS */}
+                    <div className="lg:col-span-8 space-y-4">
+                      
+                      {/* Box 1: नोंदणीची मूलभूत माहिती */}
+                      <div className="bg-[#FDF9F2] border border-amber-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-amber-100 text-[#7A0C0C] flex items-center justify-center font-bold">
+                            <User className="w-4 h-4" />
                           </div>
                           <div>
-                            <span className="text-stone-600">मोबाईल क्र. : </span>
-                            <span className="font-mono font-bold text-stone-900">{m.mobileNo}</span>
+                            <span className="text-xs font-black text-[#7A0C0C] block">
+                              नोंदणीची मूलभूत माहिती
+                            </span>
+                            <span className="text-[11px] text-stone-500 font-medium">
+                              नोंदणीकृत तपशील व सदस्य कार्ड
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-stone-500 block">नोंदणी दिनांक व वेळ</span>
+                          <span className="text-xs font-bold text-stone-800 font-mono">
+                            {fullDateTimeStr}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Box 2: प्रमुख सदस्य Header */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-[#7A0C0C]" />
+                          <h3 className="text-sm font-black text-stone-900">
+                            प्रमुख सदस्य ({mainMembersList.length})
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Main Members Cards */}
+                      {mainMembersList.map((m, idx) => (
+                        <div
+                          key={m.id || idx}
+                          className="bg-white border border-amber-200/90 rounded-2xl shadow-xs overflow-hidden"
+                        >
+                          {/* Card Sub-header */}
+                          <div className="bg-gradient-to-r from-amber-50/90 to-amber-100/40 px-4 py-2.5 border-b border-amber-200 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-full bg-[#7A0C0C] text-white text-xs font-black flex items-center justify-center shadow-xs">
+                                {m.srNo || idx + 1}
+                              </span>
+                              <span className="font-extrabold text-xs text-[#7A0C0C]">
+                                मुख्य सदस्य - {idx + 1}
+                              </span>
+                              <span className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
+                                {isExec ? "कार्यकारिणी सदस्य (Executive Member)" : "प्राथमिक सदस्य (Primary Member)"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Card Content with Avatar and 6 Tiles */}
+                          <div className="p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                            {/* Circle Avatar with Initials */}
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 border-2 border-amber-400 text-[#7A0C0C] font-black text-xl flex items-center justify-center shadow-inner shrink-0">
+                              {getInitials(m.fullName)}
+                            </div>
+
+                            {/* 6 Grid Tiles */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 flex-1 w-full text-xs">
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">पूर्ण नाव</span>
+                                <span className="font-bold text-stone-900 block truncate" title={m.fullName}>
+                                  {m.fullName || "-"}
+                                </span>
+                              </div>
+
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">सदस्य क्रमांक</span>
+                                <span className="font-extrabold text-[#7A0C0C] font-mono block">
+                                  {m.memberNo || "-"}
+                                </span>
+                              </div>
+
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">मोबाईल क्रमांक</span>
+                                <span className="font-bold text-stone-900 font-mono block">
+                                  {m.mobileNo || "-"}
+                                </span>
+                              </div>
+
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">प्रभाग क्रमांक</span>
+                                <span className="font-bold text-stone-900 block">
+                                  {m.prabhagNo || "-"}
+                                </span>
+                              </div>
+
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">गाव / शहर</span>
+                                <span className="font-bold text-stone-900 block">
+                                  {selectedDetailsReg.city || "-"}
+                                </span>
+                              </div>
+
+                              <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                                <span className="text-[10px] text-stone-500 font-semibold block">तालुका</span>
+                                <span className="font-bold text-stone-900 block">
+                                  {selectedDetailsReg.taluka || selectedDetailsReg.city || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Box 3: पत्ता व इतर माहिती (Address & Location Card) */}
+                      <div className="bg-white border border-amber-200/90 rounded-2xl shadow-xs overflow-hidden">
+                        <div className="bg-amber-50/60 px-4 py-2 border-b border-amber-200/80 flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-[#7A0C0C]" />
+                          <h4 className="text-xs font-black text-stone-900">
+                            पत्ता व इतर माहिती
+                          </h4>
+                        </div>
+                        <div className="p-3.5 grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                          <div className="sm:col-span-2 bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block">पूर्ण पत्ता</span>
+                            <span className="font-bold text-stone-900 block leading-snug">
+                              {selectedDetailsReg.address || "-"}
+                            </span>
+                          </div>
+
+                          <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block">जिल्हा</span>
+                            <span className="font-bold text-stone-900 block">
+                              {selectedDetailsReg.district || "-"}
+                            </span>
+                          </div>
+
+                          <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block">पिनकोड</span>
+                            <span className="font-bold text-stone-900 font-mono block">
+                              {selectedDetailsReg.pincode || "-"}
+                            </span>
+                          </div>
+
+                          <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block">राज्य / देश</span>
+                            <span className="font-bold text-stone-900 block">
+                              {selectedDetailsReg.state || "महाराष्ट्र"}, {selectedDetailsReg.country || "भारत"}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Address, Gaav, Taluka, City, District, State, Country, Pincode & Amount in Words */}
-                <div className="space-y-2.5 p-3.5 bg-amber-50/70 rounded-xl border border-amber-300 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div className="sm:col-span-2 lg:col-span-4">
-                      <span className="font-bold text-stone-800">संपूर्ण पत्ता (Address) : </span>
-                      <span className="font-semibold text-stone-900">{selectedReg.address || "-"}</span>
                     </div>
-                    <div>
-                      <span className="font-bold text-stone-800">गाव (Gaav) : </span>
-                      <span className="font-semibold text-stone-900">{selectedReg.gaav || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">तालुका (Taluka) : </span>
-                      <span className="font-semibold text-stone-900">{selectedReg.taluka || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">शहर / गाव (City) : </span>
-                      <span className="font-extrabold text-[#7A0C0C]">{selectedReg.city || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">जिल्हा (District) : </span>
-                      <span className="font-extrabold text-[#7A0C0C]">{selectedReg.district || "-"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">राज्य (State) : </span>
-                      <span className="font-semibold text-stone-900">{selectedReg.state || "महाराष्ट्र"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">देश (Country) : </span>
-                      <span className="font-semibold text-stone-900">{selectedReg.country || "भारत"}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-800">पिनकोड (Pincode) : </span>
-                      <span className="font-mono font-bold text-stone-900">{selectedReg.pincode || "-"}</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-amber-300/80 pt-2">
-                    <span className="font-bold text-stone-800">अक्षरी रक्कम : </span>
-                    <span className="font-extrabold text-[#7A0C0C]">{selectedReg.amountInWords || convertNumberToMarathiWords(selectedReg.registrationFee)}</span>
-                  </div>
-                </div>
 
-                {/* Family Members Details Table */}
-                {selectedReg.familyMembers && selectedReg.familyMembers.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1 flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-amber-800" />
-                      <span>कौटुंबिक सदस्यांची माहिती ({selectedReg.familyMembers.length})</span>
-                    </h4>
-                    <div className="overflow-x-auto rounded-lg border border-amber-300">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-[#7A0C0C] text-white font-bold text-center">
-                            <th className="p-2 border-r border-amber-700/60">अ.क्र.</th>
-                            <th className="p-2 border-r border-amber-700/60">नाव</th>
-                            <th className="p-2 border-r border-amber-700/60">नाते</th>
-                            <th className="p-2 border-r border-amber-700/60">जन्म दिनांक</th>
-                            <th className="p-2 border-r border-amber-700/60">व्यवसाय</th>
-                            <th className="p-2">मोबाईल क्र.</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-amber-200 text-stone-900 bg-white">
-                          {selectedReg.familyMembers.map((fam, idx) => (
-                            <tr key={fam.id || idx}>
-                              <td className="p-2 text-center font-bold border-r border-amber-200">{idx + 1}</td>
-                              <td className="p-2 font-bold border-r border-amber-200">{fam.name}</td>
-                              <td className="p-2 font-medium border-r border-amber-200">{fam.relation}</td>
-                              <td className="p-2 border-r border-amber-200">{formatDateToDDMMYYYY(fam.dob)}</td>
-                              <td className="p-2 border-r border-amber-200">{fam.occupation || "-"}</td>
-                              <td className="p-2 font-medium">{fam.mobile || "-"}</td>
+                    {/* RIGHT COLUMN: 4 COLS (नोंदणी व पेमेंट माहिती) */}
+                    <div className="lg:col-span-4">
+                      <div className="bg-white border border-amber-200/90 rounded-2xl shadow-xs overflow-hidden sticky top-2">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-amber-50 to-amber-100/60 px-4 py-3 border-b border-amber-200 flex items-center gap-2">
+                          <Banknote className="w-4 h-4 text-[#7A0C0C]" />
+                          <h4 className="text-xs font-black text-stone-900">
+                            नोंदणी व पेमेंट माहिती
+                          </h4>
+                        </div>
+
+                        {/* 7 Vertical Informational Tiles */}
+                        <div className="p-3.5 space-y-2.5 text-xs">
+                          {/* 1. पावती क्रमांक */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-amber-100/80 flex items-center justify-between">
+                            <span className="text-[11px] text-stone-600 font-semibold">पावती क्रमांक</span>
+                            <span className="font-mono font-black text-[#7A0C0C] bg-amber-100/80 px-2 py-0.5 rounded-md text-[11px] border border-amber-300">
+                              {selectedDetailsReg.receiptNo}
+                            </span>
+                          </div>
+
+                          {/* 2. नोंदणी दिनांक व वेळ */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-amber-100/80 flex items-center justify-between">
+                            <span className="text-[11px] text-stone-600 font-semibold">नोंदणी दिनांक व वेळ</span>
+                            <span className="font-mono font-bold text-stone-800 text-[11px]">
+                              {fullDateTimeStr}
+                            </span>
+                          </div>
+
+                          {/* 3. नोंदणी शुल्क */}
+                          <div className="p-3 rounded-xl bg-gradient-to-r from-amber-50/80 to-amber-100/50 border border-amber-300/80 flex items-center justify-between">
+                            <div>
+                              <span className="text-[10px] text-stone-500 font-bold block uppercase tracking-wider">नोंदणी शुल्क</span>
+                              <span className="text-[10px] text-stone-600">प्राप्त अधिकृत देयक</span>
+                            </div>
+                            <span className="text-xl font-black text-[#7A0C0C] tracking-tight">
+                              ₹ {selectedDetailsReg.registrationFee}
+                            </span>
+                          </div>
+
+                          {/* 4. भरणा पद्धत */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-amber-100/80 flex items-center justify-between">
+                            <span className="text-[11px] text-stone-600 font-semibold">भरणा पद्धत</span>
+                            <span className="font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px]">
+                              {formatPaymentMethod(selectedDetailsReg.paymentMethod)}
+                            </span>
+                          </div>
+
+                          {/* 5. व्यवहार संदर्भ क्रमांक */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block mb-0.5">व्यवहार संदर्भ क्रमांक (Txn ID)</span>
+                            <span className="font-mono text-[11px] font-bold text-stone-800 break-all block">
+                              {(selectedDetailsReg as any).paymentTransactionId || selectedDetailsReg.paymentReference || (selectedDetailsReg as any).transactionId || "UPI / Direct"}
+                            </span>
+                          </div>
+
+                          {/* 6. देयक स्रोत */}
+                          <div className="p-2.5 rounded-xl bg-[#FAF7F2] border border-amber-100/80">
+                            <span className="text-[10px] text-stone-500 font-semibold block mb-0.5">देयक स्रोत (Referrer)</span>
+                            <span className="font-bold text-stone-800 text-xs block truncate" title={refInfo.email}>
+                              {refInfo.isDirect ? "थेट वेबसाईट (Direct Website)" : (refInfo.name || refInfo.email)}
+                            </span>
+                          </div>
+
+                          {/* 7. नोंदणी स्थिती */}
+                          <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
+                            <span className="text-[11px] text-emerald-900 font-semibold">नोंदणी स्थिती</span>
+                            <span className="font-bold text-emerald-800 flex items-center gap-1 text-[11px]">
+                              <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
+                              <span>Verified (यशस्वी)</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* MIDDLE SECTION: कौटुंबिक सदस्य (Family Members Table) */}
+                  <div className="bg-white border border-amber-200/90 rounded-2xl shadow-xs overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-50 to-amber-100/50 px-4 sm:px-5 py-3 border-b border-amber-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#7A0C0C]" />
+                        <h4 className="text-xs sm:text-sm font-black text-stone-900">
+                          कौटुंबिक सदस्य ({selectedDetailsReg.familyMembers?.length || 0})
+                        </h4>
+                      </div>
+                    </div>
+
+                    {selectedDetailsReg.familyMembers && selectedDetailsReg.familyMembers.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left border-collapse">
+                          <thead className="bg-[#FDF9F2] text-stone-700 font-bold border-b border-amber-200 text-[11px]">
+                            <tr>
+                              <th className="p-2.5 text-center w-12 border-r border-amber-100">अ. क्र.</th>
+                              <th className="p-2.5 border-r border-amber-100">पूर्ण नाव</th>
+                              <th className="p-2.5 border-r border-amber-100">नाते</th>
+                              <th className="p-2.5 border-r border-amber-100">जन्म तारीख</th>
+                              <th className="p-2.5 border-r border-amber-100">व्यवसाय</th>
+                              <th className="p-2.5">मोबाईल</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-amber-100/80">
+                            {selectedDetailsReg.familyMembers.map((fam, idx) => (
+                              <tr key={fam.id || idx} className="hover:bg-amber-50/40 transition">
+                                <td className="p-2.5 text-center font-bold text-stone-600 border-r border-amber-100">
+                                  {idx + 1}
+                                </td>
+                                <td className="p-2.5 font-bold text-stone-900 border-r border-amber-100">
+                                  {fam.name}
+                                </td>
+                                <td className="p-2.5 font-medium text-stone-800 border-r border-amber-100">
+                                  <span className="bg-amber-100/70 border border-amber-300/80 text-amber-950 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                    {fam.relation || "-"}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 font-mono text-stone-700 border-r border-amber-100">
+                                  {fam.dob ? formatDateToDDMMYYYY(fam.dob) : "-"}
+                                </td>
+                                <td className="p-2.5 text-stone-700 border-r border-amber-100">
+                                  {fam.occupation || "-"}
+                                </td>
+                                <td className="p-2.5 font-mono text-stone-700">{fam.mobile || "-"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-5 text-center text-xs text-stone-500 font-medium">
+                        कोणतेही कौटुंबिक सदस्य नोंदवलेले नाहीत.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* BOTTOM SECTION: देयक तपशील (Payment Summary Cards) */}
+                  <div className="bg-white border border-amber-200/90 rounded-2xl shadow-xs overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-50 to-amber-100/50 px-4 sm:px-5 py-2.5 border-b border-amber-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-[#7A0C0C]" />
+                        <h4 className="text-xs sm:text-sm font-black text-stone-900">
+                          देयक तपशील
+                        </h4>
+                      </div>
+                      <ChevronUp className="w-4 h-4 text-stone-500" />
+                    </div>
+
+                    <div className="p-3.5 grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-xs">
+                      <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                        <span className="text-[10px] text-stone-500 font-semibold block">नोंदणी शुल्क</span>
+                        <span className="font-black text-[#7A0C0C] text-sm block">
+                          ₹ {selectedDetailsReg.registrationFee}
+                        </span>
+                      </div>
+
+                      <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                        <span className="text-[10px] text-stone-500 font-semibold block">पेमेंट दिनांक व वेळ</span>
+                        <span className="font-mono font-bold text-stone-800 text-[11px] block">
+                          {fullDateTimeStr}
+                        </span>
+                      </div>
+
+                      <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                        <span className="text-[10px] text-stone-500 font-semibold block">भरणा पद्धत</span>
+                        <span className="font-bold text-emerald-800 text-[11px] block">
+                          {formatPaymentMethod(selectedDetailsReg.paymentMethod)}
+                        </span>
+                      </div>
+
+                      <div className="sm:col-span-2 bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                        <span className="text-[10px] text-stone-500 font-semibold block">व्यवहार संदर्भ क्रमांक</span>
+                        <span className="font-mono font-bold text-stone-800 text-[11px] break-all block">
+                          {(selectedDetailsReg as any).paymentTransactionId || selectedDetailsReg.paymentReference || (selectedDetailsReg as any).transactionId || "UPI / Direct"}
+                        </span>
+                      </div>
+
+                      <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
+                        <span className="text-[10px] text-stone-500 font-semibold block">देयक स्रोत</span>
+                        <span className="font-bold text-stone-800 text-[11px] block truncate" title={refInfo.email}>
+                          {refInfo.isDirect ? "थेट वेबसाईट" : (refInfo.name || refInfo.email)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Payment & Verification Row */}
-                <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-amber-50/80 border border-amber-300 text-xs">
-                  <div>
-                    <span className="font-bold text-stone-800">देयक पद्धत : </span>
-                    <span className="font-extrabold text-stone-900">{formatPaymentMethod(selectedReg.paymentMethod)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold">
-                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">✓</span>
-                    <span>रक्कम रु. {selectedReg.registrationFee} प्राप्त झाली (Payment Verified)</span>
-                  </div>
                 </div>
 
-                {/* Sandesh Declaration Box */}
-                <div className="p-3.5 rounded-xl bg-amber-100/90 border-2 border-amber-400 text-stone-900">
-                  <p className="text-xs sm:text-sm font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
-                    <span className="whitespace-nowrap">संदेश :</span>
-                    <span className="text-stone-900 font-bold">
-                      {selectedReg.receiptNo.startsWith("MPTM-EM-") || Number(selectedReg.registrationFee) === 1001
-                        ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
-                        : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
-                    </span>
-                  </p>
-                </div>
+                {/* 3. MODAL FOOTER */}
+                <div className="px-5 sm:px-7 py-3.5 bg-white border-t border-amber-200/90 rounded-b-3xl flex items-center justify-between shrink-0 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDetailsReg(null)}
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-4 py-2.5 rounded-xl font-bold border border-stone-300 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>बंद करा (Close)</span>
+                  </button>
 
-                {/* Footer Signature Block */}
-                <div className="pt-6 border-t border-amber-300 flex items-end justify-between text-xs">
-                  <div className="text-stone-600 font-semibold italic">
-                    ही पावती सदस्य नोंदणीचा अधिकृत पुरावा म्हणून जतन करावी.
-                  </div>
-                  <div className="text-center space-y-1">
-                    <div className="w-36 h-8 border-b-2 border-stone-800 border-dashed mx-auto"></div>
-                    <p className="font-extrabold text-[#7A0C0C]">पावती देणाऱ्याची सही / शिक्का</p>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSendRegWhatsApp(selectedDetailsReg)}
+                      className="bg-[#25D366] hover:bg-[#1EBE5D] text-white text-xs px-4.5 py-2.5 rounded-xl flex items-center gap-1.5 transition font-bold shadow-sm cursor-pointer active:scale-95"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>WhatsApp करा</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const reg = selectedDetailsReg;
+                        setSelectedDetailsReg(null);
+                        setSelectedPavatiReg(reg);
+                      }}
+                      className="bg-gradient-to-r from-[#6B0606] to-[#800A0A] hover:from-[#570505] hover:to-[#6B0606] text-white text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 font-black shadow-md transition cursor-pointer active:scale-95"
+                    >
+                      <FileText className="w-4 h-4 text-amber-300" />
+                      <span>पावती पहा (View Pavati)</span>
+                    </button>
                   </div>
                 </div>
 
               </div>
+            </div>
+          );
+        })()}
+
+{/* ======================================================== */}
+        {/* 2. OFFICIAL PRINTABLE / DOWNLOADABLE PAVATI MODAL        */}
+        {/* ======================================================== */}
+        {selectedPavatiReg && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs overflow-y-auto p-2 sm:p-4 md:p-6 flex justify-center items-start animate-in fade-in duration-150">
+            <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden my-4 sm:my-8 animate-in fade-in zoom-in-95 duration-150">
+              {/* Top Action Bar (Sticky, Single Line, Crisp Typography & Balanced Spacing) */}
+              <div className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 py-3 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs no-print">
+                {/* Left: Title + Document Icon + Receipt Number */}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[#6B0606] flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-amber-800" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-slate-800 text-sm sm:text-base tracking-wide whitespace-nowrap">
+                      अधिकृत पावती
+                    </span>
+                    <span className="font-mono text-xs font-bold text-amber-950 bg-amber-100/90 border border-amber-300 px-2.5 py-0.5 rounded-md whitespace-nowrap shadow-2xs">
+                      {selectedPavatiReg.receiptNo}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Right: Action Buttons (Uniform height, whitespace-nowrap, sleek colors) */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedPavatiReg.publicToken && (
+                    <a
+                      href={`${MAIN_SITE_URL}/receipt/${selectedPavatiReg.publicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 hover:border-slate-300"
+                      title="वेबसाईटवर पावती पाहा"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="whitespace-nowrap">वेबसाईट</span>
+                    </a>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleSendRegWhatsApp(selectedPavatiReg)}
+                    className="h-9 px-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
+                    title="WhatsApp वर पाठवा"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-white" />
+                    <span className="whitespace-nowrap">WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePrint(selectedPavatiReg.receiptNo)}
+                    className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 hover:border-slate-300"
+                    title="Print Receipt"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                    <span className="whitespace-nowrap">प्रिंट</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPdf(selectedPavatiReg.receiptNo)}
+                    disabled={downloadingPdf}
+                    className="h-9 px-3.5 bg-gradient-to-r from-[#6B0606] to-[#800A0A] hover:from-[#550505] hover:to-[#6B0606] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 disabled:opacity-50"
+                    title="PDF डाऊनलोड करा"
+                  >
+                    <Download className={`w-3.5 h-3.5 shrink-0 ${downloadingPdf ? "animate-spin" : ""}`} />
+                    <span className="whitespace-nowrap">{downloadingPdf ? "डाऊनलोड होत आहे..." : "PDF डाऊनलोड"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPavatiReg(null)}
+                    className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 ml-0.5"
+                    title="बंद करा (Close)"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Printable Official Receipt Body */}
+              {(() => {
+                const reg = selectedPavatiReg;
+                const isExec = isExecutiveRegistration(reg) || Number(reg.registrationFee) === 1001;
+                const mainMembers = Array.isArray(reg.mainMembers) ? reg.mainMembers : [];
+                const familyMembers = Array.isArray(reg.familyMembers) ? reg.familyMembers : [];
+                const displayAddress = formatDisplayAddress(reg);
+                const publicToken = reg.publicToken || "";
+                const qrUrl = publicToken
+                  ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
+                      `${MAIN_SITE_URL}/receipt/${publicToken}`
+                    )}`
+                  : `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
+                      `${MAIN_SITE_URL}/receipt/${reg.receiptNo}`
+                    )}`;
+
+                return (
+                  <div
+                    id="printable-receipt-card"
+                    style={{ fontFamily: "'Baloo 2', 'Tiro Devanagari Marathi', 'Noto Sans Devanagari', system-ui, sans-serif" }}
+                    className="p-5 sm:p-7 space-y-4 text-stone-900 text-xs sm:text-sm bg-white"
+                  >
+                    {/* 1. Header Title Banner */}
+                    <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-3 sm:px-6 relative flex items-center justify-between border-b-2 border-amber-400 rounded-xl shadow-xs">
+                      <div className="hidden sm:flex items-center gap-1 text-amber-400 text-lg font-bold">
+                        <span>❖</span>
+                        <span className="w-6 h-[2px] bg-amber-400"></span>
+                      </div>
+
+                      <div className="text-center mx-auto space-y-0.5">
+                        <p className="text-[11px] sm:text-sm font-bold text-amber-400">❖ जय संताजी ❖</p>
+                        <h2 className="text-base sm:text-2xl font-black text-amber-200 drop-shadow-md leading-tight">
+                          महाराष्ट्र प्रांतिक तैलिक महासभा
+                        </h2>
+                        <p className="text-[11px] sm:text-sm text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
+                        <div className="inline-block mt-1">
+                          <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-[10px] sm:text-sm px-3 sm:px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
+                            {isExec ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★" : "★ प्राथमिक सदस्य नोंदणी पावती ★"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:flex items-center gap-1 text-amber-400 text-lg font-bold">
+                        <span className="w-6 h-[2px] bg-amber-400"></span>
+                        <span>❖</span>
+                      </div>
+                    </div>
+
+                    {/* 2. Top Meta Row: पावती क्र. | दिनांक | नोंदणी शुल्क */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-3 rounded-xl bg-amber-50/70 border border-amber-300">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">पावती क्र. :</span>
+                        <span className="font-mono font-black text-stone-900 text-sm sm:text-base">{reg.receiptNo}</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">दिनांक :</span>
+                        <span className="font-mono font-bold text-stone-900 text-xs sm:text-sm">{getDatePart(reg)}</span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">नोंदणी शुल्क :</span>
+                        <span className="font-mono font-black text-[#7A0C0C] text-sm sm:text-base">
+                          ₹{reg.registrationFee}/-
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. MAIN MEMBERS & LOCATION CONTAINER BOX (Form Style without underlines) */}
+                    {mainMembers && mainMembers.length > 0 && (
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="flex items-center justify-between border-b border-amber-300 pb-1.5">
+                          <h3 className="text-sm sm:text-base font-extrabold text-amber-950 flex items-center gap-2">
+                            <span>👤 मुख्य सदस्य माहिती</span>
+                            <span className="text-[10px] sm:text-xs font-bold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
+                              एकूण: {mainMembers.length}
+                            </span>
+                          </h3>
+                        </div>
+
+                        <div className="p-3.5 sm:p-4 rounded-xl bg-white border-2 border-amber-700/30 shadow-xs space-y-4">
+                          {mainMembers.map((member: any, index: number) => (
+                            <div
+                              key={member.id || index}
+                              className={`space-y-2.5 ${
+                                index > 0 ? "pt-3.5 border-t-2 border-dashed border-amber-300/80" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 border-b border-stone-200 pb-1.5">
+                                <span className="w-5 h-5 rounded-full bg-[#7A0C0C] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                  {member.srNo || index + 1}
+                                </span>
+                                <h4 className="font-bold text-stone-900 text-sm sm:text-base">
+                                  {index === 0 ? "प्राथमिक" : `सदस्य #${index + 1}`} सदस्य माहिती
+                                </h4>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs sm:text-sm">
+                                <div className="flex items-baseline gap-2">
+                                  <span className="font-bold text-stone-600 whitespace-nowrap">
+                                    {index === 0 ? "प्राथमिक सदस्य क्रमांक :" : "सदस्य क्रमांक :"}
+                                  </span>
+                                  <span className="font-mono font-black text-[#7A0C0C] text-sm">
+                                    {member.memberNo || "-"}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline gap-2">
+                                  <span className="font-bold text-stone-600 whitespace-nowrap">
+                                    प्रभाग क्रमांक :
+                                  </span>
+                                  <span className="font-bold text-stone-900">
+                                    {member.prabhagNo || "-"}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline gap-2">
+                                  <span className="font-bold text-stone-600 whitespace-nowrap">सदस्याचे पूर्णनाव :</span>
+                                  <span className="font-extrabold text-stone-950 text-sm sm:text-base">
+                                    {member.fullName}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-baseline gap-2">
+                                  <span className="font-bold text-stone-600 whitespace-nowrap">मोबाईल क्रमांक :</span>
+                                  <span className="font-mono font-bold text-stone-900">
+                                    {member.mobileNo}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Common Address & Location Details (Clean without underlines) */}
+                          <div className="space-y-2.5 pt-3 border-t-2 border-amber-200 text-xs sm:text-sm">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-bold text-stone-600 whitespace-nowrap">पत्ता :</span>
+                              <span className="font-semibold text-stone-900">
+                                {reg.address || "-"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">गाव :</span>
+                                <span className="font-semibold text-stone-900">
+                                  {reg.gaav || reg.city || "-"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">तालुका :</span>
+                                <span className="font-semibold text-stone-900">
+                                  {reg.taluka || reg.city || "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">जिल्हा :</span>
+                                <span className="font-semibold text-stone-900">
+                                  {reg.district || "अमरावती"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">राज्य :</span>
+                                <span className="font-semibold text-stone-900">
+                                  {reg.state || "महाराष्ट्र"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">देश :</span>
+                                <span className="font-semibold text-stone-900">
+                                  {reg.country || "भारत"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-baseline gap-2">
+                                <span className="font-bold text-stone-600 whitespace-nowrap">पिनकोड :</span>
+                                <span className="font-mono font-bold text-stone-900">
+                                  {reg.pincode || "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. FAMILY MEMBERS SECTION (Exact table matching Form.tsx) */}
+                    {familyMembers && familyMembers.length > 0 && (
+                      <div className="my-4 space-y-2">
+                        <div className="flex flex-wrap items-center justify-center gap-2 my-2">
+                          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-amber-300 py-1 px-4 sm:px-5 rounded-full border-2 border-amber-400/80 shadow-md">
+                            <span className="text-amber-400 text-xs font-bold">❖</span>
+                            <h3 className="text-xs sm:text-sm font-extrabold tracking-wide text-amber-200 whitespace-nowrap">
+                              कौटुंबिक सदस्यांची माहिती
+                            </h3>
+                            <span className="text-amber-400 text-xs font-bold">❖</span>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto rounded-lg border-2 border-amber-700/40 shadow-xs">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-[#6B0D0D] text-white font-bold text-center border-b border-amber-600">
+                                <th className="py-1.5 px-2 border-r border-amber-700/60 w-12">अ. क्र.</th>
+                                <th className="py-1.5 px-3 border-r border-amber-700/60">नाव</th>
+                                <th className="py-1.5 px-3 border-r border-amber-700/60">नाते</th>
+                                <th className="py-1.5 px-3 border-r border-amber-700/60">जन्म दिनांक</th>
+                                <th className="py-1.5 px-3 border-r border-amber-700/60">व्यवसाय / शिक्षण</th>
+                                <th className="py-1.5 px-3">मोबाईल क्रमांक</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-amber-800/30 text-stone-900 bg-white">
+                              {familyMembers.map((fm: any, i: number) => (
+                                <tr key={fm.id || i} className="hover:bg-amber-50/50">
+                                  <td className="py-1.5 px-2 text-center font-bold text-stone-800 border-r border-amber-800/30">
+                                    {fm.srNo || i + 1}.
+                                  </td>
+                                  <td className="py-1.5 px-3 font-bold border-r border-amber-800/30">{fm.name}</td>
+                                  <td className="py-1.5 px-3 border-r border-amber-800/30">{fm.relation}</td>
+                                  <td className="py-1.5 px-3 border-r border-amber-800/30 font-mono">{formatDateToDDMMYYYY(fm.dob) || fm.dob || "-"}</td>
+                                  <td className="py-1.5 px-3 border-r border-amber-800/30">{fm.occupation || "-"}</td>
+                                  <td className="py-1.5 px-3 font-mono">{fm.mobile || "-"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 5. Amount in Words */}
+                    <div className="flex items-baseline gap-2 pt-1 text-xs sm:text-sm">
+                      <span className="font-bold text-stone-700 whitespace-nowrap">रक्कम अक्षरी :</span>
+                      <span className="font-extrabold text-[#7A0C0C] text-sm">
+                        {reg.amountInWords || convertNumberToMarathiWords(reg.registrationFee)}
+                      </span>
+                    </div>
+
+                    {/* 6. PAYMENT DETAILS BOX AT BOTTOM (As currently doing) */}
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-amber-50/90 via-amber-100/40 to-amber-50/90 border-2 border-amber-400/80 space-y-2.5 text-xs sm:text-sm shadow-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-stone-800 text-xs sm:text-sm">भरणा केलेली एकूण रक्कम :</span>
+                          <span className="font-mono text-xl sm:text-2xl font-black text-[#7A0C0C]">₹{reg.registrationFee}/-</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 font-extrabold text-xs">
+                          <span>✓</span>
+                          <span>पेमेंट पुष्टी (Payment Confirmed)</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="font-bold text-stone-600">पेमेंट पद्धत : </span>
+                          <span className="font-bold text-stone-900">{formatPaymentMethod(reg.paymentMethod)}</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-stone-600">व्यवहार संदर्भ : </span>
+                          <span className="font-mono font-bold text-stone-900">
+                            {(reg as any).paymentTransactionId || reg.paymentReference || (reg as any).transactionId || "UPI / Direct"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-stone-600">पावती दिनांक : </span>
+                          <span className="font-mono font-bold text-stone-900">{getDatePart(reg)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 7. Declaration / Sandesh Box */}
+                    <div className="p-3.5 rounded-xl bg-amber-50/70 border-l-4 border-l-[#7A0C0C] border border-amber-200/80 text-stone-900 shadow-2xs">
+                      <p className="text-xs font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
+                        <span className="whitespace-nowrap">संदेश :</span>
+                        <span className="text-stone-800 font-medium leading-relaxed">
+                          {isExec
+                            ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
+                            : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* 8. AUTHORIZATION: QR CODE + OFFICIAL SEAL + SIGNATURE BLOCK */}
+                    <div className="pt-3 border-t-2 border-amber-300/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                      {/* Left: QR Code Verification */}
+                      <div className="flex items-center gap-2.5">
+                        {qrUrl ? (
+                          <div className="p-1 bg-white border border-amber-400 rounded-xl shadow-2xs shrink-0 text-center">
+                            <img src={qrUrl} alt="Receipt QR" className="w-18 h-18 sm:w-20 sm:h-20 object-contain mx-auto" />
+                            <span className="text-[8px] font-bold text-stone-600 block leading-tight mt-0.5">
+                              स्कॅन व पडताळा
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className="space-y-0.5 text-stone-700 text-left">
+                          <p className="font-bold text-[11px] text-[#7A0C0C] flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>डिजिटल सत्यता हमी</span>
+                          </p>
+                          <p className="text-[9.5px] text-stone-500 leading-tight">
+                            मोबाईलने स्कॅन करून पावतीची थेट पोर्टलवर सत्यता तपासा.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Center: Official Seal (मुद्रा / शिक्का with Navbar Logo) */}
+                      <div className="flex justify-center">
+                        <OfficialSeal />
+                      </div>
+
+                      {/* Right: Signature & Approval Block */}
+                      <div className="flex flex-col items-center sm:items-end justify-center text-center sm:text-right space-y-1">
+                        <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Digitally Certified & Approved</span>
+                        </div>
+                        <p className="font-black text-[#7A0C0C] text-xs pt-0.5">
+                          अध्यक्ष / सचिव / कोषाध्यक्ष
+                        </p>
+                        <p className="text-[10px] text-stone-600 font-medium">
+                          महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 9. Clean Footer Note */}
+                    <div className="pt-2 border-t border-amber-200 text-center">
+                      <p className="text-[10px] text-stone-600 font-semibold">
+                        ही पावती संगणकीय प्रणालीद्वारे तयार करण्यात आलेली अधिकृत डिजिटल पावती आहे. (Computer-Generated Official Receipt)
+                      </p>
+                    </div>
+
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

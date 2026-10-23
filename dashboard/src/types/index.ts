@@ -36,6 +36,13 @@ export interface MemberRegistration {
   paymentMethod: string;
   paymentScreenshot?: string | null;
   referredBy?: string | null;
+  publicToken?: string | null;
+  pendingPaymentId?: string | null;
+  paymentReference?: string | null;
+  status?: string | null;
+  paymentMode?: string | null;
+  amountPaise?: number | null;
+  collectedBy?: string | null;
   createdAt: string;
   updatedAt: string;
   mainMembers: MainMember[];

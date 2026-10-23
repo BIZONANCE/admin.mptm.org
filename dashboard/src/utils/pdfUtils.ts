@@ -1,23 +1,23 @@
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 
 /**
- * Converts modern CSS color functions (lab, oklch, color(srgb...)) into standard rgb/rgba/hex
+ * Converts modern CSS color functions (oklab, oklch, lab, color-mix, color(srgb...)) into standard rgb/rgba/hex
  * supported by html2canvas.
  */
 function fixLabColorsInString(str: string, ctx?: CanvasRenderingContext2D | null): string {
   if (!str || typeof str !== "string") return str;
-  if (!str.includes("lab") && !str.includes("oklch") && !str.includes("color(")) return str;
+  if (!str.includes("lab") && !str.includes("okl") && !str.includes("color")) return str;
 
   const dummyCtx = ctx || (typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null);
 
-  return str.replace(/(?:lab|oklch|color)\([^;}]*\)/gi, (match) => {
+  return str.replace(/(?:oklab|oklch|lab|color-mix|color)\([^;}]*\)/gi, (match) => {
     if (dummyCtx) {
       try {
         dummyCtx.fillStyle = "#000000";
         dummyCtx.fillStyle = match;
         const converted = dummyCtx.fillStyle;
-        if (converted && converted !== "#000000" && !converted.includes("lab") && !converted.includes("oklch")) {
+        if (converted && converted !== "#000000" && !converted.includes("lab") && !converted.includes("okl")) {
           return converted;
         }
       } catch (e) {
@@ -77,7 +77,7 @@ function sanitizeClonedElementForHtml2Canvas(clonedDoc: Document, elementId: str
     };
   }
 
-  // 3. Set layout overrides on cloned root element
+  // 3. Set layout and font overrides on cloned root element for flawless Marathi typography
   const clonedElement = clonedDoc.getElementById(elementId);
   if (clonedElement) {
     clonedElement.style.margin = "0";
@@ -86,6 +86,25 @@ function sanitizeClonedElementForHtml2Canvas(clonedDoc: Document, elementId: str
     clonedElement.style.maxWidth = "800px";
     clonedElement.style.boxSizing = "border-box";
     clonedElement.style.borderRadius = "0";
+    clonedElement.style.fontFamily = "'Baloo 2', 'Tiro Devanagari Marathi', 'Noto Sans Devanagari', system-ui, sans-serif";
+
+    // Inject explicit Devanagari font stylesheet in clonedDoc to prevent broken conjuncts like 'ष्ट्र' in canvas rendering
+    try {
+      const fontLink = clonedDoc.createElement("link");
+      fontLink.rel = "stylesheet";
+      fontLink.href = "https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Tiro+Devanagari+Marathi:ital@0;1&family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&display=swap";
+      clonedDoc.head.appendChild(fontLink);
+
+      const fontStyle = clonedDoc.createElement("style");
+      fontStyle.textContent = `
+        #${elementId}, #${elementId} * {
+          font-family: 'Baloo 2', 'Tiro Devanagari Marathi', 'Noto Sans Devanagari', system-ui, sans-serif !important;
+        }
+      `;
+      clonedDoc.head.appendChild(fontStyle);
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -101,12 +120,26 @@ export async function downloadReceiptAsPdf(
   if (!element) {
     console.warn(`Element with ID "${elementId}" not found for PDF generation.`);
     if (typeof window !== "undefined") {
+      const origTitle = document.title;
+      document.title = filename.replace(/\.pdf$/i, "");
       window.print();
+      setTimeout(() => {
+        document.title = origTitle;
+      }, 1500);
     }
     return false;
   }
 
   try {
+    // Ensure all web fonts (especially Noto Sans Devanagari) are fully loaded before capturing canvas
+    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+      try {
+        await (document as any).fonts.ready;
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const canvas = await html2canvas(element, {
       scale: 3, // High resolution crisp text rendering
       useCORS: true,
@@ -152,7 +185,12 @@ export async function downloadReceiptAsPdf(
   } catch (err) {
     console.error("PDF generation failed, falling back to window.print():", err);
     if (typeof window !== "undefined") {
+      const origTitle = document.title;
+      document.title = filename.replace(/\.pdf$/i, "");
       window.print();
+      setTimeout(() => {
+        document.title = origTitle;
+      }, 1500);
     }
     return false;
   }

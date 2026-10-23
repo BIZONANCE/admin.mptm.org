@@ -85,7 +85,7 @@ export default function RootLayout({
         <meta property="og:image:width" content="800" />
         <meta property="og:image:height" content="600" />
       </head>
-      <body className={`${devanagari.className} min-h-full flex flex-col font-sans`}>{children}</body>
+      <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );
 }

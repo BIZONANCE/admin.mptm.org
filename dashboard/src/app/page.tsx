@@ -63,6 +63,7 @@ export default function DashboardHome() {
   const [contactMsgsCount, setContactMsgsCount] = useState<number>(0);
 
   useEffect(() => {
+    if (!isSuperAdmin) return;
     const fetchCounts = async () => {
       try {
         const resUsers = await fetch(`${API_URL}/api/users`);
@@ -101,13 +102,24 @@ export default function DashboardHome() {
       }
     };
     fetchCounts();
-  }, [API_URL]);
+  }, [API_URL, isSuperAdmin]);
 
   const fetchRegistrations = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/api/register`);
+      const role = localStorage.getItem("mptm_admin_role") || "USER";
+      const username = localStorage.getItem("mptm_admin_username") || "";
+      const params = new URLSearchParams({
+        userEmail: username,
+        userRole: role,
+      });
+      const res = await fetch(`${API_URL}/api/register?${params.toString()}`, {
+        headers: {
+          "x-user-email": username,
+          "x-user-role": role,
+        },
+      });
       const data = await res.json();
 
       if (res.ok && data.success && Array.isArray(data.data)) {

@@ -221,12 +221,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     const enteredUser = adminUsername.trim();
+    const lowerUser = enteredUser.toLowerCase();
     const isSuperAdminUser =
-      enteredUser.toLowerCase() === "mptmamravati.org" ||
-      enteredUser.toLowerCase() === "admin@mptmamravati.org";
+      lowerUser === "mptmamravati.org" ||
+      lowerUser === "admin@mptmamravati.org" ||
+      lowerUser === "admin" ||
+      lowerUser === "superadmin";
 
     try {
       if (isSuperAdminUser) {
+        let loggedIn = false;
         try {
           const res = await fetch(`${API_URL}/api/admin/login`, {
             method: "POST",
@@ -240,32 +244,38 @@ export default function LoginPage() {
           if (res.ok && data.success) {
             document.cookie = `mptm_admin_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
             localStorage.setItem("mptm_admin_logged_in", "true");
-            localStorage.setItem("mptm_admin_username", data.admin?.username || enteredUser);
+            localStorage.setItem("mptm_admin_username", "mptmamravati.org");
             localStorage.setItem("mptm_admin_role", "SUPER_ADMIN");
+            loggedIn = true;
             router.push("/");
+            return;
+          } else if (res.status === 401) {
+            setLoginError(data.error || "युझरनेम किंवा पासवर्ड चुकीचा आहे! (Invalid Password)");
             return;
           }
         } catch (backendErr) {
           console.error("Backend login error:", backendErr);
         }
 
-        if (adminPassword === "Mptmamt@2026" || adminPassword === "Test@2026") {
-          document.cookie = `mptm_admin_token=mptm_fallback_token; path=/; max-age=86400; SameSite=Lax`;
-          localStorage.setItem("mptm_admin_logged_in", "true");
-          localStorage.setItem("mptm_admin_username", enteredUser);
-          localStorage.setItem("mptm_admin_role", "SUPER_ADMIN");
-          router.push("/");
-          return;
-        } else {
-          setLoginError("Incorrect Super Admin password!");
-          return;
+        if (!loggedIn) {
+          if (adminPassword === "Mptmamt@2026" || adminPassword === "Test@2026") {
+            document.cookie = `mptm_admin_token=mptm_fallback_token; path=/; max-age=86400; SameSite=Lax`;
+            localStorage.setItem("mptm_admin_logged_in", "true");
+            localStorage.setItem("mptm_admin_username", "mptmamravati.org");
+            localStorage.setItem("mptm_admin_role", "SUPER_ADMIN");
+            router.push("/");
+            return;
+          } else {
+            setLoginError("चुकीचा पासवर्ड! (Incorrect Super Admin password)");
+            return;
+          }
         }
       } else {
-        setLoginError("Invalid Super Admin username! Please check credentials.");
+        setLoginError("युझरनेम चुकीचे आहे! (Use mptmamravati.org किंवा admin@mptmamravati.org)");
       }
     } catch (err: any) {
       console.error("Super Admin login error:", err);
-      setLoginError("Unexpected server error occurred.");
+      setLoginError("सर्व्हरशी संपर्क साधताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.");
     } finally {
       setIsLoading(false);
     }

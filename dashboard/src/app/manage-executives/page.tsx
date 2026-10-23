@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ExecutiveMemberItem, MemberRegistration } from "@/types";
-import { getApiUrl } from "@/utils/config";
-import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod } from "@/utils/formatters";
+import { getApiUrl, getMainSiteUrl } from "@/utils/config";
+import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod, convertNumberToMarathiWords } from "@/utils/formatters";
 import { downloadReceiptAsPdf } from "@/utils/pdfUtils";
 import { formatDistrictInEnglish, formatCityInEnglish, formatAddressInEnglish } from "@/utils/locationData";
 import {
@@ -61,6 +61,44 @@ function convertNumberToEnglishWords(amountStr: string | number): string {
   if (num === 1001) return "One Thousand One Rupees Only";
   if (num === 101) return "One Hundred One Rupees Only";
   return `${num} Rupees Only`;
+}
+
+
+// ── Official Organization Seal (मुद्रा / शिक्का with Navbar Logo) ──
+function OfficialSeal({ className = "" }: { className?: string }) {
+  return (
+    <div className={`relative flex items-center justify-center select-none w-28 h-28 sm:w-32 sm:h-32 ${className}`}>
+      <svg
+        viewBox="0 0 160 160"
+        className="absolute inset-0 w-full h-full text-[#7A0C0C] drop-shadow-xs transform -rotate-3"
+      >
+        <circle cx="80" cy="80" r="76" fill="#FFFDF9" stroke="#7A0C0C" strokeWidth="2.5" />
+        <circle cx="80" cy="80" r="71" fill="none" stroke="#7A0C0C" strokeWidth="1" strokeDasharray="3,2" />
+        <circle cx="80" cy="80" r="50" fill="none" stroke="#7A0C0C" strokeWidth="1.5" />
+        <defs>
+          <path id="sealTopArc" d="M 22,80 A 58,58 0 1,1 138,80" fill="none" />
+          <path id="sealBottomArc" d="M 138,80 A 58,58 0 0,1 22,80" fill="none" />
+        </defs>
+        <text fontSize="7.5" fontWeight="900" fill="#7A0C0C" letterSpacing="0.4">
+          <textPath href="#sealTopArc" startOffset="50%" textAnchor="middle">
+            ★ महाराष्ट्र प्रांतिक तैलिक महासभा ★
+          </textPath>
+        </text>
+        <text fontSize="7" fontWeight="800" fill="#7A0C0C" letterSpacing="0.3">
+          <textPath href="#sealBottomArc" startOffset="50%" textAnchor="middle">
+            • अमरावती विभाग, अमरावती •
+          </textPath>
+        </text>
+      </svg>
+      <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-amber-500 shadow-sm bg-[#4A0404]">
+        <img
+          src="/Navlogo.png"
+          alt="महाराष्ट्र प्रांतिक तैलिक महासभा मुद्रा"
+          className="w-full h-full object-cover rounded-full"
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function ManageExecutivesPage() {
@@ -258,16 +296,7 @@ export default function ManageExecutivesPage() {
     const fee = regMatch?.registrationFee || exec.registrationFee || 1001;
     const payMethod = regMatch ? formatPaymentMethod(regMatch.paymentMethod) : (exec.paymentMethod || "Cash");
 
-    const getBasePublicUrl = () => {
-      if (typeof window !== "undefined") {
-        const host = window.location.hostname;
-        if (host.includes("mptmamravati.org")) return "https://mptmamravati.org";
-        if (host.includes("mptm.org")) return "https://mptm.org";
-      }
-      return process.env.NEXT_PUBLIC_SITE_URL || "https://mptmamravati.org";
-    };
-
-    const siteUrl = getBasePublicUrl();
+    const siteUrl = getMainSiteUrl();
     const receiptPdfUrl = `${siteUrl}/executives?receiptNo=${encodeURIComponent(receiptNo)}&id=${encodeURIComponent(exec.id)}`;
 
     const textMessage = `🚩 *MAHARASHTRA PRANTIK TAILIK MAHASABHA (AMRAVATI)* 🚩
@@ -299,7 +328,15 @@ mptmamravati.org`;
   const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
   const handlePrint = () => {
+    const originalTitle = document.title;
+    const receiptNo = matchedReg?.receiptNo || selectedViewExec?.receiptNo || (selectedViewExec ? `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}` : "");
+    if (receiptNo) {
+      document.title = receiptNo.trim().replace(/[/\\?%*:|"<>]/g, "-");
+    }
     window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1500);
   };
 
   const handleDownloadPdf = async () => {
@@ -307,7 +344,8 @@ mptmamravati.org`;
     try {
       setDownloadingPdf(true);
       const receiptNo = matchedReg?.receiptNo || selectedViewExec.receiptNo || `MPTM-EM-${selectedViewExec.id.replace(/\D/g, "").slice(-4) || "101"}`;
-      await downloadReceiptAsPdf("printable-receipt-card", `Executive_Receipt_${receiptNo}.pdf`);
+      const safeReceiptId = receiptNo.trim().replace(/[/\\?%*:|"<>]/g, "-");
+      await downloadReceiptAsPdf("printable-receipt-card", `${safeReceiptId}.pdf`);
     } finally {
       setDownloadingPdf(false);
     }
@@ -1046,182 +1084,320 @@ mptmamravati.org`;
               </div>
 
               {/* Modal Body Printable Official Receipt */}
-              <div id="printable-receipt-card" className="p-4 sm:p-6 space-y-4 text-stone-900 text-xs sm:text-sm">
+                            {/* Modal Body Printable Official Receipt */}
+              <div
+                id="printable-receipt-card"
+                style={{ fontFamily: "'Baloo 2', 'Tiro Devanagari Marathi', 'Noto Sans Devanagari', system-ui, sans-serif" }}
+                className="p-5 sm:p-7 space-y-4 text-stone-900 text-xs sm:text-sm bg-white"
+              >
+                {/* 1. Header Title Banner */}
+                <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-3 sm:px-6 relative flex items-center justify-between border-b-2 border-amber-400 rounded-xl shadow-xs">
+                  <div className="hidden sm:flex items-center gap-1 text-amber-400 text-lg font-bold">
+                    <span>❖</span>
+                    <span className="w-6 h-[2px] bg-amber-400"></span>
+                  </div>
 
-                {/* Header Title Banner */}
-                <div className="bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-white py-3 px-4 text-center rounded-xl border-b-2 border-amber-400 shadow-xs">
-                  <p className="text-xs font-bold text-amber-400">❖ Jai Santaji ❖</p>
-                  <h2 className="text-base sm:text-2xl font-black text-amber-200 tracking-wide">
-                    Maharashtra Prantik Tailik Mahasabha
-                  </h2>
-                  <p className="text-xs text-sky-200 font-bold">Amravati Division, Amravati.</p>
-                  <div className="inline-block mt-1">
-                    <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-xs px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
-                      ★ Executive Member Registration Receipt
-                    </span>
-                  </div>
-                </div>
-
-                {/* Top Info Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-xl bg-amber-50/80 border border-amber-300">
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs block">Receipt No. : </span>
-                    <span className="font-mono font-black text-amber-950 text-sm">
-                      {receiptNo}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs block">Series / Member No. : </span>
-                    <span className="font-mono font-black text-indigo-950 text-sm">
-                      {seriesNo}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs block">Date : </span>
-                    <span className="font-bold text-stone-900 text-xs">
-                      {dateStr}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-stone-700 text-xs block">Registration Fee : </span>
-                    <span className="font-black text-[#7A0C0C] text-sm">
-                      ₹{fee}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Member Details */}
-                <div className="p-4 rounded-xl bg-white border border-amber-300 space-y-3">
-                  <h4 className="text-xs font-extrabold text-amber-950 uppercase tracking-wider border-b border-amber-300 pb-1.5 flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-amber-800" />
-                    <span>Executive Member Details</span>
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <span className="font-bold text-stone-600">Full Name : </span>
-                      <span className="font-black text-stone-900 text-sm">{selectedViewExec.fullName}</span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-600">Designation : </span>
-                      <span className="font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-block">
-                        {formatDesignationInEnglish(selectedViewExec.designation)}
+                  <div className="text-center mx-auto space-y-0.5">
+                    <p className="text-[11px] sm:text-sm font-bold text-amber-400">❖ जय संताजी ❖</p>
+                    <h2 className="text-base sm:text-2xl font-black text-amber-200 drop-shadow-md leading-tight">
+                      महाराष्ट्र प्रांतिक तैलिक महासभा
+                    </h2>
+                    <p className="text-[11px] sm:text-sm text-sky-200 font-bold">अमरावती विभाग, अमरावती.</p>
+                    <div className="inline-block mt-1">
+                      <span className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-amber-100 font-extrabold text-[10px] sm:text-sm px-3 sm:px-4 py-0.5 rounded-full border border-amber-400 shadow-xs">
+                        ★ कार्यकारिणी सदस्य नोंदणी पावती ★
                       </span>
                     </div>
-                    <div>
-                      <span className="font-bold text-stone-600">Member Series No : </span>
-                      <span className="font-mono font-extrabold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
-                        {seriesNo}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-600">Mobile Number : </span>
-                      <a href={`tel:${selectedViewExec.mobileNo}`} className="font-mono font-bold text-stone-900 hover:underline">
-                        {selectedViewExec.mobileNo}
-                      </a>
-                    </div>
-                    <div>
-                      <span className="font-bold text-stone-600">City / District : </span>
-                      <span className="font-bold text-stone-900">
-                        {formatEnglishText(selectedViewExec.city)}{selectedViewExec.district ? `, ${formatEnglishText(selectedViewExec.district)}` : ""}
-                      </span>
-                    </div>
-                  {matchedReg?.address && (
-                    <div className="sm:col-span-2">
-                      <span className="font-bold text-stone-600">Full Address : </span>
-                      <span className="font-semibold text-stone-900">{matchedReg.address}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Amount in Words */}
-              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-300 text-xs">
-                <span className="font-bold text-stone-800">Amount in Words : </span>
-                <span className="font-extrabold text-[#7A0C0C]">
-                  {matchedReg?.amountInWords || convertNumberToEnglishWords(matchedReg?.registrationFee || selectedViewExec.registrationFee || 1001)}
-                </span>
-              </div>
-
-              {/* Payment Details & Proof Section */}
-              <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-300 space-y-3 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 pb-2">
-                  <div>
-                    <span className="font-bold text-stone-800">Payment Method : </span>
-                    <span className="font-extrabold text-stone-900">
-                      {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : (selectedViewExec.paymentMethod || "Cash")}
-                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-emerald-800 font-extrabold bg-emerald-100/90 border border-emerald-300 px-2.5 py-1 rounded-full">
-                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">✓</span>
-                    <span>Amount Rs. {matchedReg?.registrationFee || selectedViewExec.registrationFee || "1001"} Received (Payment Verified)</span>
+
+                  <div className="hidden sm:flex items-center gap-1 text-amber-400 text-lg font-bold">
+                    <span className="w-6 h-[2px] bg-amber-400"></span>
+                    <span>❖</span>
                   </div>
                 </div>
 
-                {/* Proof of Payment Screenshot Thumbnail */}
-                {(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot) ? (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="font-bold text-stone-800 flex items-center gap-1">
-                      <ImageIcon className="w-4 h-4 text-indigo-600" />
-                      <span>Proof of Payment :</span>
+                {/* 2. Top Meta Row: पावती क्र. | दिनांक | नोंदणी शुल्क */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-3 rounded-xl bg-amber-50/70 border border-amber-300">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">पावती क्र. :</span>
+                    <span className="font-mono font-black text-stone-900 text-sm sm:text-base">{receiptNo}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">दिनांक :</span>
+                    <span className="font-mono font-bold text-stone-900 text-xs sm:text-sm">{dateStr}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">नोंदणी शुल्क :</span>
+                    <span className="font-mono font-black text-[#7A0C0C] text-sm sm:text-base">
+                      ₹{fee}/-
                     </span>
-                    <div className="flex items-center gap-3">
-                      <div
-                        onClick={() => setScreenshotZoom(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || null)}
-                        className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-indigo-400 shadow-sm cursor-zoom-in group hover:opacity-90 transition"
-                      >
-                        <Image
-                          src={matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || ""}
-                          alt="Payment Screenshot"
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition flex items-center justify-center text-white text-[10px] font-bold">
-                          Click Zoom
+                  </div>
+                </div>
+
+                {/* 3. EXECUTIVE MEMBER & ADDRESS CONTAINER BOX (Form Style without underlines) */}
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between border-b border-amber-300 pb-1.5">
+                    <h3 className="text-sm sm:text-base font-extrabold text-amber-950 flex items-center gap-2">
+                      <span>👤 कार्यकारिणी सदस्य माहिती</span>
+                    </h3>
+                  </div>
+
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-white border-2 border-amber-700/30 shadow-xs space-y-4">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 border-b border-stone-200 pb-1.5">
+                        <span className="w-5 h-5 rounded-full bg-[#7A0C0C] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                          1
+                        </span>
+                        <h4 className="font-bold text-stone-900 text-sm sm:text-base">
+                          सदस्य माहिती
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs sm:text-sm">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">सदस्य मालिका / क्र. :</span>
+                          <span className="font-mono font-black text-[#7A0C0C] text-sm">
+                            {seriesNo}
+                          </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">पद / हुद्दा :</span>
+                          <span className="font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                            {selectedViewExec.designation || "-"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">सदस्याचे पूर्णनाव :</span>
+                          <span className="font-extrabold text-stone-950 text-sm sm:text-base">
+                            {selectedViewExec.fullName}
+                          </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">मोबाईल क्रमांक :</span>
+                          <span className="font-mono font-bold text-stone-900">
+                            {selectedViewExec.mobileNo}
+                          </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Address & Location (No underlines) */}
+                    <div className="space-y-2.5 pt-3 border-t-2 border-amber-200 text-xs sm:text-sm">
+                      {matchedReg?.address && (
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">पत्ता :</span>
+                          <span className="font-semibold text-stone-900 leading-relaxed">
+                            {matchedReg.address}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">शहर / गाव :</span>
+                          <span className="font-semibold text-stone-900">
+                            {selectedViewExec.city || matchedReg?.city || matchedReg?.gaav || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">जिल्हा :</span>
+                          <span className="font-semibold text-stone-900">
+                            {selectedViewExec.district || matchedReg?.district || "अमरावती"}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">राज्य :</span>
+                          <span className="font-semibold text-stone-900">
+                            {matchedReg?.state || "महाराष्ट्र"}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-stone-600 whitespace-nowrap">पिनकोड :</span>
+                          <span className="font-mono font-bold text-stone-900">
+                            {matchedReg?.pincode || "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Family Members (if present in matchedReg) */}
+                {matchedReg?.familyMembers && matchedReg.familyMembers.length > 0 && (
+                  <div className="my-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2 my-2">
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#3A0202] via-[#7A0C0C] to-[#3A0202] text-amber-300 py-1 px-4 sm:px-5 rounded-full border-2 border-amber-400/80 shadow-md">
+                        <span className="text-amber-400 text-xs font-bold">❖</span>
+                        <h3 className="text-xs sm:text-sm font-extrabold tracking-wide text-amber-200 whitespace-nowrap">
+                          कौटुंबिक सदस्यांची माहिती
+                        </h3>
+                        <span className="text-amber-400 text-xs font-bold">❖</span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border-2 border-amber-700/40 shadow-xs">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-[#6B0D0D] text-white font-bold text-center border-b border-amber-600">
+                            <th className="py-1.5 px-2 border-r border-amber-700/60 w-12">अ. क्र.</th>
+                            <th className="py-1.5 px-3 border-r border-amber-700/60">नाव</th>
+                            <th className="py-1.5 px-3 border-r border-amber-700/60">नाते</th>
+                            <th className="py-1.5 px-3 border-r border-amber-700/60">जन्म दिनांक</th>
+                            <th className="py-1.5 px-3 border-r border-amber-700/60">व्यवसाय / शिक्षण</th>
+                            <th className="py-1.5 px-3">मोबाईल क्रमांक</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-amber-800/30 text-stone-900 bg-white">
+                          {matchedReg.familyMembers.map((fm: any, i: number) => (
+                            <tr key={fm.id || i} className="hover:bg-amber-50/50">
+                              <td className="py-1.5 px-2 text-center font-bold text-stone-800 border-r border-amber-800/30">
+                                {fm.srNo || i + 1}.
+                              </td>
+                              <td className="py-1.5 px-3 font-bold border-r border-amber-800/30">{fm.name}</td>
+                              <td className="py-1.5 px-3 border-r border-amber-800/30">{fm.relation}</td>
+                              <td className="py-1.5 px-3 border-r border-amber-800/30 font-mono">{formatDateToDDMMYYYY(fm.dob) || fm.dob || "-"}</td>
+                              <td className="py-1.5 px-3 border-r border-amber-800/30">{fm.occupation || "-"}</td>
+                              <td className="py-1.5 px-3 font-mono">{fm.mobile || "-"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Amount in Words */}
+                <div className="flex items-baseline gap-2 pt-1 text-xs sm:text-sm">
+                  <span className="font-bold text-stone-700 whitespace-nowrap">रक्कम अक्षरी :</span>
+                  <span className="font-extrabold text-[#7A0C0C] text-sm">
+                    {matchedReg?.amountInWords || convertNumberToMarathiWords(fee)}
+                  </span>
+                </div>
+
+                {/* 6. PAYMENT DETAILS BOX AT BOTTOM (As currently doing) */}
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-amber-50/90 via-amber-100/40 to-amber-50/90 border-2 border-amber-400/80 space-y-2.5 text-xs sm:text-sm shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-stone-800 text-xs sm:text-sm">भरणा केलेली एकूण रक्कम :</span>
+                      <span className="font-mono text-xl sm:text-2xl font-black text-[#7A0C0C]">₹{fee}/-</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 font-extrabold text-xs">
+                      <span>✓</span>
+                      <span>पेमेंट पुष्टी (Payment Confirmed)</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="font-bold text-stone-600">पेमेंट पद्धत : </span>
+                      <span className="font-bold text-stone-900">
+                        {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : formatPaymentMethod(selectedViewExec.paymentMethod || "Cash")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">व्यवहार संदर्भ : </span>
+                      <span className="font-mono font-bold text-stone-900">
+                        {(matchedReg as any)?.paymentTransactionId || matchedReg?.paymentReference || "Direct / Admin"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-stone-600">पावती दिनांक : </span>
+                      <span className="font-mono font-bold text-stone-900">{dateStr}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Screenshot Proof in Admin preview */}
+                  {(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot) && (
+                    <div className="pt-2 border-t border-amber-300 flex items-center justify-between no-print">
+                      <span className="font-bold text-stone-700 flex items-center gap-1">
+                        <ImageIcon className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>पेमेंट स्क्रीनशॉट पुरावा :</span>
+                      </span>
                       <button
                         type="button"
                         onClick={() => setScreenshotZoom(matchedReg?.paymentScreenshot || selectedViewExec.paymentScreenshot || null)}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-[11px] shadow-xs transition flex items-center gap-1 cursor-pointer"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>View Full Screenshot</span>
+                        <Eye className="w-3 h-3" />
+                        <span>स्क्रीनशॉट पहा (View Screenshot)</span>
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-slate-600 italic text-[11px] flex items-center gap-1 pt-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Payment Method: Cash - Registration and fee collected directly by Admin.</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Sandesh Declaration Box */}
-              <div className="p-3.5 rounded-xl bg-amber-100/90 border-2 border-amber-400 text-stone-900">
-                <p className="text-xs sm:text-sm font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
-                  <span className="whitespace-nowrap">Message :</span>
-                  <span className="text-stone-900 font-bold">
-                    The above amount was received as registration fee for Executive Member of Maharashtra Prantik Tailik Mahasabha.
-                  </span>
-                </p>
-              </div>
-
-              {/* Footer Signature Block */}
-              <div className="pt-6 border-t border-amber-300 flex items-end justify-between text-xs">
-                <div className="text-stone-600 font-semibold italic">
-                  This receipt should be preserved as official proof of member registration.
+                  )}
                 </div>
-                <div className="text-center space-y-1">
-                  <div className="w-36 h-8 border-b-2 border-stone-800 border-dashed mx-auto"></div>
-                  <p className="font-extrabold text-[#7A0C0C]">Issuer Signature / Stamp</p>
+
+                {/* 7. Declaration / Sandesh Box */}
+                <div className="p-3.5 rounded-xl bg-amber-50/70 border-l-4 border-l-[#7A0C0C] border border-amber-200/80 text-stone-900 shadow-2xs">
+                  <p className="text-xs font-extrabold text-[#7A0C0C] flex items-start gap-1.5">
+                    <span className="whitespace-nowrap">संदेश :</span>
+                    <span className="text-stone-800 font-medium leading-relaxed">
+                      वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली.
+                    </span>
+                  </p>
+                </div>
+
+                {/* 8. AUTHORIZATION: QR CODE + OFFICIAL SEAL + SIGNATURE BLOCK */}
+                <div className="pt-3 border-t-2 border-amber-300/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+                  {/* Left: QR Code Verification */}
+                  <div className="flex items-center gap-2.5">
+                    {(() => {
+                      const token = matchedReg?.publicToken || selectedViewExec.receiptNo || receiptNo;
+                      const mainUrl = getMainSiteUrl() || "https://mptm.org";
+                      const qrData = matchedReg?.publicToken ? `${mainUrl}/receipt/${matchedReg.publicToken}` : `${mainUrl}/receipt/${receiptNo}`;
+                      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(qrData)}`;
+                      return (
+                        <>
+                          <div className="p-1 bg-white border border-amber-400 rounded-xl shadow-2xs shrink-0 text-center">
+                            <img src={qrUrl} alt="Receipt QR" className="w-18 h-18 sm:w-20 sm:h-20 object-contain mx-auto" />
+                            <span className="text-[8px] font-bold text-stone-600 block leading-tight mt-0.5">
+                              स्कॅन व पडताळा
+                            </span>
+                          </div>
+                          <div className="space-y-0.5 text-stone-700 text-left">
+                            <p className="font-bold text-[11px] text-[#7A0C0C] flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>डिजिटल सत्यता हमी</span>
+                            </p>
+                            <p className="text-[9.5px] text-stone-500 leading-tight">
+                              मोबाईलने स्कॅन करून पावतीची थेट पोर्टलवर सत्यता तपासा.
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Center: Official Seal (मुद्रा / शिक्का with Navbar Logo) */}
+                  <div className="flex justify-center">
+                    <OfficialSeal />
+                  </div>
+
+                  {/* Right: Signature & Approval Block */}
+                  <div className="flex flex-col items-center sm:items-end justify-center text-center sm:text-right space-y-1">
+                    <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Digitally Certified & Approved</span>
+                    </div>
+                    <p className="font-black text-[#7A0C0C] text-xs pt-0.5">
+                      अध्यक्ष / सचिव / कोषाध्यक्ष
+                    </p>
+                    <p className="text-[10px] text-stone-600 font-medium">
+                      महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती
+                    </p>
+                  </div>
+                </div>
+
+                {/* 9. Clean Footer Note */}
+                <div className="pt-2 border-t border-amber-200 text-center">
+                  <p className="text-[10px] text-stone-600 font-semibold">
+                    ही पावती संगणकीय प्रणालीद्वारे तयार करण्यात आलेली अधिकृत डिजिटल पावती आहे. (Computer-Generated Official Receipt)
+                  </p>
                 </div>
               </div>
-
             </div>
           </div>
-        </div>
       ); })()}
 
       {/* ZOOMED PAYMENT SCREENSHOT MODAL */}
