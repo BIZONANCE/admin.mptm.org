@@ -61,6 +61,7 @@ export default function DashboardHome() {
 
   const [careerAppsCount, setCareerAppsCount] = useState<number>(0);
   const [contactMsgsCount, setContactMsgsCount] = useState<number>(0);
+  const [executiveMembersCount, setExecutiveMembersCount] = useState<number>(0);
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -99,6 +100,18 @@ export default function DashboardHome() {
         }
       } catch (e) {
         console.error("Fetch contact msgs count error:", e);
+      }
+
+      try {
+        const resExec = await fetch(`${API_URL}/api/executives`);
+        if (resExec.ok) {
+          const dataExec = await resExec.json();
+          if (dataExec.success && Array.isArray(dataExec.data)) {
+            setExecutiveMembersCount(dataExec.data.length);
+          }
+        }
+      } catch (e) {
+        console.error("Fetch executives count error:", e);
       }
     };
     fetchCounts();
@@ -202,6 +215,22 @@ export default function DashboardHome() {
       onlineFees,
     };
   }, [primaryRegistrations]);
+
+  const executiveRegistrations = useMemo(() => {
+    return registrations.filter((r) => isExecutiveRegistration(r));
+  }, [registrations]);
+
+  const executiveStats = useMemo(() => {
+    const totalRegs = Math.max(executiveRegistrations.length, executiveMembersCount);
+    let totalFees = 0;
+    executiveRegistrations.forEach((r) => {
+      totalFees += Number(r.registrationFee) || 0;
+    });
+    return {
+      totalRegs,
+      totalFees,
+    };
+  }, [executiveRegistrations, executiveMembersCount]);
 
   return (
     <DashboardLayout>
@@ -337,50 +366,46 @@ export default function DashboardHome() {
                 </div>
               </div>
 
-              {/* Card 3: Cash Registrations & Cash Payment Received */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
-                {/* Top: Total Cash Registrations */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                    <Banknote className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 block">
-                      Total Cash Registrations
-                    </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {stats.cashCount}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full h-[1px] bg-slate-100" />
-
-                {/* Below: Total Cash Payment Received */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                    <IndianRupee className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-slate-500 block">
-                      Total Cash Payment Received
-                    </span>
-                    <span className="text-2xl font-black text-amber-600 tracking-tight">
-                      ₹{stats.cashFees}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Super Admin Only Cards (Card 4, Card 5, Card 6) */}
-              {isSuperAdmin && (
+              {isSuperAdmin ? (
                 <>
-                  {/* Card 4: Total Managed Users */}
+                  {/* Card 3 (Row 1 Col 3): Cash Registrations & Cash Payment Received */}
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                        <Banknote className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Cash Registrations
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {stats.cashCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-100" />
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                        <IndianRupee className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Cash Payment Received
+                        </span>
+                        <span className="text-2xl font-black text-amber-600 tracking-tight">
+                          ₹{stats.cashFees}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 4 (Row 1 Col 4): Total Managed Users */}
                   <div
                     onClick={() => router.push("/manage-users")}
                     className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
                   >
-                    {/* Top: Total Managed Users */}
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
                         <Users className="w-6 h-6" />
@@ -397,19 +422,17 @@ export default function DashboardHome() {
 
                     <div className="w-full h-[1px] bg-slate-100" />
 
-                    {/* Below: Quick Link to Manage Users */}
                     <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
                       <span>Manage Users List</span>
                       <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
 
-                  {/* Card 5: Total Career Applications */}
+                  {/* Card 5 (Row 2 Col 1): Total Career Applications */}
                   <div
                     onClick={() => router.push("/manage-career")}
                     className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
                   >
-                    {/* Top: Total Career Applications */}
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center shrink-0 group-hover:bg-slate-900 group-hover:text-white transition">
                         <Briefcase className="w-6 h-6" />
@@ -426,19 +449,17 @@ export default function DashboardHome() {
 
                     <div className="w-full h-[1px] bg-slate-100" />
 
-                    {/* Below: Quick Link to Manage Career */}
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700 group-hover:text-slate-900">
                       <span>Manage Career Applications</span>
                       <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
 
-                  {/* Card 6: Total Contact Messages */}
+                  {/* Card 6 (Row 2 Col 2): Total Contact Messages */}
                   <div
                     onClick={() => router.push("/manage-contact")}
                     className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
                   >
-                    {/* Top: Total Contact Messages */}
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
                         <Mail className="w-6 h-6" />
@@ -455,13 +476,99 @@ export default function DashboardHome() {
 
                     <div className="w-full h-[1px] bg-slate-100" />
 
-                    {/* Below: Quick Link to Contact Messages */}
                     <div className="flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
                       <span>Manage Contact Messages</span>
                       <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
+
+                  {/* Card 7 (Row 2 Col 3 - LAST 2 BOXES): Total Executive Member Registration */}
+                  <div
+                    onClick={() => router.push("/manage-executives")}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition">
+                        <UserCheck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Total Executive Member Registration
+                        </span>
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {executiveStats.totalRegs}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-100" />
+
+                    <div className="flex items-center justify-between text-xs font-bold text-indigo-600 group-hover:text-indigo-700">
+                      <span>Manage Executive Members</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+
+                  {/* Card 8 (Row 2 Col 4 - LAST 2 BOXES): Executive Registration Fees Collected Total */}
+                  <div
+                    onClick={() => router.push("/payments")}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col justify-between gap-4 hover:shadow-md transition cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-violet-50 text-violet-600 border border-violet-100 flex items-center justify-center shrink-0 group-hover:bg-violet-600 group-hover:text-white transition">
+                        <IndianRupee className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 block">
+                          Executive Registration Fees Collected Total
+                        </span>
+                        <span className="text-2xl font-black text-violet-600 tracking-tight">
+                          ₹{executiveStats.totalFees}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-100" />
+
+                    <div className="flex items-center justify-between text-xs font-bold text-violet-600 group-hover:text-violet-700">
+                      <span>View Executive Payments</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
                 </>
+              ) : (
+                /* Card 3 (for Non-Super Admin): Cash Registrations & Cash Payment Received */
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs flex flex-col gap-4 hover:shadow-md transition">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                      <Banknote className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-slate-500 block">
+                        Total Cash Registrations
+                      </span>
+                      <span className="text-2xl font-black text-slate-900 tracking-tight">
+                        {stats.cashCount}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-[1px] bg-slate-100" />
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                      <IndianRupee className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-slate-500 block">
+                        Total Cash Payment Received
+                      </span>
+                      <span className="text-2xl font-black text-amber-600 tracking-tight">
+                        ₹{stats.cashFees}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

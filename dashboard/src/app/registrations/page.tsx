@@ -272,7 +272,7 @@ export default function RegistrationsPage() {
     const main = reg.mainMembers[0];
     const mobile = (main?.mobileNo || "").replace(/\D/g, "");
     const cleanPhone = mobile.length === 10 ? `91${mobile}` : mobile;
-    const isExec = reg.receiptNo.startsWith("MPTM-EM-") || Number(reg.registrationFee) === 1001;
+    const isExec = isExecutiveRegistration(reg);
     const title = isExec ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★" : "★ प्राथमिक सदस्य नोंदणी पावती ★";
 
     const textMessage = `🚩 *महाराष्ट्र प्रांतिक तैलिक महासभा (अमरावती)* 🚩
@@ -1778,7 +1778,7 @@ mptmamravati.org`;
               {/* Printable Official Receipt Body */}
               {(() => {
                 const reg = selectedPavatiReg;
-                const isExec = isExecutiveRegistration(reg) || Number(reg.registrationFee) === 1001;
+                const isExec = isExecutiveRegistration(reg);
                 const mainMembers = Array.isArray(reg.mainMembers) ? reg.mainMembers : [];
                 const familyMembers = Array.isArray(reg.familyMembers) ? reg.familyMembers : [];
                 const displayAddress = formatDisplayAddress(reg);

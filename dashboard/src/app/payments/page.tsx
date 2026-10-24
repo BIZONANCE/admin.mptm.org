@@ -41,6 +41,50 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { getApiUrl, getMainSiteUrl } from "@/utils/config";
 import { convertNumberToMarathiWords, formatPaymentMethod, formatDateToDDMMYYYY } from "@/utils/formatters";
 
+interface AllPaymentItem {
+  id: string;
+  orderId?: string;
+  receiptNo?: string | null;
+  publicToken?: string | null;
+  category: "REGISTRATION" | "DONATION";
+  type: "PRIMARY" | "EXECUTIVE" | "DONATION";
+  status: "SUCCESS" | "FAILED" | "PENDING";
+  amount: number;
+  amountInWords?: string;
+  name: string;
+  memberNo?: string | null;
+  mobile: string;
+  city?: string;
+  prabhag?: string;
+  mainCount?: number;
+  familyCount?: number;
+  mainMembers?: any[];
+  familyMembers?: any[];
+  address?: string;
+  paymentMode: string;
+  referredBy?: string | null;
+  failureReason?: string | null;
+  failureCode?: string | null;
+  gatewayResponse?: any;
+  createdAt: string;
+  date?: string | null;
+  hasValidHmac?: boolean;
+}
+
+function getPaymentDateAndTime(item: { createdAt?: string; date?: string | null }) {
+  if (item.createdAt) {
+    try {
+      const d = new Date(item.createdAt);
+      if (!isNaN(d.getTime())) {
+        const date = d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+        return { date, time };
+      }
+    } catch {}
+  }
+  return { date: item.date || "-", time: "-" };
+}
+
 interface SuccessfulPaymentItem {
   id: string;
   category: "REGISTRATION" | "DONATION";
@@ -51,10 +95,12 @@ interface SuccessfulPaymentItem {
   amount: number;
   amountInWords?: string;
   name: string;
+  memberNo?: string | null;
   mobile: string;
   memberCount: number;
   familyCount: number;
   mainMembers?: any[];
+  members?: any[];
   familyMembers?: any[];
   address?: string;
   gaav?: string;
@@ -248,9 +294,34 @@ const PAYMENT_TEXTS = {
     securityBadge: "१००% डिजिटल स्वाक्षरी पडताळणी",
     securityDesc: "प्रत्येक पावतीवर डिजिटल स्वाक्षरी व स्वतंत्र क्यूआर कोड पडताळणी उपलब्ध",
     // Tabs
+    tabAll: "सर्व व्यवहार",
     tabSuccess: "यशस्वी पेमेंट्स",
     tabFailed: "अयशस्वी पेमेंट्स",
     tabVerify: "पावती पडताळणी",
+    allSubtitleHint: "प्रयत्न केलेले सर्व व्यवहार (यशस्वी, अयशस्वी व प्रलंबित) एकाच ठिकाणी सेकंडनुसार थेट",
+    // Tab 0 All
+    searchAllPlaceholder: "पावती क्र., ऑर्डर आयडी, नाव, मोबाईल किंवा कारण शोधा...",
+    statusFilterLabel: "स्थिती:",
+    statusAll: "सर्व स्थिती",
+    statusSuccess: "यशस्वी",
+    statusFailed: "अयशस्वी",
+    statusPending: "प्रलंबित",
+    loadingAll: "सर्व व्यवहार लोड होत आहेत...",
+    emptyAll: "कोणतेही व्यवहार सापडले नाहीत.",
+    statusSucceededBadge: "यशस्वी",
+    statusFailedBadge: "अयशस्वी",
+    statusPendingBadge: "प्रलंबित",
+    // Common Columns (Exact 10 Columns)
+    thIndex: "अनु. क्र.",
+    thDateTime: "तारीख व वेळ",
+    thReceiptNo: "पावती क्रमांक",
+    thOrderId: "ऑर्डर आयडी / संदर्भ",
+    thMember: "सदस्य",
+    thType: "प्रकार",
+    thAmount: "रक्कम",
+    thCardUpi: "कार्ड / UPI",
+    thStatus: "स्थिती",
+    thActions: "क्रिया",
     // Tab 1 Success
     searchSuccessPlaceholder: "पावती क्र., ऑर्डर आयडी, सदस्याचे नाव, मोबाईल किंवा टोकन शोधा...",
     typeFilterLabel: "प्रकार:",
@@ -258,14 +329,8 @@ const PAYMENT_TEXTS = {
     typePrimary: "प्राथमिक सदस्य",
     typeExecutive: "कार्यकारिणी सदस्य",
     typeDonation: "देणगी",
-    thDateTime: "तारीख व वेळ",
-    thReceiptNo: "पावती क्रमांक",
-    thOrderId: "ऑर्डर आयडी / संदर्भ",
     thPayer: "सदस्य / देणगीदार",
-    thType: "प्रकार",
-    thAmount: "रक्कम",
     thSecurity: "डिजिटल सुरक्षा",
-    thActions: "क्रिया",
     loadingSuccess: "यशस्वी पेमेंट्स लोड होत आहेत...",
     emptySuccess: "कोणतेही यशस्वी पेमेंट्स सापडले नाहीत.",
     badgeDonationRec: "देणगी पावती",
@@ -357,9 +422,34 @@ const PAYMENT_TEXTS = {
     securityBadge: "100% Cryptographic Audit",
     securityDesc: "Each receipt is backed by digital signature and independent QR code audit",
     // Tabs
+    tabAll: "All Payments",
     tabSuccess: "Successful Payments",
     tabFailed: "Failed Payments",
     tabVerify: "Verify Receipt",
+    allSubtitleHint: "Unified chronological audit trail of all attempts (Success, Failed & Pending) by every second",
+    // Tab 0 All
+    searchAllPlaceholder: "Search receipt no, order ID, member name, mobile, reason...",
+    statusFilterLabel: "Status:",
+    statusAll: "All Status",
+    statusSuccess: "Successful",
+    statusFailed: "Failed",
+    statusPending: "Pending",
+    loadingAll: "Loading all payments...",
+    emptyAll: "No payments found.",
+    statusSucceededBadge: "Succeeded",
+    statusFailedBadge: "Failed",
+    statusPendingBadge: "Pending",
+    // Common Columns (Exact 10 Columns)
+    thIndex: "#",
+    thDateTime: "Date & Time",
+    thReceiptNo: "Receipt No",
+    thOrderId: "Order ID / Ref",
+    thMember: "Member",
+    thType: "Type",
+    thAmount: "Amount",
+    thCardUpi: "Card / UPI",
+    thStatus: "Status",
+    thActions: "Actions",
     // Tab 1 Success
     searchSuccessPlaceholder: "Search receipt no, order ID, member name, mobile, or token...",
     typeFilterLabel: "Type:",
@@ -367,14 +457,8 @@ const PAYMENT_TEXTS = {
     typePrimary: "Primary Member",
     typeExecutive: "Executive Member",
     typeDonation: "Donation",
-    thDateTime: "Date & Time",
-    thReceiptNo: "Receipt No",
-    thOrderId: "Order ID / Ref",
     thPayer: "Member / Donor",
-    thType: "Type",
-    thAmount: "Amount",
     thSecurity: "Digital Security",
-    thActions: "Actions",
     loadingSuccess: "Loading successful payments...",
     emptySuccess: "No successful payments found.",
     badgeDonationRec: "Donation Receipt",
@@ -480,12 +564,23 @@ export default function PaymentsPage() {
 
   const text = PAYMENT_TEXTS[lang];
 
-  // Active Tab: SUCCESSFUL | FAILED | VERIFY
-  const [activeTab, setActiveTab] = useState<"SUCCESSFUL" | "FAILED" | "VERIFY">("SUCCESSFUL");
+  // Active Tab: ALL | SUCCESSFUL | FAILED | VERIFY
+  const [activeTab, setActiveTab] = useState<"ALL" | "SUCCESSFUL" | "FAILED" | "VERIFY">("ALL");
 
   // Summary Metrics
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [summaryLoading, setSummaryLoading] = useState<boolean>(true);
+
+  // Tab 0: All Payments (Unified chronological view of all attempts down to every second)
+  const [allList, setAllList] = useState<AllPaymentItem[]>([]);
+  const [searchAll, setSearchAll] = useState<string>("");
+  const [statusFilterAll, setStatusFilterAll] = useState<string>("ALL");
+  const [typeFilterAll, setTypeFilterAll] = useState<string>("ALL");
+  const [pageAll, setPageAll] = useState<number>(1);
+  const [totalPagesAll, setTotalPagesAll] = useState<number>(1);
+  const [totalAllItems, setTotalAllItems] = useState<number>(0);
+  const [loadingAll, setLoadingAll] = useState<boolean>(true);
+  const [selectedPendingItem, setSelectedPendingItem] = useState<AllPaymentItem | null>(null);
 
   // Tab 1: Successful Payments
   const [successfulList, setSuccessfulList] = useState<SuccessfulPaymentItem[]>([]);
@@ -582,6 +677,54 @@ export default function PaymentsPage() {
       return dateString;
     }
   };
+
+  // 0. Fetch All Payments (Unified chronological view down to every second)
+  const fetchAllPayments = useCallback(async () => {
+    try {
+      setLoadingAll(true);
+      const role = localStorage.getItem("mptm_admin_role") || "USER";
+      const username = localStorage.getItem("mptm_admin_username") || "";
+      const lowerUser = username.toLowerCase();
+      const isSuper =
+        role === "SUPER_ADMIN" ||
+        lowerUser === "mptmamravati.org" ||
+        lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "admin" ||
+        lowerUser === "superadmin";
+      const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
+
+      const params = new URLSearchParams({
+        page: String(pageAll),
+        limit: "25",
+        search: searchAll.trim(),
+        status: statusFilterAll,
+        type: typeFilterAll,
+        userEmail: username,
+        userRole: effectiveRole,
+      });
+
+      const res = await fetch(`${API_URL}/api/admin/payments/all?${params.toString()}`, {
+        headers: {
+          "x-user-email": username,
+          "x-user-role": effectiveRole,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.items)) {
+        let items: AllPaymentItem[] = data.items;
+        if (!isSuper) {
+          items = items.filter((item) => item.category !== "DONATION");
+        }
+        setAllList(items);
+        setTotalPagesAll(data.totalPages || 1);
+        setTotalAllItems(data.total || 0);
+      }
+    } catch (err) {
+      console.error("All payments fetch error:", err);
+    } finally {
+      setLoadingAll(false);
+    }
+  }, [API_URL, pageAll, searchAll, statusFilterAll, typeFilterAll]);
 
   // 1. Fetch Summary
   const fetchSummary = useCallback(async () => {
@@ -716,12 +859,14 @@ export default function PaymentsPage() {
   }, [fetchSummary]);
 
   useEffect(() => {
-    if (activeTab === "SUCCESSFUL") {
+    if (activeTab === "ALL") {
+      fetchAllPayments();
+    } else if (activeTab === "SUCCESSFUL") {
       fetchSuccessful();
     } else if (activeTab === "FAILED") {
       fetchFailed();
     }
-  }, [activeTab, fetchSuccessful, fetchFailed]);
+  }, [activeTab, fetchAllPayments, fetchSuccessful, fetchFailed]);
 
   // Execute verification
   const handleVerifyReceipt = async (queryToVerify?: string) => {
@@ -815,8 +960,10 @@ export default function PaymentsPage() {
     const isDonation = receipt.category === "DONATION";
     const isExec =
       receipt.type === "EXECUTIVE" ||
-      (receipt.receiptNo && receipt.receiptNo.startsWith("MPTM-EM-")) ||
-      Number(receipt.amount) === 1001;
+      Boolean(
+        receipt.receiptNo &&
+          (receipt.receiptNo.startsWith("MPTM-EM-") || receipt.receiptNo.includes("EM-R"))
+      );
     const title = isDonation
       ? "★ अधिकृत देणगी पावती ★"
       : isExec
@@ -862,43 +1009,39 @@ mptmamravati.org`;
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full">
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-amber-500/10 text-amber-700 rounded-xl border border-amber-500/20">
-                <CreditCard className="w-6 h-6" />
-              </span>
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                    {text.pageTitle}
-                  </h1>
-                  {isSuperAdmin ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 border border-blue-200 shadow-2xs flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-blue-700" />
-                      <span>Super Admin</span>
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs flex items-center gap-1">
-                      <User className="w-3 h-3 text-emerald-700" />
-                      <span>{loggedUserEmail || "Staff Portal"}</span>
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                  {isSuperAdmin
-                    ? text.pageSubtitle
-                    : lang === "mr"
-                    ? "तुमच्या नोंदणीकृत सदस्यांचे थेट पेमेंट्स, अयशस्वी व्यवहार व अधिकृत पावती पडताळणी"
-                    : "Payments, failed attempts, and official receipt verification for your registered members"}
-                </p>
+            <div className="flex items-center gap-2.5">
+              <CreditCard className="w-6 h-6 text-slate-800 shrink-0" />
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  {text.pageTitle}
+                </h1>
+                {isSuperAdmin ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 shadow-2xs flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-blue-700" />
+                    <span>Super Admin</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs flex items-center gap-1">
+                    <User className="w-3 h-3 text-emerald-700" />
+                    <span>{loggedUserEmail || "Staff Portal"}</span>
+                  </span>
+                )}
               </div>
             </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              {isSuperAdmin
+                ? text.pageSubtitle
+                : lang === "mr"
+                ? "तुमच्या नोंदणीकृत सदस्यांचे थेट पेमेंट्स, अयशस्वी व्यवहार व अधिकृत पावती पडताळणी"
+                : "Payments, failed attempts, and official receipt verification for your registered members"}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2.5 self-start sm:self-center">
+          <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
             {/* Marathi / English Language Toggle */}
             <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs">
               <button
@@ -930,6 +1073,7 @@ mptmamravati.org`;
             <button
               onClick={() => {
                 fetchSummary();
+                if (activeTab === "ALL") fetchAllPayments();
                 if (activeTab === "SUCCESSFUL") fetchSuccessful();
                 if (activeTab === "FAILED") fetchFailed();
               }}
@@ -1039,80 +1183,509 @@ mptmamravati.org`;
           </div>
         </div>
 
-        {/* Tab Controls Bar */}
-        <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {/* Tab 1 */}
-            <button
-              onClick={() => setActiveTab("SUCCESSFUL")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer ${
+        {/* Tab Controls Bar (Matching Members Tab Capsule Bar) */}
+        <div className="flex items-center gap-1.5 w-full bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs overflow-x-auto">
+          {/* Tab 0: All Payments */}
+          <button
+            onClick={() => setActiveTab("ALL")}
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === "ALL"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+            }`}
+          >
+            <CreditCard className={`w-4 h-4 ${activeTab === "ALL" ? "text-amber-600" : "text-slate-500"}`} />
+            <span>{text.tabAll}</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+                activeTab === "ALL"
+                  ? "bg-slate-200/80 text-slate-900"
+                  : "bg-slate-200/80 text-slate-700"
+              }`}
+            >
+              {totalAllItems || allList.length}
+            </span>
+          </button>
+
+          {/* Tab 1: Successful Payments */}
+          <button
+            onClick={() => setActiveTab("SUCCESSFUL")}
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === "SUCCESSFUL"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+            }`}
+          >
+            <CheckCircle2 className={`w-4 h-4 ${activeTab === "SUCCESSFUL" ? "text-emerald-600" : "text-slate-500"}`} />
+            <span>{text.tabSuccess}</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
                 activeTab === "SUCCESSFUL"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  ? "bg-slate-200/80 text-slate-900"
+                  : "bg-slate-200/80 text-slate-700"
               }`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{text.tabSuccess}</span>
-              <span
-                className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-                  activeTab === "SUCCESSFUL"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {summary?.totalSuccessCount || successfulList.length}
-              </span>
-            </button>
+              {summary?.totalSuccessCount || successfulList.length}
+            </span>
+          </button>
 
-            {/* Tab 2 */}
-            <button
-              onClick={() => setActiveTab("FAILED")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer ${
+          {/* Tab 2: Failed Payments */}
+          <button
+            onClick={() => setActiveTab("FAILED")}
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === "FAILED"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+            }`}
+          >
+            <XCircle className={`w-4 h-4 ${activeTab === "FAILED" ? "text-rose-600" : "text-slate-500"}`} />
+            <span>{text.tabFailed}</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
                 activeTab === "FAILED"
-                  ? "bg-rose-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  ? "bg-slate-200/80 text-slate-900"
+                  : "bg-slate-200/80 text-slate-700"
               }`}
             >
-              <XCircle className="w-4 h-4" />
-              <span>{text.tabFailed}</span>
-              <span
-                className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-                  activeTab === "FAILED"
-                    ? "bg-rose-700 text-white"
-                    : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {summary?.totalFailedCount || failedList.length}
-              </span>
-            </button>
+              {summary?.totalFailedCount || failedList.length}
+            </span>
+          </button>
 
-            {/* Tab 3 */}
-            <button
-              onClick={() => setActiveTab("VERIFY")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer ${
-                activeTab === "VERIFY"
-                  ? "bg-amber-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>{text.tabVerify}</span>
-            </button>
-          </div>
+          {/* Tab 3: Verify Receipt */}
+          <button
+            onClick={() => setActiveTab("VERIFY")}
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+              activeTab === "VERIFY"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+            }`}
+          >
+            <ShieldCheck className={`w-4 h-4 ${activeTab === "VERIFY" ? "text-blue-600" : "text-slate-500"}`} />
+            <span>{text.tabVerify}</span>
+          </button>
         </div>
 
         {/* ======================================================== */}
-        {/* TAB 1: SUCCESSFUL PAYMENTS                               */}
+        {/* TAB 0: ALL PAYMENTS (Unified Chronological View)        */}
         {/* ======================================================== */}
+        {activeTab === "ALL" && (
+          <div className="space-y-4">
+            {/* Filter and Search Bar */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-3">
+              {/* Row 1: Search Bar */}
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchAll}
+                  onChange={(e) => {
+                    setSearchAll(e.target.value);
+                    setPageAll(1);
+                  }}
+                  placeholder={text.searchAllPlaceholder}
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                />
+                {searchAll && (
+                  <button
+                    onClick={() => setSearchAll("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Row 2: Filter Dropdowns */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                    <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                    <span className="text-xs font-bold text-slate-700 shrink-0">{text.statusFilterLabel}</span>
+                    <select
+                      value={statusFilterAll}
+                      onChange={(e) => {
+                        setStatusFilterAll(e.target.value);
+                        setPageAll(1);
+                      }}
+                      className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                    >
+                      <option value="ALL">{text.statusAll}</option>
+                      <option value="SUCCESS">{text.statusSuccess}</option>
+                      <option value="FAILED">{text.statusFailed}</option>
+                      <option value="PENDING">{text.statusPending}</option>
+                    </select>
+                  </div>
+
+                  {/* Type Filter */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                    <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                    <span className="text-xs font-bold text-slate-700 shrink-0">{text.typeFilterLabel}</span>
+                    <select
+                      value={typeFilterAll}
+                      onChange={(e) => {
+                        setTypeFilterAll(e.target.value);
+                        setPageAll(1);
+                      }}
+                      className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                    >
+                      <option value="ALL">{text.typeAll}</option>
+                      <option value="PRIMARY">{text.typePrimary}</option>
+                      <option value="EXECUTIVE">{text.typeExecutive}</option>
+                      {isSuperAdmin && <option value="DONATION">{text.typeDonation}</option>}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-500 font-medium hidden sm:block">
+                  <span className="text-slate-400">{text.allSubtitleHint}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Helper Hint Bar (Matching Members Tab) */}
+            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>
+                  {lang === "mr"
+                    ? "व्यवहाराचे संपूर्ण तपशील पाहण्यासाठी ओळीवर किंवा 👁️ आयकॉनवर क्लिक करा"
+                    : "Click on any row to view full transaction details • Click 👁️ icon for receipt"}
+                </span>
+              </span>
+              <span className="text-[11px] text-slate-400 font-semibold font-mono">
+                {totalAllItems} {lang === "mr" ? "व्यवहार" : "transactions"}
+              </span>
+            </div>
+
+            {/* All Payments Table (Exact 10 Columns) */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="py-2.5 px-2.5 w-8 text-center">{text.thIndex}</th>
+                      <th className="py-2.5 px-3">{text.thDateTime}</th>
+                      <th className="py-2.5 px-3">{text.thReceiptNo}</th>
+                      <th className="py-2.5 px-3">{text.thOrderId}</th>
+                      <th className="py-2.5 px-3">{text.thMember}</th>
+                      <th className="py-2.5 px-3">{text.thType}</th>
+                      <th className="py-2.5 px-3">{text.thAmount}</th>
+                      <th className="py-2.5 px-3">{text.thCardUpi}</th>
+                      <th className="py-2.5 px-3">{text.thStatus}</th>
+                      <th className="py-2.5 px-3 text-right">{text.thActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
+                    {loadingAll ? (
+                      <tr>
+                        <td colSpan={10} className="py-12 text-center text-slate-500 font-medium">
+                          <RefreshCw className="w-6 h-6 animate-spin text-amber-600 mx-auto mb-2" />
+                          {text.loadingAll}
+                        </td>
+                      </tr>
+                    ) : allList.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="py-12 text-center text-slate-500 italic">
+                          {text.emptyAll}
+                        </td>
+                      </tr>
+                    ) : (
+                      allList.map((item, index) => {
+                        const rowNumber = (pageAll - 1) * 25 + index + 1;
+                        const dt = getPaymentDateAndTime(item);
+                        const isExec =
+                          item.type === "EXECUTIVE" ||
+                          Boolean(
+                            item.receiptNo &&
+                              (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
+                          );
+                        const isDonation = item.category === "DONATION" || item.type === "DONATION";
+
+                        return (
+                          <tr
+                            key={item.id}
+                            onClick={() => {
+                              if (item.receiptNo) setSelectedReceipt(item as any);
+                              else setSelectedPendingItem(item);
+                            }}
+                            className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80"
+                            title={lang === "mr" ? "तपशील पाहण्यासाठी क्लिक करा" : "Click to view full details"}
+                          >
+                            {/* 1. # Index */}
+                            <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
+                              {rowNumber}
+                            </td>
+
+                            {/* 2. Date & Time (Down to the second, clean stack) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex flex-col leading-tight">
+                                <span className="font-bold text-slate-900 text-xs">{dt.date}</span>
+                                <span className="text-[11px] font-normal text-slate-500 mt-0.5">{dt.time}</span>
+                              </div>
+                            </td>
+
+                            {/* 3. Receipt No (Clean bold mono text) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              {item.receiptNo ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono font-bold text-xs text-slate-900">
+                                    {item.receiptNo}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopy(item.receiptNo!, item.id + "-all-rec");
+                                    }}
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                    title={text.copyReceiptTooltip}
+                                  >
+                                    {copiedId === item.id + "-all-rec" ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-mono text-xs">-</span>
+                              )}
+                            </td>
+
+                            {/* 4. Order ID / Ref */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              {item.orderId ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-xs text-slate-600 max-w-[150px] truncate" title={item.orderId}>
+                                    {item.orderId}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopy(item.orderId!, item.id + "-all-ord");
+                                    }}
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                    title={text.copyOrderTooltip}
+                                  >
+                                    {copiedId === item.id + "-all-ord" ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-mono text-xs">-</span>
+                              )}
+                            </td>
+
+                            {/* 5. Member (Matching Members Table Name & Mobile Layout) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex flex-col leading-tight">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={item.name || "-"}>
+                                    {item.name || "-"}
+                                  </span>
+                                  {item.memberNo && item.memberNo !== "-" && (
+                                    <span className="font-mono text-[11px] text-slate-500 font-medium shrink-0">
+                                      ({item.memberNo})
+                                    </span>
+                                  )}
+                                </div>
+                                {item.mobile && item.mobile !== "N/A" ? (
+                                  <a
+                                    href={`tel:${item.mobile}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[11px] font-mono text-slate-500 hover:text-blue-700 flex items-center gap-1 mt-0.5"
+                                  >
+                                    <Phone className="w-3 h-3 text-slate-400" />
+                                    <span>{item.mobile}</span>
+                                  </a>
+                                ) : null}
+                              </div>
+                            </td>
+
+                            {/* 6. Type (Clean Capsules matching registrations) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              {isDonation ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-800 bg-pink-100/80 border border-pink-200 px-2 py-0.5 rounded-full">
+                                  <Heart className="w-3 h-3 text-pink-600" />
+                                  <span>{text.badgeTypeDonation}</span>
+                                </span>
+                              ) : isExec ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/80 border border-amber-300 px-2 py-0.5 rounded-full">
+                                  <Users className="w-3 h-3 text-amber-700" />
+                                  <span>{text.badgeTypeExec}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-800 bg-blue-100/80 border border-blue-200 px-2 py-0.5 rounded-full">
+                                  <User className="w-3 h-3 text-blue-700" />
+                                  <span>{text.badgeTypePrimary}</span>
+                                </span>
+                              )}
+                            </td>
+
+                            {/* 7. Amount */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 text-xs">
+                                ₹{Number(item.amount || 0).toLocaleString("en-IN")}
+                              </span>
+                            </td>
+
+                            {/* 8. card/upi */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
+                                <CreditCard className="w-3 h-3 text-slate-500" />
+                                <span>{formatPaymentMethod(item.paymentMode || "Online UPI")}</span>
+                              </span>
+                            </td>
+
+                            {/* 9. Status (Pill Badges) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              {item.status === "SUCCESS" ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                                  <span>{text.statusSucceededBadge}</span>
+                                </span>
+                              ) : item.status === "FAILED" ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100/90 border border-rose-300 px-2.5 py-0.5 rounded-full">
+                                  <XCircle className="w-3 h-3 text-rose-700" />
+                                  <span>{text.statusFailedBadge}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-2.5 py-0.5 rounded-full">
+                                  <Clock className="w-3 h-3 text-amber-700" />
+                                  <span>{text.statusPendingBadge}</span>
+                                </span>
+                              )}
+                            </td>
+
+                            {/* 10. Actions (Button Styles Matching Registrations) */}
+                            <td className="py-2 px-3 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {item.receiptNo ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedReceipt(item as any);
+                                    }}
+                                    className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                                    title={text.viewReceiptTooltip}
+                                  >
+                                    <Eye className="w-4 h-4 text-amber-800" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedPendingItem(item);
+                                    }}
+                                    className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                                    title="तपशील पहा (View Details)"
+                                  >
+                                    <Eye className="w-4 h-4 text-amber-800" />
+                                  </button>
+                                )}
+
+                                {item.status === "SUCCESS" && item.receiptNo && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSendPaymentWhatsApp(item);
+                                    }}
+                                    className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                                    title="व्हॉट्सॲपवर पाठवा (WhatsApp Receipt)"
+                                  >
+                                    <MessageSquare className="w-4 h-4 text-emerald-600" />
+                                  </button>
+                                )}
+
+                                {item.status === "FAILED" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedFailedDiag({
+                                        id: item.id,
+                                        orderId: item.orderId || "N/A",
+                                        type: item.type,
+                                        amount: item.amount,
+                                        name: item.name,
+                                        mobile: item.mobile,
+                                        provider: item.paymentMode,
+                                        failureCode: item.failureCode || "N/A",
+                                        failureReason: item.failureReason || "Payment failed or was cancelled",
+                                        gatewayResponse: item.gatewayResponse,
+                                        createdAt: item.createdAt,
+                                        status: "FAILED",
+                                      });
+                                    }}
+                                    className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                                    title="त्रुटी तपशील (View Failure Diagnostics)"
+                                  >
+                                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                                  </button>
+                                )}
+
+                                {item.publicToken && (
+                                  <a
+                                    href={`${MAIN_SITE_URL}/receipt/${item.publicToken}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 flex items-center justify-center transition shadow-2xs"
+                                    title={text.publicLinkTooltip}
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPagesAll > 1 && (
+                <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span>
+                    {text.pageInfo(pageAll, totalPagesAll, totalAllItems)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPageAll((p) => Math.max(1, p - 1))}
+                      disabled={pageAll <= 1}
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setPageAll((p) => Math.min(totalPagesAll, p + 1))}
+                      disabled={pageAll >= totalPagesAll}
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ======================================================== */}
-        {/* TAB 1: SUCCESSFUL PAYMENTS                               */}
+        {/* TAB 1: SUCCESSFUL PAYMENTS (Exact 10 Columns)             */}
         {/* ======================================================== */}
         {activeTab === "SUCCESSFUL" && (
           <div className="space-y-4">
             {/* Filter and Search Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-3">
+              {/* Row 1: Search Bar */}
+              <div className="relative w-full">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchSuccess}
@@ -1121,29 +1694,30 @@ mptmamravati.org`;
                     setPageSuccess(1);
                   }}
                   placeholder={text.searchSuccessPlaceholder}
-                  className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-slate-800 placeholder-slate-400 font-medium"
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
                 />
                 {searchSuccess && (
                   <button
                     onClick={() => setSearchSuccess("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
-                  <Filter className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-600">{text.typeFilterLabel}</span>
+              {/* Row 2: Filter Dropdown */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                  <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                  <span className="text-xs font-bold text-slate-700 shrink-0">{text.typeFilterLabel}</span>
                   <select
                     value={typeFilter}
                     onChange={(e) => {
                       setTypeFilter(e.target.value);
                       setPageSuccess(1);
                     }}
-                    className="bg-transparent text-xs font-extrabold text-slate-800 focus:outline-none cursor-pointer"
+                    className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                   >
                     <option value="ALL">{text.typeAll}</option>
                     <option value="PRIMARY">{text.typePrimary}</option>
@@ -1154,63 +1728,97 @@ mptmamravati.org`;
               </div>
             </div>
 
-            {/* Successful Table */}
+            {/* Helper Hint Bar (Matching Members Tab) */}
+            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>
+                  {lang === "mr"
+                    ? "पावती व संपूर्ण तपशील पाहण्यासाठी ओळीवर किंवा 👁️ आयकॉनवर क्लिक करा"
+                    : "Click on any row to view full receipt • Click 👁️ icon for receipt"}
+                </span>
+              </span>
+              <span className="text-[11px] text-slate-400 font-semibold font-mono">
+                {totalSuccessItems} {lang === "mr" ? "यशस्वी व्यवहार" : "successful payments"}
+              </span>
+            </div>
+
+            {/* Successful Table (Exact 10 Columns Matching ALL tab) */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thDateTime}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thReceiptNo}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thOrderId}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thPayer}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thType}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thAmount}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thSecurity}</th>
-                      <th className="py-3.5 px-4 text-right whitespace-nowrap">{text.thActions}</th>
+                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="py-2.5 px-2.5 w-8 text-center">{text.thIndex}</th>
+                      <th className="py-2.5 px-3">{text.thDateTime}</th>
+                      <th className="py-2.5 px-3">{text.thReceiptNo}</th>
+                      <th className="py-2.5 px-3">{text.thOrderId}</th>
+                      <th className="py-2.5 px-3">{text.thMember}</th>
+                      <th className="py-2.5 px-3">{text.thType}</th>
+                      <th className="py-2.5 px-3">{text.thAmount}</th>
+                      <th className="py-2.5 px-3">{text.thCardUpi}</th>
+                      <th className="py-2.5 px-3">{text.thStatus}</th>
+                      <th className="py-2.5 px-3 text-right">{text.thActions}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                  <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                     {loadingSuccess ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
+                        <td colSpan={10} className="py-12 text-center text-slate-500 font-medium">
                           <RefreshCw className="w-6 h-6 animate-spin text-emerald-600 mx-auto mb-2" />
                           {text.loadingSuccess}
                         </td>
                       </tr>
                     ) : successfulList.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
+                        <td colSpan={10} className="py-12 text-center text-slate-500 italic">
                           {text.emptySuccess}
                         </td>
                       </tr>
                     ) : (
-                      successfulList.map((item) => {
-                        const isExec = item.type === "EXECUTIVE";
+                      successfulList.map((item, index) => {
+                        const rowNumber = (pageSuccess - 1) * 25 + index + 1;
+                        const dt = getPaymentDateAndTime(item);
+                        const isExec =
+                          item.type === "EXECUTIVE" ||
+                          Boolean(
+                            item.receiptNo &&
+                              (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
+                          );
                         const isDonation = item.category === "DONATION";
 
                         return (
-                          <tr key={item.id} className="hover:bg-slate-50/80 transition group">
-                            {/* Date & Time */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
-                              <div className="font-bold text-slate-900 text-xs">
-                                {formatDateTime(item.createdAt)}
-                              </div>
-                              <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                                <Clock className="w-3 h-3 text-slate-400" />
-                                {formatDateOnly(item.date || item.createdAt)}
+                          <tr
+                            key={item.id}
+                            onClick={() => setSelectedReceipt(item)}
+                            className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80"
+                            title={lang === "mr" ? "पावती पाहण्यासाठी क्लिक करा" : "Click to view receipt"}
+                          >
+                            {/* 1. # Index */}
+                            <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
+                              {rowNumber}
+                            </td>
+
+                            {/* 2. Date & Time */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex flex-col leading-tight">
+                                <span className="font-bold text-slate-900 text-xs">{dt.date}</span>
+                                <span className="text-[11px] font-normal text-slate-500 mt-0.5">{dt.time}</span>
                               </div>
                             </td>
 
-                            {/* Receipt No */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
+                            {/* 3. Receipt No */}
+                            <td className="py-2 px-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-mono font-black text-slate-900 text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                <span className="font-mono font-bold text-xs text-slate-900">
                                   {item.receiptNo}
                                 </span>
                                 <button
-                                  onClick={() => handleCopy(item.receiptNo, item.id + "-rec")}
-                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopy(item.receiptNo, item.id + "-rec");
+                                  }}
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
                                   title={text.copyReceiptTooltip}
                                 >
                                   {copiedId === item.id + "-rec" ? (
@@ -1220,121 +1828,131 @@ mptmamravati.org`;
                                   )}
                                 </button>
                               </div>
-                              <div className="mt-1">
-                                {isDonation ? (
-                                  <span className="text-[10px] font-bold text-pink-700 bg-pink-50 border border-pink-200 px-1.5 py-0.2 rounded-full">
-                                    {text.badgeDonationRec}
-                                  </span>
-                                ) : isExec ? (
-                                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-full">
-                                    {text.badgeExecRec}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded-full">
-                                    {text.badgePrimaryRec}
-                                  </span>
-                                )}
-                              </div>
                             </td>
 
-                            {/* Order ID / Payment Ref */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
-                              <div className="flex items-center gap-1">
-                                <span className="font-mono text-xs text-slate-600 truncate max-w-[140px]" title={item.orderId}>
+                            {/* 4. Order ID / Ref */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs text-slate-600 max-w-[150px] truncate" title={item.orderId}>
                                   {item.orderId}
                                 </span>
                                 {item.orderId && item.orderId !== "N/A" && (
                                   <button
-                                    onClick={() => handleCopy(item.orderId, item.id + "-ord")}
-                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCopy(item.orderId, item.id + "-ord");
+                                    }}
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
                                     title={text.copyOrderTooltip}
                                   >
                                     {copiedId === item.id + "-ord" ? (
-                                      <Check className="w-3 h-3 text-emerald-600" />
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
                                     ) : (
-                                      <Copy className="w-3 h-3" />
+                                      <Copy className="w-3.5 h-3.5" />
                                     )}
                                   </button>
                                 )}
                               </div>
-                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                                {item.paymentMode || "PhonePe / UPI"}
-                              </span>
                             </td>
 
-                            {/* Payer Info */}
-                            <td className="py-3 px-4 align-top">
-                              <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span className="truncate max-w-[180px]">{item.name}</span>
+                            {/* 5. Member (Matching Members Table Name & Mobile Layout) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <div className="flex flex-col leading-tight">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={item.name}>
+                                    {item.name}
+                                  </span>
+                                  {(() => {
+                                    const mNo = item.memberNo || (item.mainMembers && item.mainMembers[0]?.memberNo);
+                                    if (mNo && mNo !== "-") {
+                                      return (
+                                        <span className="font-mono text-[11px] text-slate-500 font-medium shrink-0">
+                                          ({mNo})
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </div>
+                                {item.mobile && item.mobile !== "N/A" ? (
+                                  <a
+                                    href={`tel:${item.mobile}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[11px] font-mono text-slate-500 hover:text-blue-700 flex items-center gap-1 mt-0.5"
+                                  >
+                                    <Phone className="w-3 h-3 text-slate-400" />
+                                    <span>{item.mobile}</span>
+                                  </a>
+                                ) : null}
                               </div>
-                              <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1 mt-0.5 pl-5">
-                                <Phone className="w-3 h-3 text-slate-400" />
-                                <span>{item.mobile}</span>
-                              </div>
-                              {!isDonation && item.memberCount > 1 && (
-                                <span className="text-[10px] font-semibold text-slate-500 pl-5">
-                                  {text.moreMembers(item.memberCount - 1)}
-                                </span>
-                              )}
                             </td>
 
-                            {/* Type */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
+                            {/* 6. Type (Clean Capsules matching registrations) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
                               {isDonation ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-extrabold text-pink-700 bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-lg">
-                                  <Heart className="w-3 h-3" />
-                                  {text.badgeTypeDonation}
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-800 bg-pink-100/80 border border-pink-200 px-2 py-0.5 rounded-full">
+                                  <Heart className="w-3 h-3 text-pink-600" />
+                                  <span>{text.badgeTypeDonation}</span>
                                 </span>
                               ) : isExec ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">
-                                  <Users className="w-3 h-3" />
-                                  {text.badgeTypeExec}
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/80 border border-amber-300 px-2 py-0.5 rounded-full">
+                                  <Users className="w-3 h-3 text-amber-700" />
+                                  <span>{text.badgeTypeExec}</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-lg">
-                                  <User className="w-3 h-3" />
-                                  {text.badgeTypePrimary}
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-800 bg-blue-100/80 border border-blue-200 px-2 py-0.5 rounded-full">
+                                  <User className="w-3 h-3 text-blue-700" />
+                                  <span>{text.badgeTypePrimary}</span>
                                 </span>
                               )}
                             </td>
 
-                            {/* Amount */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
-                              <div className="text-sm font-black text-emerald-700">
+                            {/* 7. Amount */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 text-xs">
                                 ₹{item.amount.toLocaleString("en-IN")}
-                              </div>
-                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
-                                {text.badgePaid}
                               </span>
                             </td>
 
-                            {/* HMAC Status */}
-                            {/* HMAC Status */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top">
-                              <button
-                                onClick={() => {
-                                  setActiveTab("VERIFY");
-                                  setVerifyQuery(item.receiptNo);
-                                  handleVerifyReceipt(item.receiptNo);
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full transition cursor-pointer"
-                                title="Click to verify cryptographic signature"
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>{text.badgeHmacVerified}</span>
-                              </button>
+                            {/* 8. card/upi */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
+                                <CreditCard className="w-3 h-3 text-slate-500" />
+                                <span>{formatPaymentMethod(item.paymentMode || "Online UPI")}</span>
+                              </span>
                             </td>
 
-                            {/* Actions */}
-                            <td className="py-3 px-4 whitespace-nowrap align-top text-right">
+                            {/* 9. Status (Pill Badge) */}
+                            <td className="py-2 px-3 whitespace-nowrap">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                                <span>{text.statusSucceededBadge}</span>
+                              </span>
+                            </td>
+
+                            {/* 10. Actions (Button Styles Matching Registrations) */}
+                            <td className="py-2 px-3 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
-                                  onClick={() => setSelectedReceipt(item)}
-                                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 flex items-center justify-center transition shadow-2xs cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedReceipt(item);
+                                  }}
+                                  className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                                   title={text.viewReceiptTooltip}
                                 >
-                                  <Eye className="w-4 h-4" />
+                                  <Eye className="w-4 h-4 text-amber-800" />
+                                </button>
+
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSendPaymentWhatsApp(item);
+                                  }}
+                                  className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
+                                  title="व्हॉट्सॲपवर पाठवा (WhatsApp Receipt)"
+                                >
+                                  <MessageSquare className="w-4 h-4 text-emerald-600" />
                                 </button>
 
                                 {item.publicToken && (
@@ -1342,7 +1960,8 @@ mptmamravati.org`;
                                     href={`${MAIN_SITE_URL}/receipt/${item.publicToken}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 flex items-center justify-center transition shadow-2xs"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 flex items-center justify-center transition shadow-2xs"
                                     title={text.publicLinkTooltip}
                                   >
                                     <ExternalLink className="w-4 h-4" />
@@ -1368,14 +1987,14 @@ mptmamravati.org`;
                     <button
                       onClick={() => setPageSuccess((p) => Math.max(1, p - 1))}
                       disabled={pageSuccess <= 1}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setPageSuccess((p) => Math.min(totalPagesSuccess, p + 1))}
                       disabled={pageSuccess >= totalPagesSuccess}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -1405,8 +2024,8 @@ mptmamravati.org`;
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              <div className="relative flex-1">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4">
+              <div className="relative w-full">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -1416,12 +2035,12 @@ mptmamravati.org`;
                     setPageFailed(1);
                   }}
                   placeholder={text.searchFailedPlaceholder}
-                  className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-slate-800 placeholder-slate-400 font-medium"
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
                 />
                 {searchFailed && (
                   <button
                     onClick={() => setSearchFailed("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1429,23 +2048,38 @@ mptmamravati.org`;
               </div>
             </div>
 
+            {/* Helper Hint Bar (Matching Members Tab) */}
+            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <Eye className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>
+                  {lang === "mr"
+                    ? "त्रुटीचे तांत्रिक विश्लेषण पाहण्यासाठी ओळीवर किंवा डायग्नोस्टिक्सवर क्लिक करा"
+                    : "Click on any row or diagnostics button to view gateway failure analysis"}
+                </span>
+              </span>
+              <span className="text-[11px] text-slate-400 font-semibold font-mono">
+                {totalFailedItems} {lang === "mr" ? "अयशस्वी व्यवहार" : "failed transactions"}
+              </span>
+            </div>
+
             {/* Failed Payments Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thDateTime}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thOrderId}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thAttemptedPayer}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thType}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thAttemptedAmount}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thFailureReason}</th>
-                      <th className="py-3.5 px-4 whitespace-nowrap">{text.thErrorCode}</th>
-                      <th className="py-3.5 px-4 text-right whitespace-nowrap">{text.thActions}</th>
+                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="py-2.5 px-3">{text.thDateTime}</th>
+                      <th className="py-2.5 px-3">{text.thOrderId}</th>
+                      <th className="py-2.5 px-3">{text.thAttemptedPayer}</th>
+                      <th className="py-2.5 px-3">{text.thType}</th>
+                      <th className="py-2.5 px-3">{text.thAttemptedAmount}</th>
+                      <th className="py-2.5 px-3">{text.thFailureReason}</th>
+                      <th className="py-2.5 px-3">{text.thErrorCode}</th>
+                      <th className="py-2.5 px-3 text-right">{text.thActions}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                  <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                     {loadingFailed ? (
                       <tr>
                         <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
@@ -1455,34 +2089,39 @@ mptmamravati.org`;
                       </tr>
                     ) : failedList.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
+                        <td colSpan={8} className="py-12 text-center text-slate-500 italic">
                           {text.emptyFailed}
                         </td>
                       </tr>
                     ) : (
                       failedList.map((f) => (
-                        <tr key={f.id} className="hover:bg-slate-50/80 transition">
+                        <tr
+                          key={f.id}
+                          onClick={() => setSelectedFailedDiag(f)}
+                          className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80"
+                          title={lang === "mr" ? "त्रुटी तपशील पाहण्यासाठी क्लिक करा" : "Click to view failure diagnostics"}
+                        >
                           {/* Date & Time */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top">
-                            <div className="font-bold text-slate-900 text-xs">
-                              {formatDateTime(f.createdAt)}
-                            </div>
-                            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3 text-slate-400" />
-                              {formatDateOnly(f.createdAt)}
+                          <td className="py-2 px-3 whitespace-nowrap align-middle">
+                            <div className="flex flex-col leading-tight">
+                              <span className="font-bold text-slate-900 text-xs">{formatDateTime(f.createdAt)}</span>
+                              <span className="text-[11px] font-normal text-slate-500 mt-0.5">{formatDateOnly(f.createdAt)}</span>
                             </div>
                           </td>
 
                           {/* Order ID */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top">
-                            <div className="flex items-center gap-1">
+                          <td className="py-2 px-3 whitespace-nowrap align-middle">
+                            <div className="flex items-center gap-1.5">
                               <span className="font-mono font-bold text-slate-900 text-xs">
                                 {f.orderId}
                               </span>
                               {f.orderId && f.orderId !== "N/A" && (
                                 <button
-                                  onClick={() => handleCopy(f.orderId, f.id + "-failord")}
-                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopy(f.orderId, f.id + "-failord");
+                                  }}
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
                                   title={text.copyOrderTooltip}
                                 >
                                   {copiedId === f.id + "-failord" ? (
@@ -1494,32 +2133,33 @@ mptmamravati.org`;
                               )}
                             </div>
                             <span className="text-[10px] text-slate-400 font-mono">
-                              Provider: {f.provider}
+                              {f.provider}
                             </span>
                           </td>
 
                           {/* Payer Info */}
-                          <td className="py-3 px-4 align-top">
-                            <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                              <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate max-w-[160px]">{f.name}</span>
-                            </div>
-                            <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1 mt-0.5 pl-5">
-                              <Phone className="w-3 h-3 text-slate-400" />
-                              <span>{f.mobile}</span>
+                          <td className="py-2 px-3 align-middle">
+                            <div className="flex flex-col leading-tight">
+                              <span className="font-bold text-slate-900 text-xs truncate max-w-[160px]">{f.name}</span>
+                              {f.mobile && (
+                                <span className="text-[11px] font-mono text-slate-500 mt-0.5 flex items-center gap-1">
+                                  <Phone className="w-3 h-3 text-slate-400" />
+                                  <span>{f.mobile}</span>
+                                </span>
+                              )}
                             </div>
                           </td>
 
                           {/* Type */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top">
-                            <span className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
+                          <td className="py-2 px-3 whitespace-nowrap align-middle">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
                               {f.type}
                             </span>
                           </td>
 
                           {/* Amount */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top">
-                            <div className="text-xs font-black text-slate-700">
+                          <td className="py-2 px-3 whitespace-nowrap align-middle">
+                            <div className="font-bold text-slate-900 text-xs">
                               ₹{f.amount.toLocaleString("en-IN")}
                             </div>
                             <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
@@ -1528,33 +2168,35 @@ mptmamravati.org`;
                           </td>
 
                           {/* Failure Reason */}
-                          <td className="py-3 px-4 align-top max-w-[200px]">
+                          <td className="py-2 px-3 align-middle max-w-[200px]">
                             <div className="text-xs font-semibold text-rose-900 leading-snug line-clamp-2" title={f.failureReason}>
                               {f.failureReason}
                             </div>
                             {f.purgeAfter && (
-                              <div className="text-[10px] text-slate-400 mt-1">
+                              <div className="text-[10px] text-slate-400 mt-0.5">
                                 {text.purgeInfo(formatDateOnly(f.purgeAfter))}
                               </div>
                             )}
                           </td>
 
                           {/* Failure Code */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top">
+                          <td className="py-2 px-3 whitespace-nowrap align-middle">
                             <span className="inline-block text-[11px] font-mono font-bold text-rose-800 bg-rose-100/80 border border-rose-300 px-2 py-0.5 rounded-md">
                               {f.failureCode}
                             </span>
                           </td>
 
                           {/* Action */}
-                          <td className="py-3 px-4 whitespace-nowrap align-top text-right">
+                          <td className="py-2 px-3 whitespace-nowrap align-middle text-right">
                             <button
-                              onClick={() => setSelectedFailedDiag(f)}
-                              className="px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition flex items-center gap-1 ml-auto cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFailedDiag(f);
+                              }}
+                              className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition shadow-2xs active:scale-95 ml-auto cursor-pointer"
                               title="View Diagnostic Details"
                             >
-                              <Code className="w-3.5 h-3.5 text-slate-500" />
-                              <span>{text.diagBtn}</span>
+                              <Code className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -1574,14 +2216,14 @@ mptmamravati.org`;
                     <button
                       onClick={() => setPageFailed((p) => Math.max(1, p - 1))}
                       disabled={pageFailed <= 1}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setPageFailed((p) => Math.min(totalPagesFailed, p + 1))}
                       disabled={pageFailed >= totalPagesFailed}
-                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                      className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -1592,9 +2234,6 @@ mptmamravati.org`;
           </div>
         )}
 
-        {/* ======================================================== */}
-        {/* TAB 3: VERIFY RECEIPT                                    */}
-        {/* ======================================================== */}
         {/* ======================================================== */}
         {/* TAB 3: VERIFY RECEIPT                                    */}
         {/* ======================================================== */}
@@ -1939,8 +2578,10 @@ mptmamravati.org`;
                 const isDonation = r.category === "DONATION";
                 const isExec =
                   r.type === "EXECUTIVE" ||
-                  (r.receiptNo && r.receiptNo.startsWith("MPTM-EM-")) ||
-                  Number(r.amount) === 1001;
+                  Boolean(
+                    r.receiptNo &&
+                      (r.receiptNo.startsWith("MPTM-EM-") || r.receiptNo.includes("EM-R"))
+                  );
                 const qrUrl = publicToken
                   ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
                       `${MAIN_SITE_URL}/receipt/${publicToken}`
@@ -2341,6 +2982,84 @@ mptmamravati.org`;
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setSelectedFailedDiag(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  {text.closeBtn}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* MODAL 3: PENDING / ATTEMPT DETAILS MODAL                 */}
+        {/* ======================================================== */}
+        {selectedPendingItem && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs overflow-y-auto p-4 flex justify-center items-start animate-in fade-in duration-200">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-amber-300 p-6 space-y-4 my-4 sm:my-8">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900">
+                      व्यवहार तपशील (Transaction Attempt)
+                    </h3>
+                    <p className="text-xs text-slate-500 font-mono">
+                      Order: {selectedPendingItem.orderId || "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedPendingItem(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <span className="text-slate-500 font-bold block">नाव (Name):</span>
+                    <span className="font-bold text-slate-900">{selectedPendingItem.name || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block">मोबाईल (Mobile):</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedPendingItem.mobile || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block">रक्कम (Amount):</span>
+                    <span className="font-bold text-slate-900">₹{selectedPendingItem.amount}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block">स्थिती (Status):</span>
+                    <span className="font-bold uppercase text-amber-700">{selectedPendingItem.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block">पद्धत (Mode):</span>
+                    <span className="font-medium text-slate-800">{formatPaymentMethod(selectedPendingItem.paymentMode)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block">प्रकार (Type):</span>
+                    <span className="font-bold text-slate-800">{selectedPendingItem.type}</span>
+                  </div>
+                </div>
+
+                {selectedPendingItem.failureReason && (
+                  <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 space-y-1">
+                    <span className="text-rose-900 font-bold block">त्रुटी / कारण (Reason):</span>
+                    <p className="text-rose-800 leading-relaxed font-medium">
+                      {selectedPendingItem.failureReason}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => setSelectedPendingItem(null)}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
                 >
                   {text.closeBtn}

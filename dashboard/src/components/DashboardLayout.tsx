@@ -32,12 +32,96 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface SidebarNavItem {
+  title: string;
+  path: string;
+  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number; className?: string }>;
+  bg: string;
+  fg: string;
+  superAdminOnly?: boolean;
+  exactMatch?: boolean;
+}
+
+const sidebarNavItems: SidebarNavItem[] = [
+  {
+    title: "Dashboard",
+    path: "/",
+    Icon: LayoutDashboard,
+    bg: "#C2E7FF",
+    fg: "#004A77",
+    exactMatch: true,
+  },
+  {
+    title: "Member Registrations",
+    path: "/registrations",
+    Icon: ClipboardList,
+    bg: "#6DD58C",
+    fg: "#0F5223",
+  },
+  {
+    title: "Payments",
+    path: "/payments",
+    Icon: CreditCard,
+    bg: "#D9BAFD",
+    fg: "#5629A4",
+  },
+  {
+    title: "Manage Users",
+    path: "/manage-users",
+    Icon: Users,
+    bg: "#7FCFFF",
+    fg: "#004A77",
+    superAdminOnly: true,
+  },
+  {
+    title: "Career Applications",
+    path: "/manage-career",
+    Icon: Briefcase,
+    bg: "#FFE0B2",
+    fg: "#8A5300",
+    superAdminOnly: true,
+  },
+  {
+    title: "Contact Messages",
+    path: "/manage-contact",
+    Icon: Mail,
+    bg: "#FFAEE4",
+    fg: "#8D0053",
+    superAdminOnly: true,
+  },
+  {
+    title: "Donations",
+    path: "/manage-donations",
+    Icon: Heart,
+    bg: "#FFCDD2",
+    fg: "#B71C1C",
+    superAdminOnly: true,
+  },
+  {
+    title: "Executive Members",
+    path: "/manage-executives",
+    Icon: UserCheck,
+    bg: "#FDE68A",
+    fg: "#7A5B00",
+    superAdminOnly: true,
+  },
+  {
+    title: "Ads Manager",
+    path: "/manage-ads",
+    Icon: Megaphone,
+    bg: "#D1C4E9",
+    fg: "#4527A0",
+    superAdminOnly: true,
+  },
+];
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState<boolean>(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState<boolean>(false);
 
@@ -51,6 +135,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const API_URL = getApiUrl();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) setSidebarOpen(false);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Check login state and user role
   useEffect(() => {
@@ -208,6 +303,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleMarkAllAsRead = () => {
     const allIds = registrations.map((r) => r.id);
     setReadNotificationIds(allIds);
+  };
+
+  const renderSidebarButton = (item: SidebarNavItem, index: number) => {
+    const isActive = item.exactMatch
+      ? pathname === item.path
+      : pathname === item.path || pathname.startsWith(item.path + "/");
+
+    return (
+      <div key={index} className="w-full">
+        <button
+          onClick={() => {
+            router.push(item.path);
+            if (isMobile) setSidebarOpen(false);
+          }}
+          title={item.title}
+          className={`flex items-center w-full ${
+            sidebarOpen ? "justify-start gap-3 pl-2.5 pr-4" : "justify-center px-0"
+          } py-2.5 rounded-full text-[14.5px] font-medium transition-colors duration-150 ease-in-out whitespace-nowrap text-[#1F1F1F] cursor-pointer ${
+            isActive ? "bg-[#C2E7FF] font-semibold text-[#001D35]" : "hover:bg-[#E1E5EA]"
+          }`}
+        >
+          <span
+            className="shrink-0 w-[42px] h-[42px] rounded-full flex items-center justify-center"
+            style={{ backgroundColor: item.bg }}
+          >
+            <item.Icon size={20} color={item.fg} strokeWidth={2.4} />
+          </span>
+          {sidebarOpen && <span className="truncate">{item.title}</span>}
+        </button>
+      </div>
+    );
   };
 
   if (isAuthenticated === null) {
@@ -426,283 +552,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* 2. MAIN LAYOUT: SIDEBAR + MAIN CONTENT */}
       <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR NAVIGATION */}
+        {/* Sidebar Navigation */}
         <aside
-          className={`bg-white border-r border-slate-200/80 shrink-0 transition-all duration-300 ease-in-out z-20 no-print overflow-y-auto overflow-x-hidden ${
-            sidebarOpen ? "w-60" : "w-16"
+          className={`bg-[#F0F4F9] h-full flex flex-col py-4 px-3 space-y-1.5 shrink-0 overflow-y-auto z-10 border-r border-gray-100 no-scrollbar transition-all duration-200 ease-in-out ${
+            sidebarOpen ? "w-[18rem]" : "w-[6rem]"
           }`}
         >
-          <div className={`py-3 space-y-1 ${sidebarOpen ? "px-0" : "px-2 flex flex-col items-center"}`}>
-            {/* Tab 1: Dashboard (Route "/") - Visible to Everyone */}
-            <button
-              onClick={() => router.push("/")}
-              title="Dashboard"
-              className={`flex items-center transition-all duration-300 ease-in-out ${
-                sidebarOpen
-                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                      pathname === "/"
-                        ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                    }`
-                  : `w-10 h-10 justify-center rounded-full ${
-                      pathname === "/"
-                        ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                    }`
-              }`}
-            >
-              <LayoutDashboard className={`w-5 h-5 shrink-0 ${pathname === "/" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-              <span
-                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                }`}
-              >
-                Dashboard
-              </span>
-            </button>
-
-            {/* Tab 2: Member Registrations (Route "/registrations") - Visible to Everyone */}
-            <button
-              onClick={() => router.push("/registrations")}
-              title="Member Registrations"
-              className={`flex items-center transition-all duration-300 ease-in-out ${
-                sidebarOpen
-                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                      pathname === "/registrations"
-                        ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                    }`
-                  : `w-10 h-10 justify-center rounded-full ${
-                      pathname === "/registrations"
-                        ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                    }`
-              }`}
-            >
-              <ClipboardList className={`w-5 h-5 shrink-0 ${pathname === "/registrations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-              <span
-                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                }`}
-              >
-                Member Registrations
-              </span>
-            </button>
-
-            {/* Tab: Payments (Route "/payments") - Visible to Everyone */}
-            <button
-              onClick={() => router.push("/payments")}
-              title="Payments"
-              className={`flex items-center transition-all duration-300 ease-in-out ${
-                sidebarOpen
-                  ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                      pathname === "/payments"
-                        ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                        : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                    }`
-                  : `w-10 h-10 justify-center rounded-full ${
-                      pathname === "/payments"
-                        ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                        : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                    }`
-              }`}
-            >
-              <CreditCard className={`w-5 h-5 shrink-0 ${pathname === "/payments" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-              <span
-                className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                  sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                }`}
-              >
-                Payments
-              </span>
-            </button>
-
-            {/* Tab 3: Manage Users (Route "/manage-users") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-users")}
-                title="Manage Users"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-users"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-users"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <Users className={`w-5 h-5 shrink-0 ${pathname === "/manage-users" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Manage Users
-                </span>
-              </button>
-            )}
-
-            {/* Tab 4: Career Applications (Route "/manage-career") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-career")}
-                title="Career Applications"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-career"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-career"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <Briefcase className={`w-5 h-5 shrink-0 ${pathname === "/manage-career" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Career Applications
-                </span>
-              </button>
-            )}
-
-            {/* Tab 5: Contact Messages (Route "/manage-contact") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-contact")}
-                title="Contact Messages"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-contact"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-contact"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <Mail className={`w-5 h-5 shrink-0 ${pathname === "/manage-contact" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Contact Messages
-                </span>
-              </button>
-            )}
-
-            {/* Tab 6: Donations (Route "/manage-donations") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-donations")}
-                title="Donations"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-donations"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-donations"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <Heart className={`w-5 h-5 shrink-0 ${pathname === "/manage-donations" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Donations
-                </span>
-              </button>
-            )}
-
-            {/* Tab 7: Executive Members (Route "/manage-executives") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-executives")}
-                title="Executive Members"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-executives"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-executives"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <UserCheck className={`w-5 h-5 shrink-0 ${pathname === "/manage-executives" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Executive Members
-                </span>
-              </button>
-            )}
-
-            {/* Tab 8: Ads Manager (Route "/manage-ads") - Super Admin Only */}
-            {isSuperAdmin && (
-              <button
-                onClick={() => router.push("/manage-ads")}
-                title="Ads Manager"
-                className={`flex items-center transition-all duration-300 ease-in-out ${
-                  sidebarOpen
-                    ? `w-full gap-3 pl-5 pr-4 py-2 text-[14px] rounded-r-full ${
-                        pathname === "/manage-ads"
-                          ? "text-[#041E49] bg-[#DCE6FA] font-extrabold shadow-2xs"
-                          : "text-[#444746] hover:text-slate-900 hover:bg-slate-100/70 font-medium"
-                      }`
-                    : `w-10 h-10 justify-center rounded-full ${
-                        pathname === "/manage-ads"
-                          ? "bg-[#DCE6FA] text-[#0B57D0] shadow-2xs"
-                          : "text-[#444746] hover:bg-slate-100 hover:text-slate-900"
-                      }`
-                }`}
-              >
-                <Megaphone className={`w-5 h-5 shrink-0 ${pathname === "/manage-ads" ? "text-[#0B57D0]" : "text-[#444746]"}`} />
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 ease-in-out ${
-                    sidebarOpen ? "opacity-100 max-w-xs" : "opacity-0 max-w-0 overflow-hidden"
-                  }`}
-                >
-                  Ads Manager
-                </span>
-              </button>
-            )}
-          </div>
+          {sidebarNavItems
+            .filter((item) => !item.superAdminOnly || isSuperAdmin)
+            .map((item, index) => renderSidebarButton(item, index))}
         </aside>
 
-        {/* MAIN CONTENT CONTAINER */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-white">
+        {/* Main Content Area */}
+        <div className="content flex-1 bg-[#F0F4F9] overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );
