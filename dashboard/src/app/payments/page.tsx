@@ -1099,20 +1099,28 @@ mptmamravati.org`;
               </span>
             </div>
             <div className="mt-3">
-              <div className="text-2xl font-black text-slate-900">
-                ₹{(summary?.totalSuccessInr || 0).toLocaleString("en-IN")}
-              </div>
-              <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {summary?.totalSuccessCount || 0} {text.transactionsUnit}
-                </span>
-                {isSuperAdmin ? (
-                  <span>({text.regLabel}: {summary?.totalRegistrations || 0}, {text.donationLabel}: {summary?.totalDonations || 0})</span>
-                ) : (
-                  <span>({text.regLabel}: {summary?.totalRegistrations || 0})</span>
-                )}
-              </div>
+              {summaryLoading ? (
+                <div className="h-8 w-36 bg-slate-200 animate-pulse rounded-md" />
+              ) : (
+                <div className="text-2xl font-black text-slate-900">
+                  ₹{(summary?.totalSuccessInr || 0).toLocaleString("en-IN")}
+                </div>
+              )}
+              {summaryLoading ? (
+                <div className="h-4 w-48 bg-slate-200 animate-pulse rounded mt-2" />
+              ) : (
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {summary?.totalSuccessCount || 0} {text.transactionsUnit}
+                  </span>
+                  {isSuperAdmin ? (
+                    <span>({text.regLabel}: {summary?.totalRegistrations || 0}, {text.donationLabel}: {summary?.totalDonations || 0})</span>
+                  ) : (
+                    <span>({text.regLabel}: {summary?.totalRegistrations || 0})</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1127,15 +1135,23 @@ mptmamravati.org`;
               </span>
             </div>
             <div className="mt-3">
-              <div className="text-2xl font-black text-slate-900">
-                ₹{(summary?.todaySuccessInr || 0).toLocaleString("en-IN")}
-              </div>
-              <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full">
-                  <Clock className="w-3 h-3" />
-                  {summary?.todaySuccessCount || 0} {text.todayTransactionsUnit}
-                </span>
-              </div>
+              {summaryLoading ? (
+                <div className="h-8 w-28 bg-slate-200 animate-pulse rounded-md" />
+              ) : (
+                <div className="text-2xl font-black text-slate-900">
+                  ₹{(summary?.todaySuccessInr || 0).toLocaleString("en-IN")}
+                </div>
+              )}
+              {summaryLoading ? (
+                <div className="h-4 w-32 bg-slate-200 animate-pulse rounded mt-2" />
+              ) : (
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
+                  <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full">
+                    <Clock className="w-3 h-3" />
+                    {summary?.todaySuccessCount || 0} {text.todayTransactionsUnit}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1150,14 +1166,22 @@ mptmamravati.org`;
               </span>
             </div>
             <div className="mt-3">
-              <div className="text-2xl font-black text-slate-900">
-                {summary?.totalFailedCount || 0}
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-rose-700 font-semibold">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span>{text.todayFailedUnit}: {summary?.todayFailedCount || 0}</span>
-                <span className="text-[10px] text-slate-400 font-normal ml-auto">({text.retentionBadge})</span>
-              </div>
+              {summaryLoading ? (
+                <div className="h-8 w-16 bg-slate-200 animate-pulse rounded-md" />
+              ) : (
+                <div className="text-2xl font-black text-slate-900">
+                  {summary?.totalFailedCount || 0}
+                </div>
+              )}
+              {summaryLoading ? (
+                <div className="h-4 w-36 bg-slate-200 animate-pulse rounded mt-2" />
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-rose-700 font-semibold">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{text.todayFailedUnit}: {summary?.todayFailedCount || 0}</span>
+                  <span className="text-[10px] text-slate-400 font-normal ml-auto">({text.retentionBadge})</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1203,7 +1227,11 @@ mptmamravati.org`;
                   : "bg-slate-200/80 text-slate-700"
               }`}
             >
-              {totalAllItems || allList.length}
+              {loadingAll ? (
+                <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
+              ) : (
+                totalAllItems || allList.length
+              )}
             </span>
           </button>
 
@@ -1225,7 +1253,11 @@ mptmamravati.org`;
                   : "bg-slate-200/80 text-slate-700"
               }`}
             >
-              {summary?.totalSuccessCount || successfulList.length}
+              {loadingSuccess ? (
+                <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
+              ) : (
+                summary?.totalSuccessCount || successfulList.length
+              )}
             </span>
           </button>
 
@@ -1247,7 +1279,11 @@ mptmamravati.org`;
                   : "bg-slate-200/80 text-slate-700"
               }`}
             >
-              {summary?.totalFailedCount || failedList.length}
+              {loadingFailed ? (
+                <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
+              ) : (
+                summary?.totalFailedCount || failedList.length
+              )}
             </span>
           </button>
 
@@ -1354,7 +1390,12 @@ mptmamravati.org`;
                 </span>
               </span>
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
-                {totalAllItems} {lang === "mr" ? "व्यवहार" : "transactions"}
+                {loadingAll ? (
+                  <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
+                ) : (
+                  totalAllItems
+                )}{" "}
+                {lang === "mr" ? "व्यवहार" : "transactions"}
               </span>
             </div>
 
@@ -1378,12 +1419,23 @@ mptmamravati.org`;
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                     {loadingAll ? (
-                      <tr>
-                        <td colSpan={10} className="py-12 text-center text-slate-500 font-medium">
-                          <RefreshCw className="w-6 h-6 animate-spin text-amber-600 mx-auto mb-2" />
-                          {text.loadingAll}
-                        </td>
-                      </tr>
+                      Array.from({ length: 8 }).map((_, idx) => (
+                        <tr key={`skel-all-${idx}`} className="animate-pulse">
+                          <td className="py-2.5 px-2.5 text-center"><div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3">
+                            <div className="h-3.5 w-28 bg-slate-200 rounded mb-1" />
+                            <div className="h-2.5 w-20 bg-slate-200 rounded" />
+                          </td>
+                          <td className="py-2.5 px-3"><div className="h-5 w-16 bg-slate-200 rounded-full" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded font-bold" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-12 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-5 w-14 bg-slate-200 rounded-full" /></td>
+                          <td className="py-2.5 px-3 text-right"><div className="h-7 w-7 bg-slate-200 rounded ml-auto" /></td>
+                        </tr>
+                      ))
                     ) : allList.length === 0 ? (
                       <tr>
                         <td colSpan={10} className="py-12 text-center text-slate-500 italic">
@@ -1739,7 +1791,12 @@ mptmamravati.org`;
                 </span>
               </span>
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
-                {totalSuccessItems} {lang === "mr" ? "यशस्वी व्यवहार" : "successful payments"}
+                {loadingSuccess ? (
+                  <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
+                ) : (
+                  totalSuccessItems
+                )}{" "}
+                {lang === "mr" ? "यशस्वी व्यवहार" : "successful payments"}
               </span>
             </div>
 
@@ -1763,12 +1820,23 @@ mptmamravati.org`;
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                     {loadingSuccess ? (
-                      <tr>
-                        <td colSpan={10} className="py-12 text-center text-slate-500 font-medium">
-                          <RefreshCw className="w-6 h-6 animate-spin text-emerald-600 mx-auto mb-2" />
-                          {text.loadingSuccess}
-                        </td>
-                      </tr>
+                      Array.from({ length: 8 }).map((_, idx) => (
+                        <tr key={`skel-success-${idx}`} className="animate-pulse">
+                          <td className="py-2.5 px-2.5 text-center"><div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3">
+                            <div className="h-3.5 w-28 bg-slate-200 rounded mb-1" />
+                            <div className="h-2.5 w-20 bg-slate-200 rounded" />
+                          </td>
+                          <td className="py-2.5 px-3"><div className="h-5 w-16 bg-slate-200 rounded-full" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded font-bold" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-12 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-5 w-14 bg-slate-200 rounded-full" /></td>
+                          <td className="py-2.5 px-3 text-right"><div className="h-7 w-7 bg-slate-200 rounded ml-auto" /></td>
+                        </tr>
+                      ))
                     ) : successfulList.length === 0 ? (
                       <tr>
                         <td colSpan={10} className="py-12 text-center text-slate-500 italic">
@@ -2059,7 +2127,12 @@ mptmamravati.org`;
                 </span>
               </span>
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
-                {totalFailedItems} {lang === "mr" ? "अयशस्वी व्यवहार" : "failed transactions"}
+                {loadingFailed ? (
+                  <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
+                ) : (
+                  totalFailedItems
+                )}{" "}
+                {lang === "mr" ? "अयशस्वी व्यवहार" : "failed transactions"}
               </span>
             </div>
 
@@ -2081,12 +2154,21 @@ mptmamravati.org`;
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
                     {loadingFailed ? (
-                      <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-500 font-medium">
-                          <RefreshCw className="w-6 h-6 animate-spin text-rose-600 mx-auto mb-2" />
-                          {text.loadingFailed}
-                        </td>
-                      </tr>
+                      Array.from({ length: 8 }).map((_, idx) => (
+                        <tr key={`skel-failed-${idx}`} className="animate-pulse">
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3">
+                            <div className="h-3.5 w-28 bg-slate-200 rounded mb-1" />
+                            <div className="h-2.5 w-20 bg-slate-200 rounded" />
+                          </td>
+                          <td className="py-2.5 px-3"><div className="h-5 w-16 bg-slate-200 rounded-full" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded font-bold" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-32 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                          <td className="py-2.5 px-3 text-right"><div className="h-7 w-7 bg-slate-200 rounded ml-auto" /></td>
+                        </tr>
+                      ))
                     ) : failedList.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="py-12 text-center text-slate-500 italic">

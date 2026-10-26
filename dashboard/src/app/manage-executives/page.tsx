@@ -590,47 +590,77 @@ mptmamravati.org`;
                 )}
               </div>
 
-              <div className="text-xs font-bold text-slate-500 whitespace-nowrap px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/80">
-                Showing: <span className="text-slate-900 font-extrabold">{filteredExecutives.length}</span> of {executives.length} Records
+              <div className="text-xs font-bold text-slate-500 whitespace-nowrap px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/80 inline-flex items-center gap-1.5">
+                {loading ? (
+                  <>Showing: <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded" /> Records</>
+                ) : (
+                  <>Showing: <span className="text-slate-900 font-extrabold">{filteredExecutives.length}</span> of {executives.length} Records</>
+                )}
               </div>
             </div>
           </div>
 
           {/* Table */}
           <div className="overflow-x-auto">
-            {loading ? (
-              <div className="p-12 text-center space-y-3">
-                <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-                <p className="text-xs font-bold text-slate-600">Loading executive members...</p>
-              </div>
-            ) : error ? (
-              <div className="p-12 text-center text-red-600 font-bold text-sm">
-                ⚠️ {error}
-              </div>
-            ) : filteredExecutives.length === 0 ? (
-              <div className="p-12 text-center space-y-2">
-                <UserCheck className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="text-sm font-bold text-slate-700">No executive members found</p>
-                <p className="text-xs text-slate-500">Click "Add Executive Member" to create new committee entries.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse min-w-[1100px]">
-                <thead>
-                  <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
-                    <th className="py-3 px-4">Member Name</th>
-                    <th className="py-3 px-4">Receipt &amp; Series No.</th>
-                    <th className="py-3 px-4">Designation</th>
-                    <th className="py-3 px-4">Mobile Number</th>
-                    <th className="py-3 px-4">Address</th>
-                    <th className="py-3 px-4">Village / Taluka</th>
-                    <th className="py-3 px-4">District</th>
-                    <th className="py-3 px-4">State / Pin</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-center">Actions</th>
+            <table className="w-full text-left border-collapse min-w-[1100px]">
+              <thead>
+                <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
+                  <th className="py-3 px-4">Member Name</th>
+                  <th className="py-3 px-4">Receipt &amp; Series No.</th>
+                  <th className="py-3 px-4">Designation</th>
+                  <th className="py-3 px-4">Mobile Number</th>
+                  <th className="py-3 px-4">Address</th>
+                  <th className="py-3 px-4">Village / Taluka</th>
+                  <th className="py-3 px-4">District</th>
+                  <th className="py-3 px-4">State / Pin</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, idx) => (
+                    <tr key={`skel-exec-${idx}`} className="animate-pulse">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-slate-200 shrink-0" />
+                          <div className="h-4 w-32 bg-slate-200 rounded" />
+                        </div>
+                      </td>
+                      <td className="py-3 px-4"><div className="h-5 w-24 bg-slate-200 rounded-lg" /></td>
+                      <td className="py-3 px-4"><div className="h-5 w-28 bg-slate-200 rounded-full" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-32 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-5 w-16 bg-slate-200 rounded-full" /></td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="w-7 h-7 bg-slate-200 rounded-lg" />
+                          <div className="w-7 h-7 bg-slate-200 rounded-lg" />
+                          <div className="w-7 h-7 bg-slate-200 rounded-lg" />
+                          <div className="w-7 h-7 bg-slate-200 rounded-lg" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : error ? (
+                  <tr>
+                    <td colSpan={10} className="p-12 text-center text-red-600 font-bold text-sm">
+                      ⚠️ {error}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
-                  {filteredExecutives.map((item, index) => {
+                ) : filteredExecutives.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-12 text-center space-y-2">
+                      <UserCheck className="w-10 h-10 text-slate-300 mx-auto" />
+                      <p className="text-sm font-bold text-slate-700">No executive members found</p>
+                      <p className="text-xs text-slate-500">Click "Add Executive Member" to create new committee entries.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredExecutives.map((item, index) => {
                     const match = registrations.find((r) => {
                       const main = r.mainMembers[0];
                       if (!main) return false;
@@ -771,10 +801,10 @@ mptmamravati.org`;
 
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            )}
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
 
         </div>

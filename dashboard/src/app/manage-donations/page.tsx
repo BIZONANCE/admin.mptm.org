@@ -278,8 +278,12 @@ export default function ManageDonationsPage() {
               </div>
 
               {/* Records Counter Badge */}
-              <div className="px-3.5 py-1.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 shrink-0">
-                Showing <span className="text-indigo-600 font-extrabold">{filteredDonations.length}</span> of {donations.length} Records
+              <div className="px-3.5 py-1.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 shrink-0 inline-flex items-center gap-1.5">
+                {loading ? (
+                  <>Showing <span className="inline-block w-8 h-3 bg-indigo-200 animate-pulse rounded" /> Records</>
+                ) : (
+                  <>Showing <span className="text-indigo-600 font-extrabold">{filteredDonations.length}</span> of {donations.length} Records</>
+                )}
               </div>
             </div>
 
@@ -287,69 +291,86 @@ export default function ManageDonationsPage() {
 
           {/* TABLE AREA */}
           <div className="overflow-x-auto">
-            {loading ? (
-              <div className="p-16 text-center space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto shadow-inner">
-                  <RefreshCw className="w-6 h-6 animate-spin" />
-                </div>
-                <p className="text-sm font-bold text-slate-700">Loading donation records...</p>
-                <p className="text-xs text-slate-400">Connecting securely to database server</p>
-              </div>
-            ) : error ? (
-              <div className="p-12 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-                  <X className="w-6 h-6" />
-                </div>
-                <p className="text-sm font-bold text-red-600">{error}</p>
-                <button
-                  onClick={fetchDonations}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
-                >
-                  Retry Connection
-                </button>
-              </div>
-            ) : filteredDonations.length === 0 ? (
-              <div className="p-16 text-center space-y-3">
-                <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                  <FileText className="w-7 h-7" />
-                </div>
-                <p className="text-base font-extrabold text-slate-800">No donation records found</p>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  {searchQuery || selectedCityFilter !== "ALL"
-                    ? "No records match your active search filter criteria. Try clearing search filters."
-                    : "No voluntary contributions recorded in the database yet."}
-                </p>
-                {(searchQuery || selectedCityFilter !== "ALL") && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCityFilter("ALL");
-                    }}
-                    className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100 transition cursor-pointer"
-                  >
-                    Reset Filters
-                  </button>
-                )}
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse min-w-[1100px]">
-                <thead>
-                  <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-extrabold border-b border-slate-300">
-                    <th className="py-4 px-4">Receipt No.</th>
-                    <th className="py-4 px-4">Donor Name</th>
-                    <th className="py-4 px-4">Mobile Number</th>
-                    <th className="py-4 px-4">Address</th>
-                    <th className="py-4 px-4">Village / Taluka</th>
-                    <th className="py-4 px-4">District</th>
-                    <th className="py-4 px-4">State / Pin</th>
-                    <th className="py-4 px-4">Amount</th>
-                    <th className="py-4 px-4">Payment Proof</th>
-                    <th className="py-4 px-4">Date</th>
-                    <th className="py-4 px-4 text-center">Action</th>
+            <table className="w-full text-left border-collapse min-w-[1100px]">
+              <thead>
+                <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-extrabold border-b border-slate-300">
+                  <th className="py-4 px-4">Receipt No.</th>
+                  <th className="py-4 px-4">Donor Name</th>
+                  <th className="py-4 px-4">Mobile Number</th>
+                  <th className="py-4 px-4">Address</th>
+                  <th className="py-4 px-4">Village / Taluka</th>
+                  <th className="py-4 px-4">District</th>
+                  <th className="py-4 px-4">State / Pin</th>
+                  <th className="py-4 px-4">Amount</th>
+                  <th className="py-4 px-4">Payment Proof</th>
+                  <th className="py-4 px-4">Date</th>
+                  <th className="py-4 px-4 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, idx) => (
+                    <tr key={`skel-donation-${idx}`} className="animate-pulse">
+                      <td className="py-4 px-4"><div className="h-6 w-24 bg-slate-200 rounded-xl" /></td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-slate-200 shrink-0" />
+                          <div className="h-4 w-32 bg-slate-200 rounded" />
+                        </div>
+                      </td>
+                      <td className="py-4 px-4"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-3.5 w-32 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-5"><div className="h-6 w-16 bg-slate-200 rounded-full" /></td>
+                      <td className="py-4 px-5"><div className="h-7 w-20 bg-slate-200 rounded-xl" /></td>
+                      <td className="py-4 px-5"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-4 px-5 text-center"><div className="h-8 w-8 bg-slate-200 rounded-xl mx-auto" /></td>
+                    </tr>
+                  ))
+                ) : error ? (
+                  <tr>
+                    <td colSpan={11} className="p-12 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+                        <X className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-bold text-red-600">{error}</p>
+                      <button
+                        onClick={fetchDonations}
+                        className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+                      >
+                        Retry Connection
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
-                  {filteredDonations.map((item) => (
+                ) : filteredDonations.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="p-16 text-center space-y-3">
+                      <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <FileText className="w-7 h-7" />
+                      </div>
+                      <p className="text-base font-extrabold text-slate-800">No donation records found</p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        {searchQuery || selectedCityFilter !== "ALL"
+                          ? "No records match your active search filter criteria. Try clearing search filters."
+                          : "No voluntary contributions recorded in the database yet."}
+                      </p>
+                      {(searchQuery || selectedCityFilter !== "ALL") && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSelectedCityFilter("ALL");
+                          }}
+                          className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold hover:bg-indigo-100 transition cursor-pointer"
+                        >
+                          Reset Filters
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDonations.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/80 transition-colors duration-150 group">
                       
                       {/* Receipt No */}
@@ -458,10 +479,10 @@ export default function ManageDonationsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
 
         </div>

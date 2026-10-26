@@ -88,8 +88,11 @@ export default function DeletedMembersPage() {
       setRefreshing(true);
       setError(null);
       const res = await fetch(`${API_URL}/api/deleted-members`);
+      if (!res.ok) {
+        throw new Error(`API returned HTTP ${res.status}`);
+      }
       const data = await res.json();
-      if (res.ok && data.success && Array.isArray(data.data)) {
+      if (data.success && Array.isArray(data.data)) {
         setDeletedMembers(data.data);
       } else {
         setError(data.error || (lang === "mr" ? "हटवलेल्या सदस्यांची माहिती आणता आली नाही." : "Failed to fetch deleted members."));
@@ -210,8 +213,11 @@ export default function DeletedMembersPage() {
       const res = await fetch(`${API_URL}/api/deleted-members/restore/${restoreCandidate.id}`, {
         method: "POST",
       });
+      if (!res.ok) {
+        throw new Error(`API returned HTTP ${res.status}`);
+      }
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setToastMessage(`✅ ${data.message || (lang === "mr" ? "सदस्य यशस्वीरित्या मुख्य यादीमध्ये पूर्ववत (Restore) करण्यात आला आहे!" : "Member successfully restored!")}`);
         setRestoreCandidate(null);
         if (selectedDetailsMember?.id === restoreCandidate.id) setSelectedDetailsMember(null);
@@ -235,8 +241,11 @@ export default function DeletedMembersPage() {
       const res = await fetch(`${API_URL}/api/deleted-members/${permanentDeleteCandidate.id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        throw new Error(`API returned HTTP ${res.status}`);
+      }
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setToastMessage(`🗑️ ${data.message || (lang === "mr" ? "सदस्य डेटाबेसमधून कायमचा हटवण्यात आला आहे." : "Member permanently deleted.")}`);
         setPermanentDeleteCandidate(null);
         if (selectedDetailsMember?.id === permanentDeleteCandidate.id) setSelectedDetailsMember(null);
@@ -561,21 +570,19 @@ export default function DeletedMembersPage() {
                 : "Click on any row to view full details • Click 🔄 icon to restore"}
             </span>
           </span>
-          <span className="text-[11px] text-slate-400 font-semibold">
-            {filteredMembers.length} {lang === "mr" ? "हटवलेले सदस्य" : "deleted members"}
+          <span className="text-[11px] text-slate-400 font-semibold inline-flex items-center gap-1">
+            {loading ? (
+              <span className="inline-block w-6 h-3 bg-slate-200 animate-pulse rounded" />
+            ) : (
+              filteredMembers.length
+            )}{" "}
+            {lang === "mr" ? "हटवलेले सदस्य" : "deleted members"}
           </span>
         </div>
 
         {/* DATA TABLE CARD (MATCHING REGISTRATIONS TABLE EXACTLY) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 text-slate-600 animate-spin" />
-              <p className="font-semibold text-sm">
-                {lang === "mr" ? "हटवलेल्या सदस्यांची माहिती लोड होत आहे..." : "Loading deleted members data..."}
-              </p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="p-8 text-center text-red-600 flex flex-col items-center justify-center gap-2">
               <AlertTriangle className="w-8 h-8 text-red-500" />
               <p className="font-bold">{error}</p>
@@ -586,10 +593,6 @@ export default function DeletedMembersPage() {
               >
                 {lang === "mr" ? "पुन्हा प्रयत्न करा" : "Try Again"}
               </button>
-            </div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 italic">
-              {lang === "mr" ? "कोणतेही हटवलेले सदस्य सापडले नाहीत." : "No deleted members found."}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -621,7 +624,56 @@ export default function DeletedMembersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
-                  {filteredMembers.map((member, index) => {
+                  {loading ? (
+                    Array.from({ length: 8 }).map((_, idx) => (
+                      <tr key={`skel-del-${idx}`} className="animate-pulse">
+                        <td className="py-2.5 px-2.5 text-center"><div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" /></td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-24 bg-slate-200 rounded mb-1" />
+                          <div className="h-2.5 w-16 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-3"><div className="h-5 w-16 bg-slate-200 rounded-full" /></td>
+                        <td className="py-2.5 px-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-32 bg-slate-200 rounded mb-1" />
+                          <div className="h-2.5 w-20 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                        {viewMode === "all" ? (
+                          <>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded" /></td>
+                          </>
+                        ) : (
+                          <td className="py-2.5 px-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                        )}
+                        <td className="py-2.5 px-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                        <td className="py-2.5 px-2 text-center"><div className="h-3.5 w-6 bg-slate-200 rounded mx-auto" /></td>
+                        <td className="py-2.5 px-2 text-center"><div className="h-3.5 w-6 bg-slate-200 rounded mx-auto" /></td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-24 bg-slate-200 rounded mb-1" />
+                          <div className="h-2.5 w-32 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={viewMode === "all" ? 16 : 12} className="p-12 text-center text-slate-500 italic">
+                        {lang === "mr" ? "कोणतेही हटवलेले सदस्य सापडले नाहीत." : "No deleted members found."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMembers.map((member, index) => {
                     const isPrimary = member.memberType === "PRIMARY";
                     const isExecutive = member.memberType === "EXECUTIVE";
                     const mainList = (Array.isArray(member.mainMembers) && member.mainMembers.length > 0)
@@ -827,7 +879,8 @@ export default function DeletedMembersPage() {
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
                 </tbody>
               </table>
             </div>

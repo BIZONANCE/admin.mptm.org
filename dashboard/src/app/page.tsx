@@ -271,12 +271,7 @@ export default function DashboardHome() {
           </button>
         </div>
 
-        {loading ? (
-          <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-            <p className="font-semibold text-sm">Loading dashboard data...</p>
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="p-8 text-center text-red-600 flex flex-col items-center justify-center gap-2 bg-white rounded-2xl border border-red-200 shadow-2xs">
             <AlertTriangle className="w-8 h-8 text-red-500" />
             <p className="font-bold">{error}</p>
@@ -307,9 +302,13 @@ export default function DashboardHome() {
                     <span className="text-xs font-semibold text-slate-500 block">
                       Total Members Registration
                     </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {stats.totalRegs}
-                    </span>
+                    {loading ? (
+                      <div className="h-7 w-20 bg-slate-200 animate-pulse rounded-md mt-1" />
+                    ) : (
+                      <span className="text-2xl font-black text-slate-900 tracking-tight">
+                        {stats.totalRegs}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -324,9 +323,13 @@ export default function DashboardHome() {
                     <span className="text-xs font-semibold text-slate-500 block">
                       Total Registration Fees Collected
                     </span>
-                    <span className="text-2xl font-black text-emerald-600 tracking-tight">
-                      ₹{stats.totalFees}
-                    </span>
+                    {loading ? (
+                      <div className="h-7 w-28 bg-slate-200 animate-pulse rounded-md mt-1" />
+                    ) : (
+                      <span className="text-2xl font-black text-emerald-600 tracking-tight">
+                        ₹{stats.totalFees}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -342,9 +345,13 @@ export default function DashboardHome() {
                     <span className="text-xs font-semibold text-slate-500 block">
                       Total UPI Registrations
                     </span>
-                    <span className="text-2xl font-black text-slate-900 tracking-tight">
-                      {stats.onlineCount}
-                    </span>
+                    {loading ? (
+                      <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                    ) : (
+                      <span className="text-2xl font-black text-slate-900 tracking-tight">
+                        {stats.onlineCount}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -359,9 +366,13 @@ export default function DashboardHome() {
                     <span className="text-xs font-semibold text-slate-500 block">
                       Total UPI Payment Received
                     </span>
-                    <span className="text-2xl font-black text-purple-600 tracking-tight">
-                      ₹{stats.onlineFees}
-                    </span>
+                    {loading ? (
+                      <div className="h-7 w-24 bg-slate-200 animate-pulse rounded-md mt-1" />
+                    ) : (
+                      <span className="text-2xl font-black text-purple-600 tracking-tight">
+                        ₹{stats.onlineFees}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -378,9 +389,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Cash Registrations
                         </span>
-                        <span className="text-2xl font-black text-slate-900 tracking-tight">
-                          {stats.cashCount}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-900 tracking-tight">
+                            {stats.cashCount}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -394,9 +409,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Cash Payment Received
                         </span>
-                        <span className="text-2xl font-black text-amber-600 tracking-tight">
-                          ₹{stats.cashFees}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-24 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-amber-600 tracking-tight">
+                            ₹{stats.cashFees}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -414,9 +433,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Managed Users
                         </span>
-                        <span className="text-2xl font-black text-slate-900 tracking-tight">
-                          {managedUsersCount}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-900 tracking-tight">
+                            {managedUsersCount}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -441,9 +464,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Career Applications
                         </span>
-                        <span className="text-2xl font-black text-slate-900 tracking-tight">
-                          {careerAppsCount}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-900 tracking-tight">
+                            {careerAppsCount}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -468,9 +495,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Contact Messages
                         </span>
-                        <span className="text-2xl font-black text-slate-900 tracking-tight">
-                          {contactMsgsCount}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-900 tracking-tight">
+                            {contactMsgsCount}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -495,9 +526,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Total Executive Member Registration
                         </span>
-                        <span className="text-2xl font-black text-slate-900 tracking-tight">
-                          {executiveStats.totalRegs}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-slate-900 tracking-tight">
+                            {executiveStats.totalRegs}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -522,9 +557,13 @@ export default function DashboardHome() {
                         <span className="text-xs font-semibold text-slate-500 block">
                           Executive Registration Fees Collected Total
                         </span>
-                        <span className="text-2xl font-black text-violet-600 tracking-tight">
-                          ₹{executiveStats.totalFees}
-                        </span>
+                        {loading ? (
+                          <div className="h-7 w-24 bg-slate-200 animate-pulse rounded-md mt-1" />
+                        ) : (
+                          <span className="text-2xl font-black text-violet-600 tracking-tight">
+                            ₹{executiveStats.totalFees}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -547,9 +586,13 @@ export default function DashboardHome() {
                       <span className="text-xs font-semibold text-slate-500 block">
                         Total Cash Registrations
                       </span>
-                      <span className="text-2xl font-black text-slate-900 tracking-tight">
-                        {stats.cashCount}
-                      </span>
+                      {loading ? (
+                        <div className="h-7 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
+                      ) : (
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {stats.cashCount}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -563,9 +606,13 @@ export default function DashboardHome() {
                       <span className="text-xs font-semibold text-slate-500 block">
                         Total Cash Payment Received
                       </span>
-                      <span className="text-2xl font-black text-amber-600 tracking-tight">
-                        ₹{stats.cashFees}
-                      </span>
+                      {loading ? (
+                        <div className="h-7 w-24 bg-slate-200 animate-pulse rounded-md mt-1" />
+                      ) : (
+                        <span className="text-2xl font-black text-amber-600 tracking-tight">
+                          ₹{stats.cashFees}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -590,12 +637,40 @@ export default function DashboardHome() {
                   onClick={() => router.push("/registrations")}
                   className="flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-blue-200 transition cursor-pointer"
                 >
-                  <span>View All ({primaryRegistrations.length})</span>
+                  <span>
+                    View All{" "}
+                    {loading ? (
+                      <span className="inline-block h-3.5 w-6 bg-blue-200 animate-pulse rounded align-middle ml-1" />
+                    ) : (
+                      `(${primaryRegistrations.length})`
+                    )}
+                  </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
-              {primaryRegistrations.length === 0 ? (
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 animate-pulse"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-4 w-28 bg-slate-200 rounded" />
+                        <div className="h-4 w-20 bg-slate-200 rounded" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-3 w-24 bg-slate-200 rounded" />
+                        <div className="h-3 w-16 bg-slate-200 rounded" />
+                      </div>
+                      <div className="pt-1 border-t border-slate-200/60">
+                        <div className="h-3 w-20 bg-slate-200 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : primaryRegistrations.length === 0 ? (
                 <p className="text-center text-xs text-slate-500 py-6 italic">
                   No registrations received yet.
                 </p>

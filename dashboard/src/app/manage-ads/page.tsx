@@ -451,9 +451,29 @@ export default function ManageAdsPage() {
 
         {/* Content Container */}
         {loading ? (
-          <div className="p-16 bg-white rounded-2xl border border-slate-200 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-            <p className="text-xs font-bold text-slate-600">Loading advertisements...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((n) => (
+              <div
+                key={`skel-ad-${n}`}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between animate-pulse"
+              >
+                <div>
+                  <div className="h-44 bg-slate-200 relative" />
+                  <div className="p-4 sm:p-5 space-y-3">
+                    <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                    <div className="h-3 w-1/2 bg-slate-200 rounded" />
+                    <div className="h-3 w-2/3 bg-slate-200 rounded" />
+                  </div>
+                </div>
+                <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 flex items-center justify-between gap-2 mt-4">
+                  <div className="h-8 w-24 bg-slate-200 rounded-xl" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-8 w-8 bg-slate-200 rounded-xl" />
+                    <div className="h-8 w-8 bg-slate-200 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="p-12 bg-white rounded-2xl border border-red-200 text-center text-red-600 font-bold text-sm">

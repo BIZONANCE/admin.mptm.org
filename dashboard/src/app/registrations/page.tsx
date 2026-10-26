@@ -967,20 +967,17 @@ mptmamravati.org`;
             </span>
           </span>
           <span className="text-[11px] text-slate-400 font-semibold">
-            {filteredRegistrations.length} {lang === "mr" ? "नोंदणी" : "registrations"}
+            {loading ? (
+              <span className="inline-block h-3.5 w-16 bg-slate-200 animate-pulse rounded align-middle" />
+            ) : (
+              `${filteredRegistrations.length} ${lang === "mr" ? "नोंदणी" : "registrations"}`
+            )}
           </span>
         </div>
 
         {/* REGISTRATION DATA TABLE CARD */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden ${selectedPavatiReg ? "no-print" : ""}`}>
-          {loading ? (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 text-slate-600 animate-spin" />
-              <p className="font-semibold text-sm">
-                {lang === "mr" ? "नोंदणी माहिती लोड होत आहे..." : "Loading registration data..."}
-              </p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="p-8 text-center text-red-600 flex flex-col items-center justify-center gap-2">
               <AlertTriangle className="w-8 h-8 text-red-500" />
               <p className="font-bold">{error}</p>
@@ -991,10 +988,6 @@ mptmamravati.org`;
               >
                 {lang === "mr" ? "पुन्हा प्रयत्न करा" : "Try Again"}
               </button>
-            </div>
-          ) : filteredRegistrations.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 italic">
-              {lang === "mr" ? "कोणतीही नोंदणी सापडली नाही." : "No matching registrations found."}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1028,7 +1021,73 @@ mptmamravati.org`;
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
-                  {filteredRegistrations.map((reg, index) => {
+                  {loading ? (
+                    [...Array(8)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="py-2.5 px-2.5 text-center">
+                          <div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-20 bg-slate-200 rounded" />
+                          <div className="h-2.5 w-14 bg-slate-200 rounded mt-1.5" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-32 bg-slate-200 rounded" />
+                          <div className="h-2.5 w-20 bg-slate-200 rounded mt-1.5" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                        </td>
+                        {viewMode === "all" ? (
+                          <>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-28 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-16 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded" /></td>
+                            <td className="py-2.5 px-3"><div className="h-3.5 w-14 bg-slate-200 rounded" /></td>
+                          </>
+                        ) : (
+                          <td className="py-2.5 px-3">
+                            <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                          </td>
+                        )}
+                        <td className="py-2.5 px-2 text-center">
+                          <div className="h-3.5 w-6 bg-slate-200 rounded mx-auto" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-20 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-2 text-center">
+                          <div className="h-3.5 w-12 bg-slate-200 rounded mx-auto" />
+                        </td>
+                        <td className="py-2.5 px-2 text-center">
+                          <div className="h-3.5 w-12 bg-slate-200 rounded mx-auto" />
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="h-3.5 w-20 bg-slate-200 rounded" />
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                            <div className="w-8 h-8 bg-slate-200 rounded-lg" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredRegistrations.length === 0 ? (
+                    <tr>
+                      <td colSpan={viewMode === "all" ? 18 : 12} className="p-12 text-center text-slate-500 italic">
+                        {lang === "mr" ? "कोणतीही नोंदणी सापडली नाही." : "No matching registrations found."}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRegistrations.map((reg, index) => {
                     const main = reg.mainMembers[0] || {
                       fullName: "No Details Available",
                       memberNo: "-",
@@ -1228,7 +1287,8 @@ mptmamravati.org`;
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
                 </tbody>
               </table>
             </div>

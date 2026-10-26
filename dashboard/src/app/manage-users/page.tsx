@@ -77,6 +77,7 @@ export default function ManageUsersPage() {
 
   // Delete confirmation modal state
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const API_URL = getApiUrl();
 
@@ -84,6 +85,7 @@ export default function ManageUsersPage() {
   useEffect(() => {
     const syncBackendUsers = async () => {
       try {
+        setLoading(true);
         const res = await fetch(`${API_URL}/api/users`);
         if (!res.ok) {
           console.warn(`Fetch managed users responded with status: ${res.status}`);
@@ -109,6 +111,8 @@ export default function ManageUsersPage() {
         }
       } catch (err) {
         console.error("Fetch managed users error:", err);
+      } finally {
+        setLoading(false);
       }
     };
     syncBackendUsers();
@@ -454,8 +458,8 @@ export default function ManageUsersPage() {
               <h2 className="text-base font-bold text-slate-900">
                 Managed Users List
               </h2>
-              <span className="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
-                Total: {managedUsers.length}
+              <span className="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                Total: {loading ? <span className="inline-block w-6 h-3 bg-blue-200 animate-pulse rounded" /> : managedUsers.length}
               </span>
             </div>
             <p className="text-xs text-slate-500">
@@ -478,7 +482,20 @@ export default function ManageUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
-                {managedUsers.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, idx) => (
+                    <tr key={`skel-user-${idx}`} className="animate-pulse">
+                      <td className="py-3 px-4 text-center"><div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-32 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-36 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>
+                      <td className="py-3 px-4 text-center"><div className="h-5 w-16 bg-slate-200 rounded-full mx-auto" /></td>
+                      <td className="py-3 px-4 text-right"><div className="h-8 w-16 bg-slate-200 rounded-lg ml-auto" /></td>
+                    </tr>
+                  ))
+                ) : managedUsers.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-slate-500 italic">
                       No users added yet. Use form above to add a user via email verification.
