@@ -679,7 +679,8 @@ mptmamravati.org`;
   };
 
   const getActiveFormLink = () => {
-    const baseUrl = `${MAIN_SITE_URL}/registration`;
+    const siteUrl = getMainSiteUrl() || MAIN_SITE_URL;
+    const baseUrl = `${siteUrl}/registration`;
     const targetRef = isSuperAdmin ? selectedUserForLink : loggedUserEmail;
     if (targetRef && targetRef.trim()) {
       return `${baseUrl}?ref=${encodeURIComponent(targetRef.trim())}`;

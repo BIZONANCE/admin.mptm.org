@@ -23,6 +23,7 @@ import {
   UserCheck,
   Megaphone,
   CreditCard,
+  UserX,
 } from "lucide-react";
 import { MemberRegistration } from "../types";
 import { getDatePart, getTimePart } from "../utils/formatters";
@@ -111,6 +112,14 @@ const sidebarNavItems: SidebarNavItem[] = [
     Icon: Megaphone,
     bg: "#D1C4E9",
     fg: "#4527A0",
+    superAdminOnly: true,
+  },
+  {
+    title: "Deleted Members",
+    path: "/deleted-members",
+    Icon: UserX,
+    bg: "#FFCDD2",
+    fg: "#B71C1C",
     superAdminOnly: true,
   },
 ];
@@ -214,7 +223,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         pathname === "/manage-donations" ||
         pathname === "/manage-executives" ||
         pathname.startsWith("/manage-executives") ||
-        pathname === "/manage-ads"
+        pathname === "/manage-ads" ||
+        pathname === "/deleted-members"
       ) {
         router.replace("/registrations");
       }

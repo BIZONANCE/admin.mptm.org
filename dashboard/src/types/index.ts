@@ -162,3 +162,35 @@ export interface AdItem {
   updatedAt?: string;
 }
 
+export interface DeletedMemberItem {
+  id: string;
+  memberType: "PRIMARY" | "EXECUTIVE";
+  originalId?: string | null;
+  receiptNo?: string | null;
+  memberNo?: string | null;
+  fullName: string;
+  designation?: string | null;
+  mobileNo: string;
+  email?: string | null;
+  address?: string | null;
+  gaav?: string | null;
+  taluka?: string | null;
+  city?: string | null;
+  district?: string | null;
+  state?: string | null;
+  country?: string | null;
+  pincode?: string | null;
+  photoUrl?: string | null;
+  registrationFee?: number | null;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  referredBy?: string | null;
+  registrationDate?: string | null;
+  familyMembers?: any[] | null;
+  mainMembers?: any[] | null;
+  fullData?: any | null;
+  deletedAt: string;
+  deletedBy?: string | null;
+  reason?: string | null;
+}
+
