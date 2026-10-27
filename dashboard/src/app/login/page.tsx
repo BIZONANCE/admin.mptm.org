@@ -168,6 +168,7 @@ export default function LoginPage() {
     try {
       let verified = false;
 
+      let verifiedUser: any = null;
       try {
         const res = await fetch(`${API_URL}/api/users/verify-code`, {
           method: "POST",
@@ -177,6 +178,9 @@ export default function LoginPage() {
         const data = await res.json();
         if (res.ok && data.success) {
           verified = true;
+          if (data.user) {
+            verifiedUser = data.user;
+          }
         }
       } catch (err) { }
 
@@ -192,13 +196,20 @@ export default function LoginPage() {
       }
 
       // Successful OTP Verification -> Login user
-      const isSuperAdminEmail = emailTrimmed.toLowerCase() === "mptmamravati.org" || emailTrimmed.toLowerCase() === "admin@mptmamravati.org";
+      const isSuperAdminEmail =
+        emailTrimmed.toLowerCase() === "mptmamravati.org" ||
+        emailTrimmed.toLowerCase() === "admin@mptmamravati.org" ||
+        emailTrimmed.toLowerCase() === "mptmamravati@gmail.com" ||
+        (verifiedUser && (verifiedUser.role === "Super Admin" || verifiedUser.role === "SUPER_ADMIN"));
       const targetRole = isSuperAdminEmail ? "SUPER_ADMIN" : "USER";
 
       document.cookie = `mptm_admin_token=mptm_user_otp_token; path=/; max-age=86400; SameSite=Lax`;
       localStorage.setItem("mptm_admin_logged_in", "true");
       localStorage.setItem("mptm_admin_username", emailTrimmed);
       localStorage.setItem("mptm_admin_role", targetRole);
+      if (verifiedUser?.name) {
+        localStorage.setItem("mptm_admin_name", verifiedUser.name);
+      }
 
       if (targetRole === "SUPER_ADMIN") {
         router.push("/");

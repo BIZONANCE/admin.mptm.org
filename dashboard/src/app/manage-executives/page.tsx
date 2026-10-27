@@ -1375,7 +1375,7 @@ mptmamravati.org`;
                     {(() => {
                       const token = matchedReg?.publicToken || selectedViewExec.receiptNo || receiptNo;
                       const mainUrl = getMainSiteUrl() || "https://mptm.org";
-                      const qrData = matchedReg?.publicToken ? `${mainUrl}/receipt/${matchedReg.publicToken}` : `${mainUrl}/receipt/${receiptNo}`;
+                      const qrData = matchedReg?.publicToken ? `${mainUrl}/receipt/${matchedReg.publicToken}?scan=1` : `${mainUrl}/receipt/${receiptNo}?scan=1`;
                       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(qrData)}`;
                       return (
                         <>

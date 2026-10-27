@@ -44,20 +44,7 @@ export default function ManageUsersPage() {
         } catch (e) { }
       }
     }
-    return [
-      {
-        id: "usr_default_1",
-        email: "admin@mptmamravati.org",
-        name: "Administrator (Admin)",
-        phone: "9876543210",
-        city: "Amravati",
-        date: formatDateToDDMMYYYY(new Date()),
-        time: "10:00 AM",
-        status: "VERIFIED",
-        role: "Super Admin",
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    return [];
   });
 
   const [newEmailInput, setNewEmailInput] = useState<string>("");
@@ -93,20 +80,9 @@ export default function ManageUsersPage() {
         }
         const data = await res.json();
         if (res.ok && data.success && Array.isArray(data.data)) {
-          const savedStr = typeof window !== "undefined" ? localStorage.getItem("mptm_managed_users") : null;
-          const savedList: ManagedUser[] = savedStr ? JSON.parse(savedStr) : [];
-
-          const mergedData = data.data.map((bu: ManagedUser) => {
-            const local = savedList.find((l) => l.id === bu.id || l.email.toLowerCase() === bu.email.toLowerCase());
-            return {
-              ...bu,
-              city: bu.city || (local && local.city ? local.city : ""),
-            };
-          });
-
-          setManagedUsers(mergedData);
+          setManagedUsers(data.data);
           if (typeof window !== "undefined") {
-            localStorage.setItem("mptm_managed_users", JSON.stringify(mergedData));
+            localStorage.setItem("mptm_managed_users", JSON.stringify(data.data));
           }
         }
       } catch (err) {

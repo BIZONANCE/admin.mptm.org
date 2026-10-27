@@ -1846,10 +1846,10 @@ mptmamravati.org`;
                 const publicToken = reg.publicToken || "";
                 const qrUrl = publicToken
                   ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
-                      `${MAIN_SITE_URL}/receipt/${publicToken}`
+                      `${MAIN_SITE_URL}/receipt/${publicToken}?scan=1`
                     )}`
                   : `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
-                      `${MAIN_SITE_URL}/receipt/${reg.receiptNo}`
+                      `${MAIN_SITE_URL}/receipt/${reg.receiptNo}?scan=1`
                     )}`;
 
                 return (

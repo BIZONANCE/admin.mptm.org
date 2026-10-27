@@ -1345,8 +1345,8 @@ export default function ExecutiveMemberRegisterPage() {
                     {(() => {
                       const mainUrl = (typeof getMainSiteUrl === "function" ? getMainSiteUrl() : "") || "https://mptm.org";
                       const qrData = submittedReceipt.publicToken
-                        ? `${mainUrl}/receipt/${submittedReceipt.publicToken}`
-                        : `${mainUrl}/receipt/${submittedReceipt.receiptNo}`;
+                        ? `${mainUrl}/receipt/${submittedReceipt.publicToken}?scan=1`
+                        : `${mainUrl}/receipt/${submittedReceipt.receiptNo}?scan=1`;
                       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(qrData)}`;
                       return (
                         <>
