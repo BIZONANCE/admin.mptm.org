@@ -374,11 +374,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Menu className="w-5 h-5 text-slate-700" />
             </button>
 
-            {/* Brand Logo & Title (Kept in Marathi as requested) */}
+            {/* Brand Logo & Title (Matching website navbar with Navlogo.png) */}
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full border-2 border-amber-500 bg-[#4A0404] p-0.5 flex items-center justify-center shadow-xs shrink-0">
-                <div className="w-full h-full rounded-full flex items-center justify-center text-amber-400 text-sm font-bold">
-                  🚩
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 p-[2px] flex items-center justify-center shadow-md shrink-0 overflow-hidden">
+                <div className="relative w-full h-full rounded-full overflow-hidden bg-[#4A0404]">
+                  <Image
+                    src="/Navlogo.png"
+                    alt="महाराष्ट्र प्रांतिक तैलिक महासभा लोगो"
+                    fill
+                    className="object-cover rounded-full"
+                    priority
+                  />
                 </div>
               </div>
 
