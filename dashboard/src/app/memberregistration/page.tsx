@@ -979,8 +979,7 @@ mptmamravati.org`;
         </div>
 
         {/* Helper Hint */}
-        <div className={`flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2 ${selectedPavatiReg ? "no-print" : ""}`}>
-        
+        <div className={`flex items-center justify-end text-xs text-slate-500 font-medium px-1 mb-2 ${selectedPavatiReg ? "no-print" : ""}`}>
           <span className="text-[11px] text-slate-400 font-semibold">
             {loading ? (
               <span className="inline-block h-3.5 w-16 bg-slate-200 animate-pulse rounded align-middle" />

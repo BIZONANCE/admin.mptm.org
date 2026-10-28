@@ -1314,8 +1314,7 @@ mptmamravati.org`;
             </div>
 
             {/* Helper Hint Bar (Matching Members Tab) */}
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
-          
+            <div className="flex items-center justify-end text-xs text-slate-500 font-medium px-1 mb-2">
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
                 {loadingAll ? (
                   <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
@@ -1681,16 +1680,8 @@ mptmamravati.org`;
               </div>
             </div>
 
-            {/* Helper Hint Bar (Matching Members Tab) */}
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>
-                  {lang === "mr"
-                    ? "पावती व संपूर्ण तपशील पाहण्यासाठी ओळीवर किंवा 👁️ आयकॉनवर क्लिक करा"
-                    : "Click on any row to view full receipt • Click 👁️ icon for receipt"}
-                </span>
-              </span>
+            {/* Helper Hint Bar */}
+            <div className="flex items-center justify-end text-xs text-slate-500 font-medium px-1 mb-2">
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
                 {loadingSuccess ? (
                   <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
@@ -1984,16 +1975,8 @@ mptmamravati.org`;
               </div>
             </div>
 
-            {/* Helper Hint Bar (Matching Members Tab) */}
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <Eye className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span>
-                  {lang === "mr"
-                    ? "त्रुटीचे तांत्रिक विश्लेषण पाहण्यासाठी ओळीवर किंवा डायग्नोस्टिक्सवर क्लिक करा"
-                    : "Click on any row or diagnostics button to view gateway failure analysis"}
-                </span>
-              </span>
+            {/* Helper Hint Bar */}
+            <div className="flex items-center justify-end text-xs text-slate-500 font-medium px-1 mb-2">
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
                 {loadingFailed ? (
                   <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />

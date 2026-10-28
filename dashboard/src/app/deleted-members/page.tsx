@@ -567,15 +567,7 @@ export default function DeletedMembersPage() {
         </div>
 
         {/* Helper Hint */}
-        <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
-          <span className="flex items-center gap-1.5 text-slate-600">
-            <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span>
-              {lang === "mr"
-                ? "सदस्याचे संपूर्ण तपशील पाहण्यासाठी ओळीवर क्लिक करा • पूर्ववत करण्यासाठी 🔄 आयकॉन दाबा"
-                : "Click on any row to view full details • Click 🔄 icon to restore"}
-            </span>
-          </span>
+        <div className="flex items-center justify-end text-xs text-slate-500 font-medium px-1 mb-2">
           <span className="text-[11px] text-slate-400 font-semibold inline-flex items-center gap-1">
             {loading ? (
               <span className="inline-block w-6 h-3 bg-slate-200 animate-pulse rounded" />
