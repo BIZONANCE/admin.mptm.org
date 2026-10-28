@@ -53,7 +53,7 @@ export const getDatePart = (reg: MemberRegistration | null): string => {
       if (!isNaN(d.getTime())) {
         return formatDateToDDMMYYYY(d);
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return formatDateToDDMMYYYY(reg.date) || "-";
 };
@@ -77,26 +77,68 @@ export const getTimePart = (reg: MemberRegistration | null): string => {
           hour12: true,
         }).toLowerCase();
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return "";
 };
 
-export const formatPaymentMethod = (method: string | null | undefined): string => {
-  if (!method) return "Cash";
-  const lower = method.toLowerCase().trim();
-  if (lower.includes("रोख") || lower.includes("cash")) {
+export const formatPaymentMethod = (
+  method?: string | null | undefined,
+  mode?: string | null | undefined
+): string => {
+  const combined = `${mode || ""} ${method || ""}`.trim().toLowerCase();
+  if (!combined) return "Cash";
+
+  // 1. Cash / रोख
+  if (combined.includes("रोख") || combined.includes("cash")) {
     return "Cash";
   }
+
+  // 2. Card (Debit / Credit)
   if (
-    lower.includes("ऑनलाइन") ||
-    lower.includes("online") ||
-    lower.includes("upi") ||
-    lower.includes("phonepe")
+    combined.includes("card") ||
+    combined.includes("कार्ड") ||
+    combined.includes("debit") ||
+    combined.includes("credit") ||
+    combined.includes("visa") ||
+    combined.includes("mastercard") ||
+    combined.includes("rupay")
   ) {
-    return "Online UPI";
+    return "Card";
   }
-  return method;
+
+  // 3. Net Banking
+  if (
+    combined.includes("net_banking") ||
+    combined.includes("netbanking") ||
+    combined.includes("net banking") ||
+    combined.includes("बँकिंग") ||
+    combined.includes("banking") ||
+    combined.includes("nb")
+  ) {
+    return "Net Banking";
+  }
+
+  // 4. UPI
+  if (
+    combined.includes("upi") ||
+    combined.includes("bhim") ||
+    combined.includes("gpay") ||
+    combined.includes("google pay") ||
+    combined.includes("phonepe") ||
+    combined.includes("paytm") ||
+    combined.includes("qr") ||
+    combined.includes("intent")
+  ) {
+    return "UPI";
+  }
+
+  // 5. Generic Online fallback
+  if (combined.includes("ऑनलाइन") || combined.includes("online")) {
+    return "Online";
+  }
+
+  return (method || mode || "Cash").trim();
 };
 
 export function convertNumberToMarathiWords(amountStr: string | number): string {

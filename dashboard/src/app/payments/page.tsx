@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { downloadReceiptAsPdf } from "@/utils/pdfUtils";
 import {
   CreditCard,
+  Database,
+  FileSpreadsheet,
+  IndianRupee,
   Search,
   RefreshCw,
   Eye,
@@ -38,6 +41,12 @@ import {
   MessageSquare,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+
+const WhatsappIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+  </svg>
+);
 import { getApiUrl, getMainSiteUrl } from "@/utils/config";
 import { convertNumberToMarathiWords, formatPaymentMethod, formatDateToDDMMYYYY } from "@/utils/formatters";
 
@@ -69,6 +78,7 @@ interface AllPaymentItem {
   createdAt: string;
   date?: string | null;
   hasValidHmac?: boolean;
+  isDeletedMember?: boolean;
 }
 
 function getPaymentDateAndTime(item: { createdAt?: string; date?: string | null }) {
@@ -80,7 +90,7 @@ function getPaymentDateAndTime(item: { createdAt?: string; date?: string | null 
         const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
         return { date, time };
       }
-    } catch {}
+    } catch { }
   }
   return { date: item.date || "-", time: "-" };
 }
@@ -951,8 +961,8 @@ export default function PaymentsPage() {
     const mainMembers = Array.isArray(receipt.mainMembers)
       ? receipt.mainMembers
       : Array.isArray(receipt.members)
-      ? receipt.members
-      : [];
+        ? receipt.members
+        : [];
     const main = mainMembers[0];
     const rawMobile = receipt.mobile || main?.mobileNo || "";
     const mobile = rawMobile.replace(/\D/g, "");
@@ -962,13 +972,13 @@ export default function PaymentsPage() {
       receipt.type === "EXECUTIVE" ||
       Boolean(
         receipt.receiptNo &&
-          (receipt.receiptNo.startsWith("MPTM-EM-") || receipt.receiptNo.includes("EM-R"))
+        (receipt.receiptNo.startsWith("MPTM-EM-") || receipt.receiptNo.includes("EM-R"))
       );
     const title = isDonation
       ? "★ अधिकृत देणगी पावती ★"
       : isExec
-      ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★"
-      : "★ प्राथमिक सदस्य नोंदणी पावती ★";
+        ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★"
+        : "★ प्राथमिक सदस्य नोंदणी पावती ★";
 
     const memberName = main?.fullName || receipt.name || "-";
     const memberMobile = main?.mobileNo || receipt.mobile || "-";
@@ -990,13 +1000,12 @@ ${displayAddr && displayAddr !== "-" ? `📍 *पत्ता* : ${displayAddr}\
 ✅ *स्थिती* : प्राप्त व सत्यापित (Payment Verified)
 ----------------------------------
 
-संदेश: ${
-      isDonation
+संदेश: ${isDonation
         ? "महाराष्ट्र प्रांतिक तैलिक महासभेस देणगी दिल्याबद्दल आपले मनःपूर्वक आभार."
         : isExec
-        ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
-        : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
-    }
+          ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
+          : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
+      }
 
 _ही पावती अधिकृत संगणकीय डिजिटल पावती आहे._
 mptmamravati.org`;
@@ -1036,8 +1045,8 @@ mptmamravati.org`;
               {isSuperAdmin
                 ? text.pageSubtitle
                 : lang === "mr"
-                ? "तुमच्या नोंदणीकृत सदस्यांचे थेट पेमेंट्स, अयशस्वी व्यवहार व अधिकृत पावती पडताळणी"
-                : "Payments, failed attempts, and official receipt verification for your registered members"}
+                  ? "तुमच्या नोंदणीकृत सदस्यांचे थेट पेमेंट्स, अयशस्वी व्यवहार व अधिकृत पावती पडताळणी"
+                  : "Payments, failed attempts, and official receipt verification for your registered members"}
             </p>
           </div>
 
@@ -1047,11 +1056,10 @@ mptmamravati.org`;
               <button
                 type="button"
                 onClick={() => handleToggleLang("mr")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                  lang === "mr"
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${lang === "mr"
                     ? "bg-amber-600 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                }`}
+                  }`}
               >
                 <Globe className="w-3.5 h-3.5" />
                 <span>मराठी</span>
@@ -1059,11 +1067,10 @@ mptmamravati.org`;
               <button
                 type="button"
                 onClick={() => handleToggleLang("en")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                  lang === "en"
+                className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${lang === "en"
                     ? "bg-amber-600 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-                }`}
+                  }`}
               >
                 <Globe className="w-3.5 h-3.5" />
                 <span>English</span>
@@ -1086,123 +1093,62 @@ mptmamravati.org`;
           </div>
         </div>
 
-        {/* 4 Summary Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Total Success */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 border border-emerald-200/80 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                {text.totalSuccessTitle}
-              </span>
-              <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                ₹
-              </span>
+        {/* 3 Summary Metric Cards (Matching Image 1) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Total Collection */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Database className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <div className="mt-3">
+            <div>
+              <span className="text-xs sm:text-sm font-normal text-slate-500 block">
+                {lang === "mr" ? "एकूण संकलन" : "Total Collection"}
+              </span>
               {summaryLoading ? (
-                <div className="h-8 w-36 bg-slate-200 animate-pulse rounded-md" />
+                <div className="h-8 w-28 bg-slate-200 animate-pulse rounded-md mt-1" />
               ) : (
-                <div className="text-2xl font-black text-slate-900">
+                <span className="text-2xl font-bold text-slate-900 tracking-tight block">
                   ₹{(summary?.totalSuccessInr || 0).toLocaleString("en-IN")}
-                </div>
-              )}
-              {summaryLoading ? (
-                <div className="h-4 w-48 bg-slate-200 animate-pulse rounded mt-2" />
-              ) : (
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {summary?.totalSuccessCount || 0} {text.transactionsUnit}
-                  </span>
-                  {isSuperAdmin ? (
-                    <span>({text.regLabel}: {summary?.totalRegistrations || 0}, {text.donationLabel}: {summary?.totalDonations || 0})</span>
-                  ) : (
-                    <span>({text.regLabel}: {summary?.totalRegistrations || 0})</span>
-                  )}
-                </div>
+                </span>
               )}
             </div>
           </div>
 
           {/* Card 2: Today's Collection */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 via-white to-blue-50/30 border border-blue-200/80 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">
-                {text.todaySuccessTitle}
-              </span>
-              <span className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
-              </span>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <FileSpreadsheet className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <div className="mt-3">
+            <div>
+              <span className="text-xs sm:text-sm font-normal text-slate-500 block">
+                {lang === "mr" ? "आजचे संकलन" : "Today's Collection"}
+              </span>
               {summaryLoading ? (
-                <div className="h-8 w-28 bg-slate-200 animate-pulse rounded-md" />
+                <div className="h-8 w-20 bg-slate-200 animate-pulse rounded-md mt-1" />
               ) : (
-                <div className="text-2xl font-black text-slate-900">
+                <span className="text-2xl font-bold text-slate-900 tracking-tight block">
                   ₹{(summary?.todaySuccessInr || 0).toLocaleString("en-IN")}
-                </div>
-              )}
-              {summaryLoading ? (
-                <div className="h-4 w-32 bg-slate-200 animate-pulse rounded mt-2" />
-              ) : (
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                  <span className="inline-flex items-center gap-1 font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-full">
-                    <Clock className="w-3 h-3" />
-                    {summary?.todaySuccessCount || 0} {text.todayTransactionsUnit}
-                  </span>
-                </div>
+                </span>
               )}
             </div>
           </div>
 
-          {/* Card 3: Failed Payments */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-50 via-white to-rose-50/30 border border-rose-200/80 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">
-                {text.failedTitle}
-              </span>
-              <span className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
-                <XCircle className="w-4 h-4" />
-              </span>
+          {/* Card 3: Failed Transactions */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs flex items-center gap-4 hover:shadow-md transition">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+              <XCircle className="w-6 h-6 stroke-[1.75]" />
             </div>
-            <div className="mt-3">
+            <div>
+              <span className="text-xs sm:text-sm font-normal text-slate-500 block">
+                {lang === "mr" ? "अयशस्वी व्यवहार" : "Failed Transactions"}
+              </span>
               {summaryLoading ? (
-                <div className="h-8 w-16 bg-slate-200 animate-pulse rounded-md" />
+                <div className="h-8 w-16 bg-slate-200 animate-pulse rounded-md mt-1" />
               ) : (
-                <div className="text-2xl font-black text-slate-900">
+                <span className="text-2xl font-bold text-slate-900 tracking-tight block">
                   {summary?.totalFailedCount || 0}
-                </div>
+                </span>
               )}
-              {summaryLoading ? (
-                <div className="h-4 w-36 bg-slate-200 animate-pulse rounded mt-2" />
-              ) : (
-                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-rose-700 font-semibold">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{text.todayFailedUnit}: {summary?.todayFailedCount || 0}</span>
-                  <span className="text-[10px] text-slate-400 font-normal ml-auto">({text.retentionBadge})</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Card 4: HMAC Cryptographic Status */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border border-amber-200/80 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                {text.securityTitle}
-              </span>
-              <span className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </span>
-            </div>
-            <div className="mt-3">
-              <div className="text-base font-extrabold text-amber-900 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{text.securityBadge}</span>
-              </div>
-              <div className="mt-1.5 text-xs text-slate-600 leading-snug">
-                {text.securityDesc}
-              </div>
             </div>
           </div>
         </div>
@@ -1212,20 +1158,18 @@ mptmamravati.org`;
           {/* Tab 0: All Payments */}
           <button
             onClick={() => setActiveTab("ALL")}
-            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === "ALL"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === "ALL"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-            }`}
+              }`}
           >
             <CreditCard className={`w-4 h-4 ${activeTab === "ALL" ? "text-amber-600" : "text-slate-500"}`} />
             <span>{text.tabAll}</span>
             <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-                activeTab === "ALL"
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${activeTab === "ALL"
                   ? "bg-slate-200/80 text-slate-900"
                   : "bg-slate-200/80 text-slate-700"
-              }`}
+                }`}
             >
               {loadingAll ? (
                 <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
@@ -1238,20 +1182,18 @@ mptmamravati.org`;
           {/* Tab 1: Successful Payments */}
           <button
             onClick={() => setActiveTab("SUCCESSFUL")}
-            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === "SUCCESSFUL"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === "SUCCESSFUL"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-            }`}
+              }`}
           >
             <CheckCircle2 className={`w-4 h-4 ${activeTab === "SUCCESSFUL" ? "text-emerald-600" : "text-slate-500"}`} />
             <span>{text.tabSuccess}</span>
             <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-                activeTab === "SUCCESSFUL"
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${activeTab === "SUCCESSFUL"
                   ? "bg-slate-200/80 text-slate-900"
                   : "bg-slate-200/80 text-slate-700"
-              }`}
+                }`}
             >
               {loadingSuccess ? (
                 <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
@@ -1264,20 +1206,18 @@ mptmamravati.org`;
           {/* Tab 2: Failed Payments */}
           <button
             onClick={() => setActiveTab("FAILED")}
-            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === "FAILED"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === "FAILED"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-            }`}
+              }`}
           >
             <XCircle className={`w-4 h-4 ${activeTab === "FAILED" ? "text-rose-600" : "text-slate-500"}`} />
             <span>{text.tabFailed}</span>
             <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-                activeTab === "FAILED"
+              className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${activeTab === "FAILED"
                   ? "bg-slate-200/80 text-slate-900"
                   : "bg-slate-200/80 text-slate-700"
-              }`}
+                }`}
             >
               {loadingFailed ? (
                 <span className="inline-block h-3.5 w-5 bg-slate-300 animate-pulse rounded align-middle" />
@@ -1290,11 +1230,10 @@ mptmamravati.org`;
           {/* Tab 3: Verify Receipt */}
           <button
             onClick={() => setActiveTab("VERIFY")}
-            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === "VERIFY"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === "VERIFY"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80 font-extrabold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-            }`}
+              }`}
           >
             <ShieldCheck className={`w-4 h-4 ${activeTab === "VERIFY" ? "text-blue-600" : "text-slate-500"}`} />
             <span>{text.tabVerify}</span>
@@ -1306,36 +1245,35 @@ mptmamravati.org`;
         {/* ======================================================== */}
         {activeTab === "ALL" && (
           <div className="space-y-4">
-            {/* Filter and Search Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-3">
-              {/* Row 1: Search Bar */}
-              <div className="relative w-full">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchAll}
-                  onChange={(e) => {
-                    setSearchAll(e.target.value);
-                    setPageAll(1);
-                  }}
-                  placeholder={text.searchAllPlaceholder}
-                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
-                />
-                {searchAll && (
-                  <button
-                    onClick={() => setSearchAll("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+            {/* Filter and Search Bar (Compact Single Row) */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                  {/* Reduced Search Bar */}
+                  <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchAll}
+                      onChange={(e) => {
+                        setSearchAll(e.target.value);
+                        setPageAll(1);
+                      }}
+                      placeholder={text.searchAllPlaceholder}
+                      className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                    />
+                    {searchAll && (
+                      <button
+                        onClick={() => setSearchAll("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
 
-              {/* Row 2: Filter Dropdowns */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
-                <div className="flex flex-wrap items-center gap-2.5">
                   {/* Status Filter */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                     <span className="text-xs font-bold text-slate-700 shrink-0">{text.statusFilterLabel}</span>
                     <select
@@ -1344,7 +1282,7 @@ mptmamravati.org`;
                         setStatusFilterAll(e.target.value);
                         setPageAll(1);
                       }}
-                      className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                      className="bg-white text-xs font-bold text-slate-800 py-1 px-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                     >
                       <option value="ALL">{text.statusAll}</option>
                       <option value="SUCCESS">{text.statusSuccess}</option>
@@ -1354,7 +1292,7 @@ mptmamravati.org`;
                   </div>
 
                   {/* Type Filter */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                     <span className="text-xs font-bold text-slate-700 shrink-0">{text.typeFilterLabel}</span>
                     <select
@@ -1363,7 +1301,7 @@ mptmamravati.org`;
                         setTypeFilterAll(e.target.value);
                         setPageAll(1);
                       }}
-                      className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                      className="bg-white text-xs font-bold text-slate-800 py-1 px-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                     >
                       <option value="ALL">{text.typeAll}</option>
                       <option value="PRIMARY">{text.typePrimary}</option>
@@ -1372,30 +1310,19 @@ mptmamravati.org`;
                     </select>
                   </div>
                 </div>
-
-                <div className="text-xs text-slate-500 font-medium hidden sm:block">
-                  <span className="text-slate-400">{text.allSubtitleHint}</span>
-                </div>
               </div>
             </div>
 
             {/* Helper Hint Bar (Matching Members Tab) */}
             <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1 mb-2">
-              <span className="flex items-center gap-1.5 text-slate-600">
-                <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>
-                  {lang === "mr"
-                    ? "व्यवहाराचे संपूर्ण तपशील पाहण्यासाठी ओळीवर किंवा 👁️ आयकॉनवर क्लिक करा"
-                    : "Click on any row to view full transaction details • Click 👁️ icon for receipt"}
-                </span>
-              </span>
+          
               <span className="text-[11px] text-slate-400 font-semibold font-mono">
                 {loadingAll ? (
                   <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded align-middle mr-1" />
                 ) : (
                   totalAllItems
                 )}{" "}
-                {lang === "mr" ? "व्यवहार" : "transactions"}
+                {lang === "mr" ? "व्यवहार" : "Transactions"}
               </span>
             </div>
 
@@ -1404,16 +1331,16 @@ mptmamravati.org`;
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                    <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200  whitespace-nowrap">
                       <th className="py-2.5 px-2.5 w-8 text-center">{text.thIndex}</th>
-                      <th className="py-2.5 px-3">{text.thDateTime}</th>
-                      <th className="py-2.5 px-3">{text.thReceiptNo}</th>
-                      <th className="py-2.5 px-3">{text.thOrderId}</th>
-                      <th className="py-2.5 px-3">{text.thMember}</th>
-                      <th className="py-2.5 px-3">{text.thType}</th>
-                      <th className="py-2.5 px-3">{text.thAmount}</th>
-                      <th className="py-2.5 px-3">{text.thCardUpi}</th>
-                      <th className="py-2.5 px-3">{text.thStatus}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thDateTime}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thReceiptNo}</th>
+                      <th className="py-2.5 pl-4 pr-10 text-left">{text.thOrderId}</th>
+                      <th className="py-2.5 pl-4 pr-4 text-left">{text.thMember}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thType}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thAmount}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thCardUpi}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thStatus}</th>
                       <th className="py-2.5 px-3 text-right">{text.thActions}</th>
                     </tr>
                   </thead>
@@ -1450,7 +1377,7 @@ mptmamravati.org`;
                           item.type === "EXECUTIVE" ||
                           Boolean(
                             item.receiptNo &&
-                              (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
+                            (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
                           );
                         const isDonation = item.category === "DONATION" || item.type === "DONATION";
 
@@ -1465,23 +1392,23 @@ mptmamravati.org`;
                             title={lang === "mr" ? "तपशील पाहण्यासाठी क्लिक करा" : "Click to view full details"}
                           >
                             {/* 1. # Index */}
-                            <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
+                            <td className="align-top py-2.5 px-2.5 text-center text-slate-400 whitespace-nowrap text-xs font-normal">
                               {rowNumber}
                             </td>
 
-                            {/* 2. Date & Time (Down to the second, clean stack) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
+                            {/* 2. Date & Time */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
                               <div className="flex flex-col leading-tight">
-                                <span className="font-bold text-slate-900 text-xs">{dt.date}</span>
-                                <span className="text-[11px] font-normal text-slate-500 mt-0.5">{dt.time}</span>
+                                <span className="text-slate-800 text-xs font-normal">{dt.date}</span>
+                                <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{dt.time}</span>
                               </div>
                             </td>
 
-                            {/* 3. Receipt No (Clean bold mono text) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
+                            {/* 3. Receipt No */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
                               {item.receiptNo ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono font-bold text-xs text-slate-900">
+                                <div className="w-[170px] flex items-center justify-between gap-1.5 leading-tight">
+                                  <span className="font-mono text-xs text-slate-800 font-normal truncate" title={item.receiptNo}>
                                     {item.receiptNo}
                                   </span>
                                   <button
@@ -1489,7 +1416,7 @@ mptmamravati.org`;
                                       e.stopPropagation();
                                       handleCopy(item.receiptNo!, item.id + "-all-rec");
                                     }}
-                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
                                     title={text.copyReceiptTooltip}
                                   >
                                     {copiedId === item.id + "-all-rec" ? (
@@ -1499,16 +1426,20 @@ mptmamravati.org`;
                                     )}
                                   </button>
                                 </div>
+                              ) : (item.status === "SUCCESS" || item.isDeletedMember) ? (
+                                <span className="text-xs text-rose-500 font-normal italic leading-tight block" title="सदस्य नोंदणी हटवण्यात आली आहे (Member Registration Deleted)">
+                                  {lang === "mr" ? "हटवले (Deleted)" : "Deleted"}
+                                </span>
                               ) : (
-                                <span className="text-slate-400 font-mono text-xs">-</span>
+                                <span className="text-slate-400 font-mono text-xs leading-tight font-normal">-</span>
                               )}
                             </td>
 
                             {/* 4. Order ID / Ref */}
-                            <td className="py-2 px-3 whitespace-nowrap">
+                            <td className="align-top py-2.5 pl-4 pr-10 whitespace-nowrap">
                               {item.orderId ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono text-xs text-slate-600 max-w-[150px] truncate" title={item.orderId}>
+                                <div className="w-[185px] flex items-center justify-between gap-1.5 leading-tight">
+                                  <span className="font-mono text-xs text-slate-600 truncate font-normal" title={item.orderId}>
                                     {item.orderId}
                                   </span>
                                   <button
@@ -1516,7 +1447,7 @@ mptmamravati.org`;
                                       e.stopPropagation();
                                       handleCopy(item.orderId!, item.id + "-all-ord");
                                     }}
-                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
                                     title={text.copyOrderTooltip}
                                   >
                                     {copiedId === item.id + "-all-ord" ? (
@@ -1527,93 +1458,63 @@ mptmamravati.org`;
                                   </button>
                                 </div>
                               ) : (
-                                <span className="text-slate-400 font-mono text-xs">-</span>
+                                <span className="text-slate-400 font-mono text-xs leading-tight font-normal">-</span>
                               )}
                             </td>
 
-                            {/* 5. Member (Matching Members Table Name & Mobile Layout) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <div className="flex flex-col leading-tight">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={item.name || "-"}>
-                                    {item.name || "-"}
+                            {/* 5. Member (Clean Member Name only) */}
+                            <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 leading-tight">
+                                <span className="text-slate-800 text-xs font-normal truncate max-w-[190px]" title={item.name || "-"}>
+                                  {item.name || "-"}
+                                </span>
+                                {((item.status === "SUCCESS" && !item.receiptNo) || item.isDeletedMember) && (
+                                  <span className="text-[11px] text-rose-500 font-normal italic shrink-0" title="हटवलेले सदस्य (Deleted Member)">
+                                    ({lang === "mr" ? "हटवले" : "Deleted"})
                                   </span>
-                                  {item.memberNo && item.memberNo !== "-" && (
-                                    <span className="font-mono text-[11px] text-slate-500 font-medium shrink-0">
-                                      ({item.memberNo})
-                                    </span>
-                                  )}
-                                </div>
-                                {item.mobile && item.mobile !== "N/A" ? (
-                                  <a
-                                    href={`tel:${item.mobile}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-[11px] font-mono text-slate-500 hover:text-blue-700 flex items-center gap-1 mt-0.5"
-                                  >
-                                    <Phone className="w-3 h-3 text-slate-400" />
-                                    <span>{item.mobile}</span>
-                                  </a>
-                                ) : null}
+                                )}
                               </div>
                             </td>
 
-                            {/* 6. Type (Clean Capsules matching registrations) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              {isDonation ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-800 bg-pink-100/80 border border-pink-200 px-2 py-0.5 rounded-full">
-                                  <Heart className="w-3 h-3 text-pink-600" />
-                                  <span>{text.badgeTypeDonation}</span>
-                                </span>
-                              ) : isExec ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/80 border border-amber-300 px-2 py-0.5 rounded-full">
-                                  <Users className="w-3 h-3 text-amber-700" />
-                                  <span>{text.badgeTypeExec}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-800 bg-blue-100/80 border border-blue-200 px-2 py-0.5 rounded-full">
-                                  <User className="w-3 h-3 text-blue-700" />
-                                  <span>{text.badgeTypePrimary}</span>
-                                </span>
-                              )}
+                            {/* 6. Type (Only text, NO bg colored capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs text-slate-600 font-normal leading-tight block">
+                                {isDonation ? text.badgeTypeDonation : isExec ? text.badgeTypeExec : text.badgeTypePrimary}
+                              </span>
                             </td>
 
                             {/* 7. Amount */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <span className="font-bold text-slate-900 text-xs">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs font-normal text-slate-900 leading-tight block">
                                 ₹{Number(item.amount || 0).toLocaleString("en-IN")}
                               </span>
                             </td>
 
-                            {/* 8. card/upi */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
-                                <CreditCard className="w-3 h-3 text-slate-500" />
-                                <span>{formatPaymentMethod(item.paymentMode || "Online UPI")}</span>
+                            {/* 8. Card / UPI (Only text, NO bg capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs text-slate-600 font-normal leading-tight block">
+                                {formatPaymentMethod(item.paymentMode, item.gatewayResponse?.paymentDetails?.[0]?.paymentMode || item.gatewayResponse?.payment_details?.[0]?.payment_mode)}
                               </span>
                             </td>
 
-                            {/* 9. Status (Pill Badges) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              {item.status === "SUCCESS" ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                                  <span>{text.statusSucceededBadge}</span>
-                                </span>
-                              ) : item.status === "FAILED" ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100/90 border border-rose-300 px-2.5 py-0.5 rounded-full">
-                                  <XCircle className="w-3 h-3 text-rose-700" />
-                                  <span>{text.statusFailedBadge}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-2.5 py-0.5 rounded-full">
-                                  <Clock className="w-3 h-3 text-amber-700" />
-                                  <span>{text.statusPendingBadge}</span>
-                                </span>
-                              )}
+                            {/* 9. Status (Only text, NO bg colored capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className={`text-xs font-normal leading-tight block ${item.status === "SUCCESS"
+                                  ? "text-emerald-600"
+                                  : item.status === "FAILED"
+                                    ? "text-rose-600"
+                                    : "text-amber-600"
+                                }`}>
+                                {item.status === "SUCCESS"
+                                  ? text.statusSucceededBadge
+                                  : item.status === "FAILED"
+                                    ? text.statusFailedBadge
+                                    : text.statusPendingBadge}
+                              </span>
                             </td>
 
-                            {/* 10. Actions (Button Styles Matching Registrations) */}
-                            <td className="py-2 px-3 whitespace-nowrap text-right">
+                            {/* 10. Actions */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 {item.receiptNo ? (
                                   <button
@@ -1648,7 +1549,7 @@ mptmamravati.org`;
                                     className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                                     title="व्हॉट्सॲपवर पाठवा (WhatsApp Receipt)"
                                   >
-                                    <MessageSquare className="w-4 h-4 text-emerald-600" />
+                                    <WhatsappIcon className="w-4 h-4 text-emerald-600" />
                                   </button>
                                 )}
 
@@ -1733,34 +1634,34 @@ mptmamravati.org`;
         {/* ======================================================== */}
         {activeTab === "SUCCESSFUL" && (
           <div className="space-y-4">
-            {/* Filter and Search Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-3">
-              {/* Row 1: Search Bar */}
-              <div className="relative w-full">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchSuccess}
-                  onChange={(e) => {
-                    setSearchSuccess(e.target.value);
-                    setPageSuccess(1);
-                  }}
-                  placeholder={text.searchSuccessPlaceholder}
-                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
-                />
-                {searchSuccess && (
-                  <button
-                    onClick={() => setSearchSuccess("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+            {/* Filter and Search Bar (Compact Single Row) */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-3.5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Reduced Search Bar */}
+                <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchSuccess}
+                    onChange={(e) => {
+                      setSearchSuccess(e.target.value);
+                      setPageSuccess(1);
+                    }}
+                    placeholder={text.searchSuccessPlaceholder}
+                    className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                  />
+                  {searchSuccess && (
+                    <button
+                      onClick={() => setSearchSuccess("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-              {/* Row 2: Filter Dropdown */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
-                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                {/* Type Filter */}
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 shrink-0">
                   <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                   <span className="text-xs font-bold text-slate-700 shrink-0">{text.typeFilterLabel}</span>
                   <select
@@ -1769,7 +1670,7 @@ mptmamravati.org`;
                       setTypeFilter(e.target.value);
                       setPageSuccess(1);
                     }}
-                    className="bg-white text-xs font-bold text-slate-800 py-1.5 px-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
+                    className="bg-white text-xs font-bold text-slate-800 py-1 px-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 cursor-pointer"
                   >
                     <option value="ALL">{text.typeAll}</option>
                     <option value="PRIMARY">{text.typePrimary}</option>
@@ -1805,16 +1706,16 @@ mptmamravati.org`;
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                    <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
                       <th className="py-2.5 px-2.5 w-8 text-center">{text.thIndex}</th>
-                      <th className="py-2.5 px-3">{text.thDateTime}</th>
-                      <th className="py-2.5 px-3">{text.thReceiptNo}</th>
-                      <th className="py-2.5 px-3">{text.thOrderId}</th>
-                      <th className="py-2.5 px-3">{text.thMember}</th>
-                      <th className="py-2.5 px-3">{text.thType}</th>
-                      <th className="py-2.5 px-3">{text.thAmount}</th>
-                      <th className="py-2.5 px-3">{text.thCardUpi}</th>
-                      <th className="py-2.5 px-3">{text.thStatus}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thDateTime}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thReceiptNo}</th>
+                      <th className="py-2.5 pl-4 pr-10 text-left">{text.thOrderId}</th>
+                      <th className="py-2.5 pl-4 pr-4 text-left">{text.thMember}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thType}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thAmount}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thCardUpi}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thStatus}</th>
                       <th className="py-2.5 px-3 text-right">{text.thActions}</th>
                     </tr>
                   </thead>
@@ -1851,7 +1752,7 @@ mptmamravati.org`;
                           item.type === "EXECUTIVE" ||
                           Boolean(
                             item.receiptNo &&
-                              (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
+                            (item.receiptNo.startsWith("MPTM-EM-") || item.receiptNo.includes("EM-R"))
                           );
                         const isDonation = item.category === "DONATION";
 
@@ -1863,22 +1764,22 @@ mptmamravati.org`;
                             title={lang === "mr" ? "पावती पाहण्यासाठी क्लिक करा" : "Click to view receipt"}
                           >
                             {/* 1. # Index */}
-                            <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
+                            <td className="align-top py-2.5 px-2.5 text-center text-slate-400 whitespace-nowrap text-xs font-normal">
                               {rowNumber}
                             </td>
 
                             {/* 2. Date & Time */}
-                            <td className="py-2 px-3 whitespace-nowrap">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
                               <div className="flex flex-col leading-tight">
-                                <span className="font-bold text-slate-900 text-xs">{dt.date}</span>
-                                <span className="text-[11px] font-normal text-slate-500 mt-0.5">{dt.time}</span>
+                                <span className="text-slate-800 text-xs font-normal">{dt.date}</span>
+                                <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{dt.time}</span>
                               </div>
                             </td>
 
                             {/* 3. Receipt No */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono font-bold text-xs text-slate-900">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <div className="w-[170px] flex items-center justify-between gap-1.5 leading-tight">
+                                <span className="font-mono text-xs text-slate-800 font-normal truncate" title={item.receiptNo}>
                                   {item.receiptNo}
                                 </span>
                                 <button
@@ -1886,7 +1787,7 @@ mptmamravati.org`;
                                     e.stopPropagation();
                                     handleCopy(item.receiptNo, item.id + "-rec");
                                   }}
-                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
                                   title={text.copyReceiptTooltip}
                                 >
                                   {copiedId === item.id + "-rec" ? (
@@ -1899,9 +1800,9 @@ mptmamravati.org`;
                             </td>
 
                             {/* 4. Order ID / Ref */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono text-xs text-slate-600 max-w-[150px] truncate" title={item.orderId}>
+                            <td className="align-top py-2.5 pl-4 pr-10 whitespace-nowrap">
+                              <div className="w-[185px] flex items-center justify-between gap-1.5 leading-tight">
+                                <span className="font-mono text-xs text-slate-600 truncate font-normal" title={item.orderId}>
                                   {item.orderId}
                                 </span>
                                 {item.orderId && item.orderId !== "N/A" && (
@@ -1910,7 +1811,7 @@ mptmamravati.org`;
                                       e.stopPropagation();
                                       handleCopy(item.orderId, item.id + "-ord");
                                     }}
-                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                    className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
                                     title={text.copyOrderTooltip}
                                   >
                                     {copiedId === item.id + "-ord" ? (
@@ -1923,83 +1824,50 @@ mptmamravati.org`;
                               </div>
                             </td>
 
-                            {/* 5. Member (Matching Members Table Name & Mobile Layout) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <div className="flex flex-col leading-tight">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={item.name}>
-                                    {item.name}
+                            {/* 5. Member (Clean Member Name only) */}
+                            <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 leading-tight">
+                                <span className="text-slate-800 text-xs font-normal truncate max-w-[190px]" title={item.name}>
+                                  {item.name}
+                                </span>
+                                {(!item.receiptNo || (item as any).isDeletedMember) && (
+                                  <span className="text-[11px] text-rose-500 font-normal italic shrink-0" title="हटवलेले सदस्य (Deleted Member)">
+                                    ({lang === "mr" ? "हटवले" : "Deleted"})
                                   </span>
-                                  {(() => {
-                                    const mNo = item.memberNo || (item.mainMembers && item.mainMembers[0]?.memberNo);
-                                    if (mNo && mNo !== "-") {
-                                      return (
-                                        <span className="font-mono text-[11px] text-slate-500 font-medium shrink-0">
-                                          ({mNo})
-                                        </span>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-                                {item.mobile && item.mobile !== "N/A" ? (
-                                  <a
-                                    href={`tel:${item.mobile}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-[11px] font-mono text-slate-500 hover:text-blue-700 flex items-center gap-1 mt-0.5"
-                                  >
-                                    <Phone className="w-3 h-3 text-slate-400" />
-                                    <span>{item.mobile}</span>
-                                  </a>
-                                ) : null}
+                                )}
                               </div>
                             </td>
 
-                            {/* 6. Type (Clean Capsules matching registrations) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              {isDonation ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-800 bg-pink-100/80 border border-pink-200 px-2 py-0.5 rounded-full">
-                                  <Heart className="w-3 h-3 text-pink-600" />
-                                  <span>{text.badgeTypeDonation}</span>
-                                </span>
-                              ) : isExec ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100/80 border border-amber-300 px-2 py-0.5 rounded-full">
-                                  <Users className="w-3 h-3 text-amber-700" />
-                                  <span>{text.badgeTypeExec}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-800 bg-blue-100/80 border border-blue-200 px-2 py-0.5 rounded-full">
-                                  <User className="w-3 h-3 text-blue-700" />
-                                  <span>{text.badgeTypePrimary}</span>
-                                </span>
-                              )}
+                            {/* 6. Type (Only text, NO bg colored capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs text-slate-600 font-normal leading-tight block">
+                                {isDonation ? text.badgeTypeDonation : isExec ? text.badgeTypeExec : text.badgeTypePrimary}
+                              </span>
                             </td>
 
                             {/* 7. Amount */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <span className="font-bold text-slate-900 text-xs">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs font-normal text-slate-900 leading-tight block">
                                 ₹{item.amount.toLocaleString("en-IN")}
                               </span>
                             </td>
 
-                            {/* 8. card/upi */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
-                                <CreditCard className="w-3 h-3 text-slate-500" />
-                                <span>{formatPaymentMethod(item.paymentMode || "Online UPI")}</span>
+                            {/* 8. Card / UPI (Only text, NO bg capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs text-slate-600 font-normal leading-tight block">
+                                {formatPaymentMethod(item.paymentMode)}
                               </span>
                             </td>
 
-                            {/* 9. Status (Pill Badge) */}
-                            <td className="py-2 px-3 whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                                <span>{text.statusSucceededBadge}</span>
+                            {/* 9. Status (Only text, NO bg colored capsule) */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                              <span className="text-xs font-normal text-emerald-600 leading-tight block">
+                                {text.statusSucceededBadge}
                               </span>
                             </td>
 
-                            {/* 10. Actions (Button Styles Matching Registrations) */}
-                            <td className="py-2 px-3 whitespace-nowrap text-right">
+                            {/* 10. Actions */}
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   onClick={(e) => {
@@ -2020,7 +1888,7 @@ mptmamravati.org`;
                                   className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                                   title="व्हॉट्सॲपवर पाठवा (WhatsApp Receipt)"
                                 >
-                                  <MessageSquare className="w-4 h-4 text-emerald-600" />
+                                  <WhatsappIcon className="w-4 h-4 text-emerald-600" />
                                 </button>
 
                                 {item.publicToken && (
@@ -2092,8 +1960,8 @@ mptmamravati.org`;
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4">
-              <div className="relative w-full">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-3.5">
+              <div className="relative w-full sm:w-80 md:w-96">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -2103,7 +1971,7 @@ mptmamravati.org`;
                     setPageFailed(1);
                   }}
                   placeholder={text.searchFailedPlaceholder}
-                  className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                  className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
                 />
                 {searchFailed && (
                   <button
@@ -2141,14 +2009,14 @@ mptmamravati.org`;
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
-                      <th className="py-2.5 px-3">{text.thDateTime}</th>
-                      <th className="py-2.5 px-3">{text.thOrderId}</th>
-                      <th className="py-2.5 px-3">{text.thAttemptedPayer}</th>
-                      <th className="py-2.5 px-3">{text.thType}</th>
-                      <th className="py-2.5 px-3">{text.thAttemptedAmount}</th>
-                      <th className="py-2.5 px-3">{text.thFailureReason}</th>
-                      <th className="py-2.5 px-3">{text.thErrorCode}</th>
+                    <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="py-2.5 px-3 text-left">{text.thDateTime}</th>
+                      <th className="py-2.5 pl-4 pr-10 text-left">{text.thOrderId}</th>
+                      <th className="py-2.5 pl-4 pr-4 text-left">{text.thAttemptedPayer}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thType}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thAttemptedAmount}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thFailureReason}</th>
+                      <th className="py-2.5 px-3 text-left">{text.thErrorCode}</th>
                       <th className="py-2.5 px-3 text-right">{text.thActions}</th>
                     </tr>
                   </thead>
@@ -2184,17 +2052,17 @@ mptmamravati.org`;
                           title={lang === "mr" ? "त्रुटी तपशील पाहण्यासाठी क्लिक करा" : "Click to view failure diagnostics"}
                         >
                           {/* Date & Time */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle">
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap">
                             <div className="flex flex-col leading-tight">
-                              <span className="font-bold text-slate-900 text-xs">{formatDateTime(f.createdAt)}</span>
-                              <span className="text-[11px] font-normal text-slate-500 mt-0.5">{formatDateOnly(f.createdAt)}</span>
+                              <span className="text-slate-800 text-xs font-normal">{formatDateTime(f.createdAt)}</span>
+                              <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{formatDateOnly(f.createdAt)}</span>
                             </div>
                           </td>
 
                           {/* Order ID */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-bold text-slate-900 text-xs">
+                          <td className="align-top py-2.5 pl-4 pr-10 whitespace-nowrap">
+                            <div className="w-[185px] flex items-center justify-between gap-1.5 leading-tight">
+                              <span className="font-mono text-xs text-slate-800 font-normal truncate" title={f.orderId}>
                                 {f.orderId}
                               </span>
                               {f.orderId && f.orderId !== "N/A" && (
@@ -2203,7 +2071,7 @@ mptmamravati.org`;
                                     e.stopPropagation();
                                     handleCopy(f.orderId, f.id + "-failord");
                                   }}
-                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                                  className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
                                   title={text.copyOrderTooltip}
                                 >
                                   {copiedId === f.id + "-failord" ? (
@@ -2214,62 +2082,55 @@ mptmamravati.org`;
                                 </button>
                               )}
                             </div>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {f.provider}
+                            {f.provider && (
+                              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                                {f.provider}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Payer Info (Clean Payer Name only) */}
+                          <td className="align-top py-2.5 px-4">
+                            <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] leading-tight block" title={f.name}>
+                              {f.name}
                             </span>
                           </td>
 
-                          {/* Payer Info */}
-                          <td className="py-2 px-3 align-middle">
-                            <div className="flex flex-col leading-tight">
-                              <span className="font-bold text-slate-900 text-xs truncate max-w-[160px]">{f.name}</span>
-                              {f.mobile && (
-                                <span className="text-[11px] font-mono text-slate-500 mt-0.5 flex items-center gap-1">
-                                  <Phone className="w-3 h-3 text-slate-400" />
-                                  <span>{f.mobile}</span>
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Type */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                          {/* Type (Only text, NO bg colored capsule) */}
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                            <span className="text-xs text-slate-600 font-normal leading-tight block">
                               {f.type}
                             </span>
                           </td>
 
                           {/* Amount */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle">
-                            <div className="font-bold text-slate-900 text-xs">
-                              ₹{f.amount.toLocaleString("en-IN")}
-                            </div>
-                            <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
-                              {text.badgeFailed}
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                            <span className="text-xs font-normal text-slate-900 leading-tight block">
+                              ₹{f.amount}
                             </span>
                           </td>
 
                           {/* Failure Reason */}
-                          <td className="py-2 px-3 align-middle max-w-[200px]">
-                            <div className="text-xs font-semibold text-rose-900 leading-snug line-clamp-2" title={f.failureReason}>
+                          <td className="align-top py-2.5 px-3 max-w-[200px]">
+                            <span className="text-xs text-rose-600 font-normal leading-tight block truncate" title={f.failureReason}>
                               {f.failureReason}
-                            </div>
+                            </span>
                             {f.purgeAfter && (
-                              <div className="text-[10px] text-slate-400 mt-0.5">
+                              <span className="text-[10px] text-slate-400 block mt-0.5">
                                 {text.purgeInfo(formatDateOnly(f.purgeAfter))}
-                              </div>
+                              </span>
                             )}
                           </td>
 
                           {/* Failure Code */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle">
-                            <span className="inline-block text-[11px] font-mono font-bold text-rose-800 bg-rose-100/80 border border-rose-300 px-2 py-0.5 rounded-md">
-                              {f.failureCode}
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                            <span className="font-mono text-xs text-slate-600 font-normal leading-tight block">
+                              {f.failureCode || "N/A"}
                             </span>
                           </td>
 
                           {/* Action */}
-                          <td className="py-2 px-3 whitespace-nowrap align-middle text-right">
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap text-right">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2399,24 +2260,26 @@ mptmamravati.org`;
             {verifyResult && (
               <div className="animate-in fade-in duration-200">
                 {verifyResult.valid ? (
-                  <div className="bg-white rounded-2xl border-2 border-emerald-400 shadow-md p-6 space-y-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
                     {/* Header Banner */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
-                          ✓
+                        <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-2xs shrink-0">
+                          <Check className="w-5 h-5 stroke-[2.5]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-base sm:text-lg font-black text-emerald-950">
-                              {text.validTitle}
+                            <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+                              {lang === "mr" ? "पावती अधिकृत व सत्यापित आहे" : "Authentic & Verified Receipt"}
                             </h4>
-                            <span className="text-[11px] font-extrabold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full">
-                              {text.validBadge}
+                            <span className="text-[11px] font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-200">
+                              {lang === "mr" ? "सत्यापित" : "Verified"}
                             </span>
                           </div>
-                          <p className="text-xs text-emerald-800 font-semibold mt-0.5">
-                            {text.validDesc}
+                          <p className="text-xs text-slate-500 font-normal mt-0.5">
+                            {lang === "mr"
+                              ? "ही पावती अधिकृत डेटाबेसमधील नोंदीशी पूर्णतः जुळत आहे."
+                              : "This receipt matches official database records."}
                           </p>
                         </div>
                       </div>
@@ -2424,7 +2287,7 @@ mptmamravati.org`;
                       <div className="flex items-center gap-2 self-start sm:self-center">
                         <button
                           onClick={() => setSelectedReceipt(verifyResult)}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>{text.viewReceiptBtn}</span>
@@ -2435,7 +2298,7 @@ mptmamravati.org`;
                             href={`${MAIN_SITE_URL}/receipt/${verifyResult.publicToken}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium text-xs rounded-lg transition flex items-center gap-1.5"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>{text.publicLinkBtn}</span>
@@ -2444,96 +2307,100 @@ mptmamravati.org`;
                       </div>
                     </div>
 
-                    {/* Cryptographic Proof Comparison */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                          {text.storedHmacLabel}
-                        </span>
-                        <div className="font-mono text-xs font-bold text-slate-800 break-all bg-white p-2 rounded border border-slate-200">
-                          {verifyResult.storedHmac || "N/A"}
+                    {/* Essentials Grid (Clean, Professional, No bulky cryptographic hash boxes) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-xl bg-slate-50/70 border border-slate-200/80 text-xs">
+                      {/* 1. Receipt No & ID */}
+                      <div className="space-y-1">
+                        <span className="text-slate-500 font-normal block">{text.lblReceiptNo}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-semibold text-slate-900">
+                            {verifyResult.receiptNo}
+                          </span>
+                          <button
+                            onClick={() => handleCopy(verifyResult.receiptNo || "", "verify-rec")}
+                            className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer"
+                            title="Copy Receipt No"
+                          >
+                            {copiedId === "verify-rec" ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
+                        {Array.isArray(verifyResult.members) && verifyResult.members[0]?.memberNo && (
+                          <span className="text-[11px] text-slate-500 block">
+                            <span>{lang === "mr" ? "सदस्य क्रमांक : " : "Member ID : "}</span>
+                            <span className="font-mono font-semibold text-slate-700">
+                              {verifyResult.members[0].memberNo}
+                            </span>
+                          </span>
+                        )}
                       </div>
 
-                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                          {text.computedHmacLabel}
+                      {/* 2. Payer / Member Name */}
+                      <div className="space-y-1">
+                        <span className="text-slate-500 font-normal block">{text.lblName}</span>
+                        <span className="font-semibold text-slate-900 text-xs block truncate" title={verifyResult.name}>
+                          {verifyResult.name}
                         </span>
-                        <div className="font-mono text-xs font-bold text-emerald-800 break-all bg-emerald-50/50 p-2 rounded border border-emerald-200">
-                          {verifyResult.computedHmac || "N/A"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Metadata Card */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-xl bg-amber-50/50 border border-amber-200 text-xs text-slate-800">
-                      <div>
-                        <span className="text-slate-500 font-bold block">{text.lblReceiptNo}</span>
-                        <span className="font-mono font-black text-slate-900 text-sm">
-                          {verifyResult.receiptNo}
-                        </span>
+                        {verifyResult.mobile && (
+                          <span className="text-slate-500 font-mono text-[11px] block">
+                            📞 {verifyResult.mobile}
+                          </span>
+                        )}
                       </div>
 
-                      <div>
-                        <span className="text-slate-500 font-bold block">{text.lblDate}</span>
-                        <span className="font-bold text-slate-900">
-                          {formatDateOnly(verifyResult.date)}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="text-slate-500 font-bold block">{text.lblAmount}</span>
-                        <span className="text-base font-black text-emerald-700">
+                      {/* 3. Amount */}
+                      <div className="space-y-1">
+                        <span className="text-slate-500 font-normal block">{text.lblAmount}</span>
+                        <span className="text-sm font-semibold text-slate-900 block">
                           ₹{verifyResult.amount?.toLocaleString("en-IN")}
                         </span>
-                        <span className="block text-[11px] text-slate-500 font-medium">
+                        <span className="block text-[11px] text-slate-500 font-normal">
                           ({verifyResult.amountInWords || convertNumberToMarathiWords(verifyResult.amount || 0)})
                         </span>
                       </div>
 
-                      <div>
-                        <span className="text-slate-500 font-bold block">{text.lblPaymentMode}</span>
-                        <span className="font-bold text-slate-900">
-                          {verifyResult.paymentMode || "PhonePe / UPI"}
+                      {/* 4. Payment Method & Date */}
+                      <div className="space-y-1">
+                        <span className="text-slate-500 font-normal block">{text.lblPaymentMode}</span>
+                        <span className="font-medium text-slate-800 text-xs block">
+                          {formatPaymentMethod(verifyResult.paymentMode)}
                         </span>
-                        <span className="block font-mono text-[10px] text-slate-400 truncate">
-                          {verifyResult.paymentReference}
-                        </span>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <span className="text-slate-500 font-bold block">{text.lblName}</span>
-                        <span className="font-extrabold text-slate-900 text-sm">
-                          {verifyResult.name}
-                        </span>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <span className="text-slate-500 font-bold block">{text.lblMobile}</span>
-                        <span className="font-mono font-bold text-slate-900">
-                          {verifyResult.mobile}
-                        </span>
+                        <div className="pt-0.5">
+                          <span className="text-[11px] text-slate-700 block">
+                            {formatDateOnly(verifyResult.date)}
+                          </span>
+                          {verifyResult.date && (
+                            <span className="text-[10px] text-slate-400 block font-normal">
+                              {formatDateTime(verifyResult.date)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Registered Members List (if registration) */}
+                    {/* Compact Registered Members (if any) */}
                     {Array.isArray(verifyResult.members) && verifyResult.members.length > 0 && (
-                      <div className="space-y-2">
-                        <h5 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                          <Users className="w-4 h-4 text-slate-500" />
+                      <div className="space-y-2 pt-1">
+                        <h5 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-slate-500" />
                           <span>{text.lblMembersCount(verifyResult.members.length)}</span>
                         </h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                           {verifyResult.members.map((m: any, idx: number) => (
-                            <div key={idx} className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
+                            <div key={idx} className="p-3 rounded-lg bg-slate-50/60 border border-slate-200/80 text-xs space-y-1">
                               <div className="flex items-center justify-between">
-                                <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
+                                <span className="font-mono font-medium text-slate-800 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[11px]">
                                   {m.memberNo}
                                 </span>
-                                <span className="text-slate-500">{text.lblPrabhagNo} {m.prabhagNo || "-"}</span>
+                                {m.prabhagNo && (
+                                  <span className="text-slate-400 text-[11px]">{text.lblPrabhagNo} {m.prabhagNo}</span>
+                                )}
                               </div>
-                              <div className="font-bold text-slate-900 pt-1">{m.fullName}</div>
-                              <div className="font-mono text-slate-500">{m.mobileNo}</div>
+                              <div className="font-medium text-slate-900 pt-0.5">{m.fullName}</div>
+                              {m.mobileNo && <div className="font-mono text-slate-500 text-[11px]">📞 {m.mobileNo}</div>}
                             </div>
                           ))}
                         </div>
@@ -2541,16 +2408,16 @@ mptmamravati.org`;
                     )}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl border-2 border-rose-300 shadow-md p-6 space-y-4">
-                    <div className="flex items-center gap-3 bg-rose-50 p-4 rounded-xl border border-rose-200">
-                      <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xl shrink-0">
-                        ✕
+                  <div className="bg-white rounded-2xl border border-rose-200 shadow-xs p-6 space-y-4">
+                    <div className="flex items-center gap-3 bg-rose-50/80 p-4 rounded-xl border border-rose-200/80">
+                      <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                        <X className="w-5 h-5 stroke-[2.5]" />
                       </div>
                       <div>
-                        <h4 className="text-base sm:text-lg font-black text-rose-950">
+                        <h4 className="text-sm sm:text-base font-semibold text-rose-950">
                           {text.invalidTitle}
                         </h4>
-                        <p className="text-xs text-rose-800 font-semibold mt-0.5">
+                        <p className="text-xs text-rose-700 font-normal mt-0.5">
                           {verifyResult.error || text.invalidDescDefault}
                         </p>
                       </div>
@@ -2585,59 +2452,65 @@ mptmamravati.org`;
                   </div>
                 </div>
 
-                {/* Right: Action Buttons (Uniform height, whitespace-nowrap, sleek colors) */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Right: Action Buttons (Compact, Sleek, Professional) */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   {selectedReceipt.publicToken && (
                     <a
                       href={`${MAIN_SITE_URL}/receipt/${selectedReceipt.publicToken}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 hover:border-slate-300"
-                      title="वेबसाईटवर पावती पाहा"
+                      className="h-7.5 px-2 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[11px] rounded-md border border-slate-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
+                      title={text.publicLinkTooltip}
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="whitespace-nowrap">वेबसाईट</span>
+                      <ExternalLink className="w-3 h-3 text-blue-600 shrink-0" />
+                      <span className="whitespace-nowrap">{lang === "mr" ? "वेबसाईट" : "Website"}</span>
                     </a>
                   )}
 
                   <button
                     type="button"
                     onClick={() => handleSendPaymentWhatsApp(selectedReceipt)}
-                    className="h-9 px-3 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
+                    className="h-7.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[11px] rounded-md shadow-2xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
                     title="WhatsApp वर पाठवा"
                   >
-                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-white" />
+                    <WhatsappIcon className="w-3 h-3 shrink-0 text-white" />
                     <span className="whitespace-nowrap">WhatsApp</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handlePrintReceipt(selectedReceipt.receiptNo || "Receipt")}
-                    className="h-9 px-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200/90 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 hover:border-slate-300"
-                    title="प्रिंट पावती"
+                    className="h-7.5 px-2 bg-white hover:bg-slate-50 text-slate-700 font-medium text-[11px] rounded-md border border-slate-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
+                    title={lang === "mr" ? "प्रिंट पावती" : "Print Receipt"}
                   >
-                    <Printer className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                    <span className="whitespace-nowrap">प्रिंट</span>
+                    <Printer className="w-3 h-3 text-slate-600 shrink-0" />
+                    <span className="whitespace-nowrap">{lang === "mr" ? "प्रिंट" : "Print"}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleDownloadPdf(selectedReceipt.receiptNo || "Receipt")}
                     disabled={downloadingPdf}
-                    className="h-9 px-3.5 bg-gradient-to-r from-[#6B0606] to-[#800A0A] hover:from-[#550505] hover:to-[#6B0606] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 disabled:opacity-50"
-                    title="PDF डाऊनलोड करा"
+                    className="h-7.5 px-2.5 bg-[#7A0C0C] hover:bg-[#600808] text-white font-semibold text-[11px] rounded-md shadow-2xs transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95 disabled:opacity-50"
+                    title={lang === "mr" ? "PDF डाऊनलोड करा" : "Download PDF"}
                   >
-                    <Download className={`w-3.5 h-3.5 shrink-0 ${downloadingPdf ? "animate-spin" : ""}`} />
-                    <span className="whitespace-nowrap">{downloadingPdf ? "डाऊनलोड होत आहे..." : "PDF डाऊनलोड"}</span>
+                    <Download className={`w-3 h-3 shrink-0 ${downloadingPdf ? "animate-spin" : ""}`} />
+                    <span className="whitespace-nowrap">
+                      {downloadingPdf
+                        ? (lang === "mr" ? "डाऊनलोड..." : "Downloading...")
+                        : (lang === "mr" ? "PDF डाऊनलोड" : "PDF Download")}
+                    </span>
                   </button>
+
+                  <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
                   <button
                     type="button"
                     onClick={() => setSelectedReceipt(null)}
-                    className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/80 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 ml-0.5"
-                    title="बंद करा (Close)"
+                    className="h-7.5 w-7.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95"
+                    title={text.closeBtn}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -2648,8 +2521,8 @@ mptmamravati.org`;
                 const mainMembers = Array.isArray(r.mainMembers)
                   ? r.mainMembers
                   : Array.isArray(r.members)
-                  ? r.members
-                  : [];
+                    ? r.members
+                    : [];
 
                 const familyMembers = Array.isArray(r.familyMembers)
                   ? r.familyMembers
@@ -2662,21 +2535,21 @@ mptmamravati.org`;
                   r.type === "EXECUTIVE" ||
                   Boolean(
                     r.receiptNo &&
-                      (r.receiptNo.startsWith("MPTM-EM-") || r.receiptNo.includes("EM-R"))
+                    (r.receiptNo.startsWith("MPTM-EM-") || r.receiptNo.includes("EM-R"))
                   );
                 const qrUrl = publicToken
                   ? `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
-                      `${MAIN_SITE_URL}/receipt/${publicToken}?scan=1`
-                    )}`
+                    `${MAIN_SITE_URL}/receipt/${publicToken}?scan=1`
+                  )}`
                   : `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
-                      `${MAIN_SITE_URL}/receipt/${r.receiptNo}?scan=1`
-                    )}`;
+                    `${MAIN_SITE_URL}/receipt/${r.receiptNo}?scan=1`
+                  )}`;
 
                 const displayAddress = formatDisplayAddress(selectedReceipt);
                 const receiptDate = formatDateToDDMMYYYY(selectedReceipt.date || (selectedReceipt as any).createdAt);
 
                 return (
-                                    <div
+                  <div
                     id="printable-payment-receipt"
                     style={{ fontFamily: "'Baloo 2', 'Tiro Devanagari Marathi', 'Noto Sans Devanagari', system-ui, sans-serif" }}
                     className="p-5 sm:p-7 space-y-4 text-stone-900 text-xs sm:text-sm bg-white"
@@ -2699,8 +2572,8 @@ mptmamravati.org`;
                             {isDonation
                               ? "★ अधिकृत देणगी पावती ★"
                               : isExec
-                              ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★"
-                              : "★ प्राथमिक सदस्य नोंदणी पावती ★"}
+                                ? "★ कार्यकारिणी सदस्य नोंदणी पावती ★"
+                                : "★ प्राथमिक सदस्य नोंदणी पावती ★"}
                           </span>
                         </div>
                       </div>
@@ -2712,20 +2585,20 @@ mptmamravati.org`;
                     </div>
 
                     {/* 2. Top Meta Row: पावती क्र. | दिनांक | नोंदणी शुल्क/देणगी रक्कम */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-3 rounded-xl bg-amber-50/70 border border-amber-300">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">पावती क्र. :</span>
-                        <span className="font-mono font-black text-stone-900 text-sm sm:text-base">{selectedReceipt.receiptNo}</span>
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 p-2.5 sm:p-3 rounded-xl bg-amber-50/70 border border-amber-300 text-xs">
+                      <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm shrink-0">पावती क्र. :</span>
+                        <span className="font-mono font-black text-stone-900 text-xs sm:text-sm tracking-tight shrink-0">{selectedReceipt.receiptNo}</span>
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">दिनांक :</span>
-                        <span className="font-mono font-bold text-stone-900 text-xs sm:text-sm">{receiptDate}</span>
+                      <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm shrink-0">दिनांक :</span>
+                        <span className="font-mono font-bold text-stone-900 text-xs sm:text-sm shrink-0">{receiptDate}</span>
                       </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-bold text-stone-600 text-xs sm:text-sm whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0 sm:justify-end">
+                        <span className="font-bold text-stone-600 text-xs sm:text-sm shrink-0">
                           {isDonation ? "देणगी रक्कम :" : "नोंदणी शुल्क :"}
                         </span>
-                        <span className="font-mono font-black text-[#7A0C0C] text-sm sm:text-base">
+                        <span className="font-mono font-black text-[#7A0C0C] text-xs sm:text-sm shrink-0">
                           ₹{selectedReceipt.amount}/-
                         </span>
                       </div>
@@ -2747,9 +2620,8 @@ mptmamravati.org`;
                           {mainMembers.map((member: any, index: number) => (
                             <div
                               key={member.id || index}
-                              className={`space-y-2.5 ${
-                                index > 0 ? "pt-3.5 border-t-2 border-dashed border-amber-300/80" : ""
-                              }`}
+                              className={`space-y-2.5 ${index > 0 ? "pt-3.5 border-t-2 border-dashed border-amber-300/80" : ""
+                                }`}
                             >
                               <div className="flex items-center gap-2 border-b border-stone-200 pb-1.5">
                                 <span className="w-5 h-5 rounded-full bg-[#7A0C0C] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
@@ -2906,17 +2778,19 @@ mptmamravati.org`;
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <span className="font-bold text-stone-600">पेमेंट पद्धत : </span>
+                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4 text-xs">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                          <span className="font-bold text-stone-600 shrink-0">पेमेंट पद्धत : </span>
                           <span className="font-bold text-stone-900">{formatPaymentMethod(selectedReceipt.paymentMode)}</span>
                         </div>
-                        <div>
-                          <span className="font-bold text-stone-600">व्यवहार संदर्भ : </span>
-                          <span className="font-mono font-bold text-stone-900">{orderId}</span>
+                        <div className="flex items-center gap-1.5 whitespace-nowrap min-w-0">
+                          <span className="font-bold text-stone-600 shrink-0">व्यवहार संदर्भ : </span>
+                          <span className="font-mono font-bold text-stone-900 text-[11px] sm:text-xs truncate" title={orderId}>
+                            {orderId}
+                          </span>
                         </div>
-                        <div>
-                          <span className="font-bold text-stone-600">पावती दिनांक : </span>
+                        <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0 sm:justify-end">
+                          <span className="font-bold text-stone-600 shrink-0">पावती दिनांक : </span>
                           <span className="font-mono font-bold text-stone-900">{receiptDate}</span>
                         </div>
                       </div>
@@ -2930,8 +2804,8 @@ mptmamravati.org`;
                           {isDonation
                             ? "महाराष्ट्र प्रांतिक तैलिक महासभेस देणगी दिल्याबद्दल आपले मनःपूर्वक आभार."
                             : isExec
-                            ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
-                            : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
+                              ? "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या कार्यकारिणी सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."
+                              : "वरील रक्कम महाराष्ट्र प्रांतिक तैलिक महासभेच्या प्राथमिक सदस्य नोंदणी शुल्क म्हणून प्राप्त झाली."}
                         </span>
                       </p>
                     </div>
@@ -2970,12 +2844,7 @@ mptmamravati.org`;
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           <span>Digitally Certified & Approved</span>
                         </div>
-                        <p className="font-black text-[#7A0C0C] text-xs pt-0.5">
-                          अध्यक्ष / सचिव / कोषाध्यक्ष
-                        </p>
-                        <p className="text-[10px] text-stone-600 font-medium">
-                          महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती
-                        </p>
+                        
                       </div>
                     </div>
 

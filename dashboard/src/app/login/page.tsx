@@ -103,7 +103,7 @@ export default function LoginPage() {
       const isSuperCreds = uName === "mptmamravati.org" || uName === "admin@mptmamravati.org";
       const role = localStorage.getItem("mptm_admin_role") || (isSuperCreds ? "SUPER_ADMIN" : "USER");
       if (role === "USER" && !isSuperCreds) {
-        router.push("/registrations");
+        router.push("/memberregistration");
       } else {
         router.push("/");
       }
@@ -214,7 +214,7 @@ export default function LoginPage() {
       if (targetRole === "SUPER_ADMIN") {
         router.push("/");
       } else {
-        router.push("/registrations");
+        router.push("/memberregistration");
       }
     } catch (err: any) {
       console.error("Login verification error:", err);

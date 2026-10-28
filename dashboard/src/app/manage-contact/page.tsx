@@ -83,7 +83,7 @@ export default function ManageContactPage() {
         username === "admin@mptmamravati.org";
       setIsSuperAdmin(isSuper);
       if (!isSuper) {
-        router.replace("/registrations");
+        router.replace("/memberregistration");
       }
     }
   }, [router]);
@@ -485,44 +485,46 @@ export default function ManageContactPage() {
         {/* TAB 2: CONTACT MESSAGES LIST */}
         {activeTab === "MESSAGES" && (
           <div className="space-y-4">
-            {/* Search & Status Filters Toolbar */}
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              {/* Search Box */}
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name, email, phone number, or subject..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+            {/* Search & Status Filters Toolbar (Compact Single Row) */}
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+                {/* Shortened Search Box */}
+                <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name, email, phone number, or subject..."
+                    className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-              {/* Status Filter Buttons */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-semibold">
-                <Filter className="w-4 h-4 text-slate-400 mr-1 shrink-0 hidden sm:inline" />
-                {(["ALL", "UNREAD", "READ"] as const).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-3 py-2 rounded-xl transition shrink-0 ${
-                      statusFilter === st
-                        ? "bg-slate-900 text-white shadow-xs font-bold"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
-                  >
-                    {st === "ALL" ? "All" : st === "UNREAD" ? "Unread" : "Read"}
-                  </button>
-                ))}
+                {/* Status Filter Buttons on same row */}
+                <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-normal">
+                  <Filter className="w-3.5 h-3.5 text-slate-400 mr-1 shrink-0 hidden sm:inline" />
+                  {(["ALL", "UNREAD", "READ"] as const).map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-3 py-1.5 rounded-xl transition shrink-0 cursor-pointer text-xs ${
+                        statusFilter === st
+                          ? "bg-slate-900 text-white font-bold shadow-2xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
+                      }`}
+                    >
+                      {st === "ALL" ? "All" : st === "UNREAD" ? "Unread" : "Read"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -530,14 +532,14 @@ export default function ManageContactPage() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-[#DCE6FA] border-b border-slate-300 text-slate-800 font-bold text-[11px]">
+                  <thead className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
                     <tr>
-                      <th className="py-3.5 px-4 sm:px-6">Visitor Name</th>
-                      <th className="py-3.5 px-4 sm:px-6">Contact Info</th>
-                      <th className="py-3.5 px-4 sm:px-6">Subject & Message</th>
-                      <th className="py-3.5 px-4 sm:px-6">Date</th>
-                      <th className="py-3.5 px-4 sm:px-6">Status</th>
-                      <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                      <th className="py-2.5 px-4 text-left">Visitor Name</th>
+                      <th className="py-2.5 px-4 text-left">Contact Info</th>
+                      <th className="py-2.5 px-4 text-left">Subject & Message</th>
+                      <th className="py-2.5 px-4 text-left">Date</th>
+                      <th className="py-2.5 px-4 text-left">Status</th>
+                      <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
 
@@ -585,88 +587,102 @@ export default function ManageContactPage() {
                         </td>
                       </tr>
                     ) : (
-                      filteredMessages.map((msg) => (
+                      filteredMessages.map((msg) => {
+                        const msgDate = formatDateToDDMMYYYY(msg.createdAt);
+                        let msgTime = "";
+                        try {
+                          const d = new Date(msg.createdAt);
+                          if (!isNaN(d.getTime())) {
+                            msgTime = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+                          }
+                        } catch {}
+
+                        return (
                         <tr
                           key={msg.id}
-                          className={`hover:bg-slate-50 transition ${
-                            msg.status === "UNREAD" ? "bg-slate-50/60 font-semibold" : ""
+                          className={`hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80 ${
+                            msg.status === "UNREAD" ? "bg-amber-50/30" : ""
                           }`}
                         >
                           {/* Visitor Name */}
-                          <td className="py-4 px-4 sm:px-6">
-                            <div className="font-bold text-slate-900 text-sm leading-tight">{msg.name}</div>
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                            <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={msg.name}>
+                              {msg.name}
+                            </span>
                           </td>
 
                           {/* Contact Info */}
-                          <td className="py-4 px-4 sm:px-6">
-                            <div className="flex items-center gap-1.5 text-slate-700">
-                              <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                              <a href={`mailto:${msg.email}`} className="hover:underline hover:text-slate-900 truncate max-w-[160px]">
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                            <div className="flex flex-col leading-tight">
+                              <a href={`mailto:${msg.email}`} className="text-xs font-normal text-slate-700 hover:underline truncate max-w-[170px]" title={msg.email}>
                                 {msg.email}
                               </a>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-600 mt-1 font-mono text-xs">
-                              <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                              <a href={`tel:${msg.phone}`} className="hover:underline hover:text-slate-900 font-bold">
+                              <a href={`tel:${msg.phone}`} className="text-xs font-normal text-slate-600 hover:text-slate-900 mt-0.5 font-mono">
                                 {msg.phone}
                               </a>
+                              {(msg.city || msg.district) && (
+                                <span className="text-[10px] font-normal text-slate-400 mt-0.5">
+                                  {[msg.city, msg.district].filter(Boolean).join(", ")}
+                                </span>
+                              )}
                             </div>
-                            {(msg.city || msg.district) && (
-                              <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
-                                📍 {[msg.city, msg.district].filter(Boolean).join(", ")}
-                              </div>
-                            )}
                           </td>
 
                           {/* Subject & Message */}
-                          <td className="py-4 px-4 sm:px-6">
-                            <div className="font-bold text-slate-900 text-xs truncate max-w-[200px]">
-                              {msg.subject || "General Inquiry"}
-                            </div>
-                            <div className="text-xs text-slate-500 truncate max-w-[240px] mt-0.5">
-                              {msg.message}
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                            <div className="flex flex-col leading-tight">
+                              <span className="font-normal text-slate-900 text-xs truncate max-w-[220px]" title={msg.subject || "General Inquiry"}>
+                                {msg.subject || "General Inquiry"}
+                              </span>
+                              <span className="text-[11px] font-normal text-slate-500 truncate max-w-[240px] mt-0.5" title={msg.message}>
+                                {msg.message}
+                              </span>
                             </div>
                           </td>
 
                           {/* Date */}
-                          <td className="py-4 px-4 sm:px-6 text-slate-600 text-xs whitespace-nowrap">
-                            {formatDateToDDMMYYYY(msg.createdAt)}
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-slate-800 text-xs font-normal">{msgDate}</span>
+                              {msgTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{msgTime}</span>}
+                            </div>
                           </td>
 
-                          {/* Status Badge */}
-                          <td className="py-4 px-4 sm:px-6">
+                          {/* Status */}
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
                             <button
-                              onClick={() =>
-                                handleUpdateStatus(msg.id, msg.status === "UNREAD" ? "READ" : "UNREAD")
-                              }
-                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition ${
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateStatus(msg.id, msg.status === "UNREAD" ? "READ" : "UNREAD");
+                              }}
+                              className={`text-xs font-normal py-1 px-2.5 rounded-lg border transition cursor-pointer ${
                                 msg.status === "UNREAD"
-                                  ? "bg-slate-900 text-white border-slate-900"
-                                  : "bg-slate-100 text-slate-700 border-slate-300"
+                                  ? "text-blue-700 border-blue-200 bg-blue-50/60"
+                                  : "text-slate-600 border-slate-200 bg-slate-50"
                               }`}
                               title="Click to toggle Read/Unread"
                             >
-                              {msg.status}
+                              {msg.status === "UNREAD" ? "Unread" : "Read"}
                             </button>
                           </td>
 
                           {/* Actions */}
-                          <td className="py-4 px-4 sm:px-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap text-right">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => {
                                   setViewingMsg(msg);
                                   if (msg.status === "UNREAD") handleUpdateStatus(msg.id, "READ");
                                 }}
-                                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                                className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                                 title="View Details"
                               >
-                                <Eye className="w-4 h-4" />
+                                <Eye className="w-4 h-4 text-amber-800" />
                               </button>
 
                               <button
                                 onClick={() => setDeletingMsg(msg)}
-                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
                                 title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -674,7 +690,8 @@ export default function ManageContactPage() {
                             </div>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

@@ -54,7 +54,7 @@ const sidebarNavItems: SidebarNavItem[] = [
   },
   {
     title: "Member Registrations",
-    path: "/registrations",
+    path: "/memberregistration",
     Icon: ClipboardList,
     bg: "#6DD58C",
     fg: "#0F5223",
@@ -226,7 +226,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         pathname === "/manage-ads" ||
         pathname === "/deleted-members"
       ) {
-        router.replace("/registrations");
+        router.replace("/memberregistration");
       }
     }
   }, [isAuthenticated, isSuperAdmin, pathname, router]);
@@ -307,7 +307,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!readNotificationIds.includes(id)) {
       setReadNotificationIds((prev) => [...prev, id]);
     }
-    router.push("/registrations");
+    router.push("/memberregistration");
   };
 
   const handleMarkAllAsRead = () => {
@@ -501,7 +501,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div className="p-2 border-t border-slate-100 bg-slate-50">
                       <button
                         onClick={() => {
-                          router.push("/registrations");
+                          router.push("/memberregistration");
                           setNotificationDropdownOpen(false);
                         }}
                         className="w-full text-center text-xs font-bold text-blue-700 hover:text-blue-900 py-1.5 rounded-lg hover:bg-blue-100/60 transition flex items-center justify-center gap-1"

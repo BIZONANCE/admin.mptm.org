@@ -12,6 +12,8 @@ import {
   Trash2,
   Eye,
   X,
+  Copy,
+  Check,
   IndianRupee,
   Calendar,
   Building2,
@@ -37,6 +39,14 @@ export default function ManageDonationsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState<string>("ALL");
   const [selectedCityFilter, setSelectedCityFilter] = useState<string>("ALL");
+
+  // Copy state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Modal State for Viewing Payment Screenshot
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
@@ -207,44 +217,42 @@ export default function ManageDonationsPage() {
         {/* SEARCH, FILTER & TABLE CONTAINER */}
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden">
           
-          {/* FILTER TOOLBAR (2 ROWS) */}
-          <div className="p-4 sm:p-5 border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-slate-50 space-y-3">
-            
-            {/* ROW 1: SEARCH BAR (Full Width) */}
-            <div className="relative w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search donor name, receipt no, mobile, city, district..."
-                className="w-full bg-white border border-slate-300/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition shadow-inner font-medium"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 w-5 h-5 rounded-full flex items-center justify-center hover:bg-slate-100 transition cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+          {/* Filter Bar (Compact Single Row) */}
+          <div className="p-3.5 border-b border-slate-200 bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                {/* Shortened Search Box */}
+                <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search donor name, receipt no, mobile, city, district..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-            {/* ROW 2: FILTER DROPDOWNS & RECORDS COUNTER */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
-              <div className="flex flex-wrap items-center gap-2.5">
                 {/* District Filter Dropdown */}
                 {uniqueDistricts.length > 0 && (
-                  <div className="flex items-center gap-2 bg-white border border-slate-300/80 rounded-2xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">District:</span>
+                    <span className="text-xs font-bold text-slate-700">District:</span>
                     <select
                       value={selectedDistrictFilter}
                       onChange={(e) => {
                         setSelectedDistrictFilter(e.target.value);
                         setSelectedCityFilter("ALL");
                       }}
-                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer pr-1"
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
                     >
                       <option value="ALL">All Districts ({uniqueDistricts.length})</option>
                       {uniqueDistricts.map((dist) => (
@@ -258,13 +266,13 @@ export default function ManageDonationsPage() {
 
                 {/* City Filter Dropdown */}
                 {uniqueCities.length > 0 && (
-                  <div className="flex items-center gap-2 bg-white border border-slate-300/80 rounded-2xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">City:</span>
+                    <span className="text-xs font-bold text-slate-700">City:</span>
                     <select
                       value={selectedCityFilter}
                       onChange={(e) => setSelectedCityFilter(e.target.value)}
-                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer pr-1"
+                      className="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer"
                     >
                       <option value="ALL">All Cities ({uniqueCities.length})</option>
                       {uniqueCities.map((city) => (
@@ -277,34 +285,33 @@ export default function ManageDonationsPage() {
                 )}
               </div>
 
-              {/* Records Counter Badge */}
-              <div className="px-3.5 py-1.5 bg-indigo-50/80 border border-indigo-100 rounded-2xl text-xs font-bold text-indigo-900 shrink-0 inline-flex items-center gap-1.5">
+              {/* Records Counter */}
+              <div className="text-xs text-slate-500 shrink-0">
                 {loading ? (
-                  <>Showing <span className="inline-block w-8 h-3 bg-indigo-200 animate-pulse rounded" /> Records</>
+                  <>Showing: <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded" /> Records</>
                 ) : (
-                  <>Showing <span className="text-indigo-600 font-extrabold">{filteredDonations.length}</span> of {donations.length} Records</>
+                  <>Showing: <span className="text-slate-800 font-semibold">{filteredDonations.length}</span> of {donations.length} Records</>
                 )}
               </div>
             </div>
-
           </div>
 
           {/* TABLE AREA */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
-                <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-extrabold border-b border-slate-300">
-                  <th className="py-4 px-4">Receipt No.</th>
-                  <th className="py-4 px-4">Donor Name</th>
-                  <th className="py-4 px-4">Mobile Number</th>
-                  <th className="py-4 px-4">Address</th>
-                  <th className="py-4 px-4">Village / Taluka</th>
-                  <th className="py-4 px-4">District</th>
-                  <th className="py-4 px-4">State / Pin</th>
-                  <th className="py-4 px-4">Amount</th>
-                  <th className="py-4 px-4">Payment Proof</th>
-                  <th className="py-4 px-4">Date</th>
-                  <th className="py-4 px-4 text-center">Action</th>
+                <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
+                  <th className="py-2.5 px-4 text-left">Receipt No.</th>
+                  <th className="py-2.5 px-4 text-left">Donor Name</th>
+                  <th className="py-2.5 px-4 text-left">Mobile Number</th>
+                  <th className="py-2.5 px-4 text-left">Address</th>
+                  <th className="py-2.5 px-4 text-left">Village / Taluka</th>
+                  <th className="py-2.5 px-4 text-left">District</th>
+                  <th className="py-2.5 px-4 text-left">State / Pin</th>
+                  <th className="py-2.5 px-4 text-left">Amount</th>
+                  <th className="py-2.5 px-4 text-left">Payment Proof</th>
+                  <th className="py-2.5 px-4 text-left">Date</th>
+                  <th className="py-2.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
@@ -371,112 +378,120 @@ export default function ManageDonationsPage() {
                   </tr>
                 ) : (
                   filteredDonations.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors duration-150 group">
+                    <tr key={item.id} className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80">
                       
-                      {/* Receipt No */}
-                      <td className="py-4 px-4 font-mono font-bold text-indigo-700 whitespace-nowrap">
-                        <span className="bg-indigo-50/90 text-indigo-800 px-2.5 py-1 rounded-xl border border-indigo-200/80 shadow-2xs">
-                          {item.receiptNo}
-                        </span>
+                      {/* Receipt No (Aligned Copy Icon) */}
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <div className="w-[170px] flex items-center justify-between gap-1.5 leading-tight">
+                          <span className="font-mono text-xs text-slate-800 font-normal truncate" title={item.receiptNo}>
+                            {item.receiptNo}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(item.receiptNo, item.id + "-rec");
+                            }}
+                            className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
+                            title="Copy Receipt No"
+                          >
+                            {copiedId === item.id + "-rec" ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </td>
 
                       {/* Donor Name */}
-                      <td className="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                            {item.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-slate-900 group-hover:text-indigo-900 transition-colors">
-                            {item.name}
-                          </span>
-                        </div>
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={item.name}>
+                          {item.name}
+                        </span>
                       </td>
 
                       {/* Mobile */}
-                      <td className="py-4 px-4 font-bold text-slate-700 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <a
-                            href={`tel:${item.mobileNo}`}
-                            className="text-slate-700 hover:text-emerald-700 hover:underline font-mono"
-                          >
-                            {item.mobileNo}
-                          </a>
-                        </div>
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <a
+                          href={`tel:${item.mobileNo}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-slate-700 hover:text-slate-900 text-xs font-normal font-mono"
+                        >
+                          {item.mobileNo}
+                        </a>
                       </td>
 
                       {/* Address */}
-                      <td className="py-4 px-4 text-slate-700 max-w-[180px] truncate" title={item.address || "-"}>
-                        {item.address || <span className="text-slate-400 italic">-</span>}
+                      <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal max-w-[180px] truncate" title={item.address || "-"}>
+                        {item.address || <span className="text-slate-400">-</span>}
                       </td>
 
                       {/* Village / Taluka */}
-                      <td className="py-4 px-4 text-slate-700 whitespace-nowrap">
-                        {[item.gaav, item.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
+                      <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                        {[item.gaav, item.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400">-</span>}
                       </td>
 
                       {/* District */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 text-slate-700">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-semibold">
-                            {formatDistrictInEnglish(item.district, item.city)}
-                          </span>
-                        </div>
+                      <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                        {formatDistrictInEnglish(item.district, item.city)}
                       </td>
 
                       {/* State & Pincode */}
-                      <td className="py-4 px-4 text-slate-700 whitespace-nowrap">
-                        {[item.state, item.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400 italic">-</span>}
+                      <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                        {[item.state, item.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400">-</span>}
                       </td>
 
                       {/* Amount */}
-                      <td className="py-4 px-5 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
-                          ₹ {item.amount.toLocaleString("en-IN")}
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <span className="text-xs font-normal text-slate-900 leading-tight block">
+                          ₹{item.amount.toLocaleString("en-IN")}
                         </span>
                       </td>
 
                       {/* Payment Screenshot Thumbnail */}
-                      <td className="py-4 px-5 whitespace-nowrap">
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
                         {item.paymentScreenshot ? (
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedScreenshot(item.paymentScreenshot || null);
                               setSelectedDonation(item);
                             }}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-900 px-3 py-1.5 rounded-xl border border-indigo-200/80 transition-all duration-200 shadow-2xs cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-xs font-normal text-slate-700 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
                             <span>View Proof</span>
-                            <ArrowUpRight className="w-3 h-3 opacity-60" />
                           </button>
                         ) : (
-                          <span className="text-slate-400 italic text-[11px] px-2 py-0.5 bg-slate-100 rounded-md">
-                            No Receipt Attached
+                          <span className="text-slate-400 text-xs font-normal">
+                            -
                           </span>
                         )}
                       </td>
 
                       {/* Date */}
-                      <td className="py-4 px-5 text-slate-600 whitespace-nowrap font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-mono text-slate-700">{item.date}</span>
-                        </div>
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <span className="text-slate-800 text-xs font-normal block leading-tight">
+                          {item.date}
+                        </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-5 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setDeleteCandidate(item)}
-                          title="Delete Donation Record"
-                          className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all duration-200 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="align-top py-2.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteCandidate(item);
+                            }}
+                            title="Delete Donation Record"
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

@@ -64,7 +64,7 @@ export default function ManageCareerPage() {
         username === "admin@mptmamravati.org";
       setIsSuperAdmin(isSuper);
       if (!isSuper) {
-        router.replace("/registrations");
+        router.replace("/memberregistration");
       }
     }
   }, [router]);
@@ -239,52 +239,54 @@ export default function ManageCareerPage() {
 
 
 
-        {/* Filters & Search Toolbar */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, or phone number..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+        {/* Filters & Search Toolbar (Compact Single Row) */}
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+            {/* Shortened Search Box */}
+            <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or phone number..."
+                className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
-          {/* Status Filter Buttons */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-semibold">
-            <Filter className="w-4 h-4 text-slate-400 mr-1 shrink-0 hidden sm:inline" />
-            {(["ALL", "PENDING", "SHORTLISTED", "REVIEWED", "REJECTED"] as const).map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-2 rounded-xl transition shrink-0 ${
-                  statusFilter === st
-                    ? "bg-slate-900 text-white shadow-xs font-bold"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {st === "ALL"
-                  ? "All"
-                  : st === "PENDING"
-                  ? "Pending"
-                  : st === "SHORTLISTED"
-                  ? "Shortlisted"
-                  : st === "REVIEWED"
-                  ? "Reviewed"
-                  : "Rejected"}
-              </button>
-            ))}
+            {/* Status Filter Buttons on same row */}
+            <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-normal">
+              <Filter className="w-3.5 h-3.5 text-slate-400 mr-1 shrink-0 hidden sm:inline" />
+              {(["ALL", "PENDING", "SHORTLISTED", "REVIEWED", "REJECTED"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setStatusFilter(st)}
+                  className={`px-3 py-1.5 rounded-xl transition shrink-0 cursor-pointer text-xs ${
+                    statusFilter === st
+                      ? "bg-slate-900 text-white font-bold shadow-2xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal"
+                  }`}
+                >
+                  {st === "ALL"
+                    ? "All"
+                    : st === "PENDING"
+                    ? "Pending"
+                    : st === "SHORTLISTED"
+                    ? "Shortlisted"
+                    : st === "REVIEWED"
+                    ? "Reviewed"
+                    : "Rejected"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -292,14 +294,14 @@ export default function ManageCareerPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-[#DCE6FA] border-b border-slate-300 text-slate-800 font-bold text-[11px]">
+              <thead className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
                 <tr>
-                  <th className="py-3.5 px-4 sm:px-6">Applicant Name</th>
-                  <th className="py-3.5 px-4 sm:px-6">Contact Info</th>
-                  <th className="py-3.5 px-4 sm:px-6">Date Applied</th>
-                  <th className="py-3.5 px-4 sm:px-6">Resume</th>
-                  <th className="py-3.5 px-4 sm:px-6">Status</th>
-                  <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                  <th className="py-2.5 px-4 text-left">Applicant Name</th>
+                  <th className="py-2.5 px-4 text-left">Contact Info</th>
+                  <th className="py-2.5 px-4 text-left">Date Applied</th>
+                  <th className="py-2.5 px-4 text-left">Resume</th>
+                  <th className="py-2.5 px-4 text-left">Status</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
 
@@ -347,57 +349,65 @@ export default function ManageCareerPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredApplications.map((app) => (
-                    <tr key={app.id} className="hover:bg-slate-50 transition">
+                  filteredApplications.map((app) => {
+                    const appDate = formatDateToDDMMYYYY(app.createdAt);
+                    let appTime = "";
+                    try {
+                      const d = new Date(app.createdAt);
+                      if (!isNaN(d.getTime())) {
+                        appTime = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+                      }
+                    } catch {}
+
+                    return (
+                    <tr key={app.id} className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80">
                       {/* Name */}
-                      <td className="py-4 px-4 sm:px-6">
-                        <div className="font-bold text-slate-900 text-sm leading-tight">{app.name}</div>
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={app.name}>
+                          {app.name}
+                        </span>
                       </td>
 
                       {/* Contact Info */}
-                      <td className="py-4 px-4 sm:px-6">
-                        <div className="flex items-center gap-1.5 text-slate-700">
-                          <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <a href={`mailto:${app.email}`} className="hover:underline hover:text-slate-900 truncate max-w-[160px]">
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <div className="flex flex-col leading-tight">
+                          <a href={`mailto:${app.email}`} className="text-xs font-normal text-slate-700 hover:underline truncate max-w-[170px]" title={app.email}>
                             {app.email}
                           </a>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-slate-600 mt-1 font-mono text-xs">
-                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <a href={`tel:${app.phone}`} className="hover:underline hover:text-slate-900 font-bold">
+                          <a href={`tel:${app.phone}`} className="text-xs font-normal text-slate-600 hover:text-slate-900 mt-0.5 font-mono">
                             {app.phone}
                           </a>
+                          {(app.city || app.district) && (
+                            <span className="text-[10px] font-normal text-slate-400 mt-0.5">
+                              {[app.city, app.district].filter(Boolean).join(", ")}
+                            </span>
+                          )}
                         </div>
-                        {(app.city || app.district) && (
-                          <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
-                            📍 {[app.city, app.district].filter(Boolean).join(", ")}
-                          </div>
-                        )}
                       </td>
 
                       {/* Date */}
-                      <td className="py-4 px-4 sm:px-6 text-slate-600 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{formatDateToDDMMYYYY(app.createdAt)}</span>
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-slate-800 text-xs font-normal">{appDate}</span>
+                          {appTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{appTime}</span>}
                         </div>
                       </td>
 
                       {/* Resume File */}
-                      <td className="py-4 px-4 sm:px-6">
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
                         <button
                           onClick={() => setViewingResumeApp(app)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 transition group cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-normal text-slate-700 transition cursor-pointer"
                           title="Click to view resume PDF"
                         >
-                          <FileText className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-900" />
+                          <FileText className="w-3.5 h-3.5 text-slate-500" />
                           <span className="truncate max-w-[110px]">{app.resumeName || "Resume.pdf"}</span>
-                          <Eye className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 ml-0.5" />
+                          <Eye className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
                         </button>
                       </td>
 
-                      {/* Status Selector Badge */}
-                      <td className="py-4 px-4 sm:px-6">
+                      {/* Status Selector */}
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
                         <select
                           value={app.status}
                           disabled={updatingStatusId === app.id}
@@ -407,7 +417,7 @@ export default function ManageCareerPage() {
                               e.target.value as "PENDING" | "REVIEWED" | "SHORTLISTED" | "REJECTED"
                             )
                           }
-                          className="text-xs font-bold px-3 py-1.5 rounded-full border border-slate-300 bg-slate-100 text-slate-800 hover:bg-slate-200 focus:outline-none transition cursor-pointer"
+                          className="text-xs font-normal py-1 px-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 focus:outline-none transition cursor-pointer"
                         >
                           <option value="PENDING">Pending</option>
                           <option value="REVIEWED">Reviewed</option>
@@ -417,19 +427,19 @@ export default function ManageCareerPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-4 sm:px-6 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setViewingApp(app)}
-                            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                            className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4 text-amber-800" />
                           </button>
 
                           <button
                             onClick={() => setDeletingApp(app)}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -437,7 +447,8 @@ export default function ManageCareerPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

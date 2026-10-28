@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
+  Search,
   RefreshCw,
   Mail,
   Send,
@@ -30,7 +31,7 @@ export default function ManageUsersPage() {
       const username = localStorage.getItem("mptm_admin_username");
       const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
       if (!isSuper) {
-        router.replace("/registrations");
+        router.replace("/memberregistration");
       }
     }
   }, [router]);
@@ -65,6 +66,21 @@ export default function ManageUsersPage() {
   // Delete confirmation modal state
   const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const [searchUserQuery, setSearchUserQuery] = useState<string>("");
+
+  const filteredUsers = useMemo(() => {
+    return managedUsers.filter((user) => {
+      if (!searchUserQuery.trim()) return true;
+      const q = searchUserQuery.toLowerCase().trim();
+      return (
+        (user.name || "").toLowerCase().includes(q) ||
+        (user.email || "").toLowerCase().includes(q) ||
+        (user.phone || "").toLowerCase().includes(q) ||
+        (user.city || "").toLowerCase().includes(q)
+      );
+    });
+  }, [managedUsers, searchUserQuery]);
 
   const API_URL = getApiUrl();
 
@@ -428,33 +444,52 @@ export default function ManageUsersPage() {
 
         {/* CARD 2: MANAGED USERS TABLE */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Users className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                Managed Users List
-              </h2>
-              <span className="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                Total: {loading ? <span className="inline-block w-6 h-3 bg-blue-200 animate-pulse rounded" /> : managedUsers.length}
-              </span>
+          <div className="p-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+              {/* Shortened Search Box */}
+              <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchUserQuery}
+                  onChange={(e) => setSearchUserQuery(e.target.value)}
+                  placeholder="Search users by name, email, phone, city..."
+                  className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                />
+                {searchUserQuery && (
+                  <button
+                    onClick={() => setSearchUserQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="text-xs font-normal text-slate-500 whitespace-nowrap px-3 py-1 bg-slate-50 rounded-xl border border-slate-200 shrink-0">
+                {loading ? (
+                  <>Showing: <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded" /> Users</>
+                ) : (
+                  <>Showing: <span className="text-slate-800 font-semibold">{filteredUsers.length}</span> of {managedUsers.length} Users</>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-slate-500">
-              * Use Edit / Save button in Action column to update name, phone number, or city.
-            </p>
+
+         
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[750px]">
               <thead>
-                <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
-                  <th className="py-3 px-4 w-12 text-center">Sr. No.</th>
-                  <th className="py-3 px-4 min-w-[180px]">Name</th>
-                  <th className="py-3 px-4 min-w-[160px]">Phone No.</th>
-                  <th className="py-3 px-4 min-w-[180px]">Email ID</th>
-                  <th className="py-3 px-4 min-w-[140px]">City</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
+                  <th className="py-2.5 px-3 w-12 text-center">#</th>
+                  <th className="py-2.5 px-4 text-left">Name</th>
+                  <th className="py-2.5 px-4 text-left">Phone No.</th>
+                  <th className="py-2.5 px-4 text-left">Email ID</th>
+                  <th className="py-2.5 px-4 text-left">City</th>
+                  <th className="py-2.5 px-4 text-left">Date</th>
+                  <th className="py-2.5 px-4 text-center">Status</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-900">
@@ -478,35 +513,35 @@ export default function ManageUsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  managedUsers.map((user, idx) => {
+                  filteredUsers.map((user, idx) => {
                     const isEditingThisRow = editingUserId === user.id;
 
                     return (
                       <tr key={user.id} className={`transition ${isEditingThisRow ? "bg-amber-50/40" : "hover:bg-slate-50/80"}`}>
-                        <td className="py-3 px-4 text-center font-bold text-slate-500">
+                        <td className="align-top py-2.5 px-3 text-center text-slate-400 whitespace-nowrap text-xs font-normal">
                           {idx + 1}
                         </td>
 
                         {/* 1. NAME COLUMN */}
-                        <td className="py-2 px-4">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
                           {isEditingThisRow ? (
                             <input
                               type="text"
                               value={editNameInput}
                               onChange={(e) => setEditNameInput(e.target.value)}
                               placeholder="Type name..."
-                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                               autoFocus
                             />
                           ) : (
-                            <span className="font-semibold text-slate-800">
+                            <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={user.name || ""}>
                               {user.name || <span className="text-slate-400 italic">Name not added</span>}
                             </span>
                           )}
                         </td>
 
                         {/* 2. PHONE COLUMN */}
-                        <td className="py-2 px-4">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
                           {isEditingThisRow ? (
                             <input
                               type="tel"
@@ -517,62 +552,60 @@ export default function ManageUsersPage() {
                                 setEditPhoneInput(clean);
                               }}
                               placeholder="10-digit phone number..."
-                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono shadow-2xs"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 transition font-mono"
                             />
                           ) : (
-                            <span className="font-mono text-slate-700">
-                              {user.phone || <span className="text-slate-400 italic">No phone number</span>}
+                            <span className="font-mono text-xs font-normal text-slate-700">
+                              {user.phone || <span className="text-slate-400 italic">-</span>}
                             </span>
                           )}
                         </td>
 
                         {/* 3. EMAIL COLUMN */}
-                        <td className="py-3 px-4 font-bold text-slate-900">
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                            <span className="font-mono text-xs sm:text-sm">{user.email}</span>
-                          </div>
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <span className="font-mono text-xs font-normal text-slate-800 truncate max-w-[190px] block" title={user.email}>
+                            {user.email}
+                          </span>
                         </td>
 
                         {/* 4. CITY COLUMN */}
-                        <td className="py-2 px-4">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
                           {isEditingThisRow ? (
                             <input
                               type="text"
                               value={editCityInput}
                               onChange={(e) => setEditCityInput(e.target.value)}
                               placeholder="Type city..."
-                              className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
                             />
                           ) : (
-                            <span className="font-semibold text-slate-800">
-                              {user.city || <span className="text-slate-400 italic">No city</span>}
+                            <span className="text-xs font-normal text-slate-700">
+                              {user.city || <span className="text-slate-400 italic">-</span>}
                             </span>
                           )}
                         </td>
 
                         {/* 5. DATE COLUMN */}
-                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap text-xs font-normal text-slate-700">
                           {user.date}
                         </td>
 
                         {/* 6. STATUS COLUMN */}
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <td className="align-top py-2.5 px-4 text-center whitespace-nowrap">
+                          <span className="text-xs font-normal text-emerald-600 leading-tight block">
                             Verified
                           </span>
                         </td>
 
                         {/* 7. ACTION COLUMN */}
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <td className="align-top py-2.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             {isEditingThisRow ? (
                               <>
                                 <button
                                   onClick={() => handleSaveEditUser(user.id)}
                                   title="Save"
-                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition"
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs flex items-center gap-1 shadow-2xs transition cursor-pointer"
                                 >
                                   <Save className="w-3.5 h-3.5" />
                                   <span>Save</span>
@@ -580,29 +613,34 @@ export default function ManageUsersPage() {
                                 <button
                                   onClick={handleCancelEditUser}
                                   title="Cancel"
-                                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
+                                  className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium text-xs transition cursor-pointer"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <span>Cancel</span>
                                 </button>
                               </>
                             ) : (
-                              <button
-                                onClick={() => handleStartEditUser(user)}
-                                title="Edit"
-                                className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-800 border border-blue-200 font-bold text-xs flex items-center gap-1 transition"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingUserId(user.id);
+                                    setEditNameInput(user.name || "");
+                                    setEditPhoneInput(user.phone || "");
+                                    setEditCityInput(user.city || "");
+                                  }}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                                  title="Edit User"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteManagedUser(user)}
+                                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
+                                  title="Delete User"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
                             )}
-
-                            <button
-                              onClick={() => handleDeleteManagedUser(user)}
-                              title="Delete User"
-                              className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-800 border border-red-200 transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </td>
                       </tr>

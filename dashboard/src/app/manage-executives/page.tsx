@@ -4,6 +4,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
+
+const WhatsappIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+  </svg>
+);
 import { ExecutiveMemberItem, MemberRegistration } from "@/types";
 import { getApiUrl, getMainSiteUrl } from "@/utils/config";
 import { formatDateToDDMMYYYY, getDatePart, formatPaymentMethod, convertNumberToMarathiWords } from "@/utils/formatters";
@@ -14,9 +20,12 @@ import {
   Search,
   RefreshCw,
   Trash2,
+  UserX,
   Edit,
   Plus,
   X,
+  Copy,
+  Check,
   Phone,
   Building2,
   MapPin,
@@ -139,6 +148,14 @@ export default function ManageExecutivesPage() {
 
   const [saving, setSaving] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  // Copy state
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Modal State for Delete
   const [deleteCandidate, setDeleteCandidate] = useState<ExecutiveMemberItem | null>(null);
@@ -473,6 +490,15 @@ mptmamravati.org`;
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
+              href="/deleted-members"
+              className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 border border-red-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+              title="View Deleted Members"
+            >
+              <UserX className="w-4 h-4 text-red-600" />
+              <span>Deleted Members</span>
+            </Link>
+
+            <Link
               href="/manage-executives/register"
               className="px-4 py-2 bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:to-amber-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer border border-amber-400/60"
             >
@@ -502,35 +528,35 @@ mptmamravati.org`;
         {/* Search & Table Card */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 ${selectedViewExec ? "no-print" : ""}`}>
 
-          {/* Filter Bar (2 ROWS) */}
-          <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/50 space-y-3">
-            {/* ROW 1: SEARCH BAR (Full Width) */}
-            <div className="relative w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name, designation, city, mobile, prabhag..."
-                className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 transition"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+          {/* Filter Bar (Compact Single Row) */}
+          <div className="p-3.5 border-b border-slate-200 bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                {/* Shortened Search Box */}
+                <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search name, designation, city, mobile, prabhag..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-            {/* ROW 2: FILTER DROPDOWNS & COUNTER BADGE */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-200/60">
-              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Designation Filter */}
                 {uniqueDesignations.length > 0 && (
-                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 shrink-0">
                     <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">Designation:</span>
+                    <span className="text-xs font-bold text-slate-700">Designation:</span>
                     <select
                       value={designationFilter}
                       onChange={(e) => setDesignationFilter(e.target.value)}
@@ -548,9 +574,9 @@ mptmamravati.org`;
 
                 {/* District Filter */}
                 {uniqueDistricts.length > 0 && (
-                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 shrink-0">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">District:</span>
+                    <span className="text-xs font-bold text-slate-700">District:</span>
                     <select
                       value={districtFilter}
                       onChange={(e) => {
@@ -571,9 +597,9 @@ mptmamravati.org`;
 
                 {/* City Filter */}
                 {uniqueCities.length > 0 && (
-                  <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 shrink-0">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">City:</span>
+                    <span className="text-xs font-bold text-slate-700">City:</span>
                     <select
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
@@ -590,11 +616,11 @@ mptmamravati.org`;
                 )}
               </div>
 
-              <div className="text-xs font-bold text-slate-500 whitespace-nowrap px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200/80 inline-flex items-center gap-1.5">
+              <div className="text-xs font-normal text-slate-500 whitespace-nowrap px-3 py-1 bg-slate-50 rounded-xl border border-slate-200 shrink-0">
                 {loading ? (
                   <>Showing: <span className="inline-block w-8 h-3 bg-slate-200 animate-pulse rounded" /> Records</>
                 ) : (
-                  <>Showing: <span className="text-slate-900 font-extrabold">{filteredExecutives.length}</span> of {executives.length} Records</>
+                  <>Showing: <span className="text-slate-800 font-semibold">{filteredExecutives.length}</span> of {executives.length} Records</>
                 )}
               </div>
             </div>
@@ -604,23 +630,30 @@ mptmamravati.org`;
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
-                <tr className="bg-[#DCE6FA] text-slate-800 text-xs font-bold border-b border-slate-300">
-                  <th className="py-3 px-4">Member Name</th>
-                  <th className="py-3 px-4">Receipt &amp; Series No.</th>
-                  <th className="py-3 px-4">Designation</th>
-                  <th className="py-3 px-4">Mobile Number</th>
-                  <th className="py-3 px-4">Address</th>
-                  <th className="py-3 px-4">Village / Taluka</th>
-                  <th className="py-3 px-4">District</th>
-                  <th className="py-3 px-4">State / Pin</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
+                <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
+                  <th className="py-2.5 px-2.5 w-8 text-center">#</th>
+                  <th className="py-2.5 px-3 text-left">Date &amp; Time</th>
+                  <th className="py-2.5 px-4 text-left">Member Name</th>
+                  <th className="py-2.5 px-4 text-left">Receipt &amp; Series No.</th>
+                  <th className="py-2.5 px-4 text-left">Designation</th>
+                  <th className="py-2.5 px-4 text-left">Mobile Number</th>
+                  <th className="py-2.5 px-4 text-left">Address</th>
+                  <th className="py-2.5 px-4 text-left">Village / Taluka</th>
+                  <th className="py-2.5 px-4 text-left">District</th>
+                  <th className="py-2.5 px-4 text-left">State / Pin</th>
+                  <th className="py-2.5 px-4 text-left">Status</th>
+                  <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-800 font-medium">
                 {loading ? (
                   Array.from({ length: 8 }).map((_, idx) => (
                     <tr key={`skel-exec-${idx}`} className="animate-pulse">
+                      <td className="py-3 px-2.5 text-center"><div className="h-3.5 w-4 bg-slate-200 rounded mx-auto" /></td>
+                      <td className="py-3 px-3">
+                        <div className="h-3.5 w-20 bg-slate-200 rounded mb-1" />
+                        <div className="h-2.5 w-14 bg-slate-200 rounded" />
+                      </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-slate-200 shrink-0" />
@@ -676,129 +709,161 @@ mptmamravati.org`;
                     const receiptNo = item.receiptNo || match?.receiptNo || `MPTM-EM-R${String(seqNum).padStart(3, "0")}`;
                     const seriesNo = item.memberNo || item.seriesNo || match?.mainMembers[0]?.memberNo || `MPTM-EM-S${String(seqNum).padStart(3, "0")}`;
 
+                    const rawDate = match?.createdAt || item.createdAt;
+                    let timeStr = "";
+                    if (rawDate) {
+                      try {
+                        const d = new Date(rawDate);
+                        if (!isNaN(d.getTime())) {
+                          timeStr = d.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true,
+                          }).toLowerCase();
+                        }
+                      } catch {}
+                    }
+                    const dateStr = match ? getDatePart(match) : formatDateToDDMMYYYY(item.createdAt);
+
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
 
-                        {/* Name */}
-                        <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
-                              {item.fullName.charAt(0).toUpperCase()}
-                            </div>
-                            <span>{item.fullName}</span>
+                        {/* 1. Sr No */}
+                        <td className="align-top py-2.5 px-2.5 text-center text-slate-400 whitespace-nowrap text-xs font-normal">
+                          {index + 1}
+                        </td>
+
+                        {/* 2. Date & Time */}
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-slate-800 text-xs font-normal">{dateStr}</span>
+                            {timeStr && (
+                              <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{timeStr}</span>
+                            )}
                           </div>
                         </td>
 
+                        {/* Name */}
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={item.fullName}>
+                            {item.fullName}
+                          </span>
+                        </td>
+
                         {/* Receipt & Series No. */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="flex flex-col gap-1 text-xs">
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] font-bold text-slate-400">R:</span>
-                              <span className="font-mono font-extrabold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            <div className="w-[170px] flex items-center justify-between gap-1 leading-tight">
+                              <span className="font-mono text-xs text-slate-800 font-normal truncate" title={receiptNo}>
                                 {receiptNo}
                               </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopy(receiptNo, item.id + "-rec");
+                                }}
+                                className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
+                                title="Copy Receipt No"
+                              >
+                                {copiedId === item.id + "-rec" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] font-bold text-slate-400">S:</span>
-                              <span className="font-mono font-extrabold text-indigo-900 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                            <div className="w-[170px] flex items-center justify-between gap-1 leading-tight">
+                              <span className="font-mono text-[11px] text-slate-500 font-normal truncate" title={seriesNo}>
                                 {seriesNo}
                               </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopy(seriesNo, item.id + "-ser");
+                                }}
+                                className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
+                                title="Copy Series No"
+                              >
+                                {copiedId === item.id + "-ser" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                              </button>
                             </div>
                           </div>
                         </td>
 
                         {/* Designation */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-                            <Award className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                            <span>{formatDesignationInEnglish(item.designation)}</span>
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <span className="text-xs font-normal text-slate-700 leading-tight block">
+                            {formatDesignationInEnglish(item.designation)}
                           </span>
                         </td>
 
                         {/* Mobile */}
-                        <td className="py-3.5 px-4 font-bold text-slate-700 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <a href={`tel:${item.mobileNo}`} className="hover:underline font-mono">
-                              {item.mobileNo}
-                            </a>
-                          </div>
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <a href={`tel:${item.mobileNo}`} className="hover:underline font-mono text-xs font-normal text-slate-700">
+                            {item.mobileNo}
+                          </a>
                         </td>
 
                         {/* Address */}
-                        <td className="py-3.5 px-4 text-slate-700 max-w-[160px] truncate" title={item.address || match?.address || "-"}>
-                          {item.address || match?.address || <span className="text-slate-400 italic">-</span>}
+                        <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal max-w-[180px] truncate" title={item.address || "-"}>
+                          {item.address || <span className="text-slate-400">-</span>}
                         </td>
 
                         {/* Village / Taluka */}
-                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">
-                          {[item.gaav || match?.gaav, item.taluka || match?.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400 italic">-</span>}
+                        <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                          {[item.gaav, item.taluka].filter(Boolean).join(" / ") || <span className="text-slate-400">-</span>}
                         </td>
 
                         {/* District */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-slate-700">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{formatDistrictInEnglish(item.district, item.city)}</span>
-                          </div>
+                        <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                          {formatDistrictInEnglish(item.district, item.city)}
                         </td>
 
                         {/* State & Pincode */}
-                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap">
-                          {[item.state || match?.state, item.pincode || match?.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400 italic">-</span>}
+                        <td className="align-top py-2.5 px-4 text-slate-700 text-xs font-normal whitespace-nowrap">
+                          {[item.state, item.pincode].filter(Boolean).join(" - ") || <span className="text-slate-400">-</span>}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${item.status === "ACTIVE"
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
-                            }`}>
-                            ● {item.status}
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                          <span className="text-xs font-normal text-emerald-600 leading-tight block">
+                            {item.status || "Active"}
                           </span>
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
+                        <td className="align-top py-2.5 px-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
-                              type="button"
                               onClick={() => setSelectedViewExec(item)}
-                              title="View Detailed Receipt & Payment Proof"
-                              className="p-1.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
+                              title="View Executive Receipt"
+                              className="w-8 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                             >
-                              <Eye className="w-4 h-4" />
+                              <Eye className="w-4 h-4 text-amber-800" />
                             </button>
+
                             <button
-                              type="button"
-                              onClick={() => {
-                                const match = registrations.find((r) => r.mainMembers[0]?.mobileNo?.replace(/\D/g, "") === item.mobileNo.replace(/\D/g, ""));
-                                handleSendWhatsApp(item, match);
-                              }}
-                              title="Send Receipt on WhatsApp"
-                              className="p-1.5 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
+                              onClick={() => handleSendWhatsApp(item, match)}
+                              title="Send WhatsApp"
+                              className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition shadow-2xs active:scale-95 cursor-pointer"
                             >
-                              <MessageSquare className="w-4 h-4 text-emerald-600" />
+                              <WhatsappIcon className="w-4 h-4 text-emerald-600" />
                             </button>
+
                             <button
-                              type="button"
                               onClick={() => handleOpenEditModal(item)}
-                              title="Edit Member"
-                              className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                              title="Edit"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition cursor-pointer"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
+
                             <button
-                              type="button"
                               onClick={() => setDeleteCandidate(item)}
-                              title="Delete Member"
-                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+                              title="Delete"
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 transition flex items-center justify-center cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
-
                       </tr>
                     );
                   })
@@ -1082,7 +1147,7 @@ mptmamravati.org`;
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
                     title="Send Receipt to WhatsApp"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <WhatsappIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">WhatsApp</span>
                   </button>
 
@@ -1320,21 +1385,21 @@ mptmamravati.org`;
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="font-bold text-stone-600">पेमेंट पद्धत : </span>
+                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                      <span className="font-bold text-stone-600 shrink-0">पेमेंट पद्धत : </span>
                       <span className="font-bold text-stone-900">
                         {matchedReg ? formatPaymentMethod(matchedReg.paymentMethod) : formatPaymentMethod(selectedViewExec.paymentMethod || "Cash")}
                       </span>
                     </div>
-                    <div>
-                      <span className="font-bold text-stone-600">व्यवहार संदर्भ : </span>
-                      <span className="font-mono font-bold text-stone-900">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap min-w-0">
+                      <span className="font-bold text-stone-600 shrink-0">व्यवहार संदर्भ : </span>
+                      <span className="font-mono font-bold text-stone-900 text-[11px] sm:text-xs truncate">
                         {(matchedReg as any)?.paymentTransactionId || matchedReg?.paymentReference || "Direct / Admin"}
                       </span>
                     </div>
-                    <div>
-                      <span className="font-bold text-stone-600">पावती दिनांक : </span>
+                    <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0 sm:justify-end">
+                      <span className="font-bold text-stone-600 shrink-0">पावती दिनांक : </span>
                       <span className="font-mono font-bold text-stone-900">{dateStr}</span>
                     </div>
                   </div>
@@ -1410,12 +1475,7 @@ mptmamravati.org`;
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>Digitally Certified & Approved</span>
                     </div>
-                    <p className="font-black text-[#7A0C0C] text-xs pt-0.5">
-                      अध्यक्ष / सचिव / कोषाध्यक्ष
-                    </p>
-                    <p className="text-[10px] text-stone-600 font-medium">
-                      महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती
-                    </p>
+                    
                   </div>
                 </div>
 

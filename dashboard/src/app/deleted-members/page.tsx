@@ -18,7 +18,7 @@ import {
   X,
   Phone,
   MapPin,
-  Check,
+  Copy, Check,
   CheckCircle2,
   AlertTriangle,
   Globe,
@@ -80,6 +80,13 @@ export default function DeletedMembersPage() {
 
   // Toast Alert
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const API_URL = getApiUrl();
 
@@ -409,33 +416,32 @@ export default function DeletedMembersPage() {
           </div>
         )}
 
-        {/* SEARCH & FILTER TOOLBAR (2 ROWS - EXACT MATCH TO REGISTRATIONS TAB) */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 mb-6 space-y-3">
-          {/* ROW 1: SEARCH BAR (Full Width) */}
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder={lang === "mr" ? "पावती क्र., नाव, मोबाईल, गाव/शहर, पद किंवा कारण शोधा..." : "Search receipt no, name, mobile, city, designation or reason..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {/* SEARCH & FILTER TOOLBAR (Compact Single Row) */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-3.5 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+              {/* Shortened Search Box */}
+              <div className="relative w-full sm:w-80 md:w-96 shrink-0">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={lang === "mr" ? "पावती क्र., नाव, मोबाईल, गाव/शहर, पद किंवा कारण शोधा..." : "Search receipt no, name, mobile, city, designation or reason..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
 
-          {/* ROW 2: FILTER DROPDOWNS & CONTROL PILLS */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-100">
-            <div className="flex flex-wrap items-center gap-2.5">
               {/* Member Type Filter Pills (सर्व, प्राथमिक, कार्यकारिणी) */}
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 shrink-0">
                 <button
                   type="button"
                   onClick={() => setTypeFilter("ALL")}
@@ -486,7 +492,7 @@ export default function DeletedMembersPage() {
 
               {/* District Filter Dropdown */}
               {uniqueDistrictsList.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shrink-0">
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                   <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "जिल्हा:" : "District:"}</span>
                   <select
@@ -509,9 +515,9 @@ export default function DeletedMembersPage() {
 
               {/* City Filter Dropdown */}
               {uniqueCitiesList.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shrink-0">
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
-                  <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "शहर:" : "City:"}</span>
+                  <span className="text-xs font-bold text-slate-700 shrink-0">{lang === "mr" ? "गाव/शहर:" : "City:"}</span>
                   <select
                     value={cityFilter}
                     onChange={(e) => setCityFilter(e.target.value)}
@@ -528,25 +534,25 @@ export default function DeletedMembersPage() {
               )}
             </div>
 
-            {/* View Mode Toggle (Essential vs All Columns) */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/60 ml-auto">
+            {/* Essential / All Columns View Toggle */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 shrink-0">
               <button
                 type="button"
                 onClick={() => setViewMode("essential")}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   viewMode === "essential"
                     ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
-                title={lang === "mr" ? "महत्त्वाचे स्तंभ (कमी जागा, कॉम्पॅक्ट)" : "Essential Columns View"}
+                title={lang === "mr" ? "केवळ आवश्यक स्तंभ दाखवा" : "Essential Columns View"}
               >
-                <Columns3 className="w-3.5 h-3.5 text-amber-600" />
-                <span>{lang === "mr" ? "महत्त्वाचे" : "Essential"}</span>
+                <Columns3 className="w-3.5 h-3.5 text-slate-500" />
+                <span>{lang === "mr" ? "आवश्यक" : "Essential"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("all")}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                   viewMode === "all"
                     ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                     : "text-slate-600 hover:text-slate-900"
@@ -598,7 +604,7 @@ export default function DeletedMembersPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#EBF1FA] text-slate-800 text-[11px] font-bold border-b border-slate-200 uppercase tracking-wider whitespace-nowrap">
+                  <tr className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
                     <th className="py-2.5 px-2.5 w-8 text-center">{lang === "mr" ? "अ.क्र." : "#"}</th>
                     <th className="py-2.5 px-3">{lang === "mr" ? "हटवल्याचा दिनांक व वेळ" : "Deleted Date & Time"}</th>
                     <th className="py-2.5 px-3">{lang === "mr" ? "प्रकार" : "Type"}</th>
@@ -689,18 +695,19 @@ export default function DeletedMembersPage() {
 
                     const dateObj = member.deletedAt ? new Date(member.deletedAt) : null;
                     const datePart = dateObj
-                      ? dateObj.toLocaleDateString("mr-IN", {
+                      ? dateObj.toLocaleDateString(lang === "mr" ? "mr-IN" : "en-GB", {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
                         })
                       : "-";
                     const timePart = dateObj
-                      ? dateObj.toLocaleTimeString("mr-IN", {
+                      ? dateObj.toLocaleTimeString(lang === "mr" ? "mr-IN" : "en-US", {
                           hour: "2-digit",
                           minute: "2-digit",
+                          second: "2-digit",
                           hour12: true,
-                        })
+                        }).toLowerCase()
                       : "";
 
                     return (
@@ -711,51 +718,57 @@ export default function DeletedMembersPage() {
                         title={lang === "mr" ? "संपूर्ण तपशील पाहण्यासाठी क्लिक करा" : "Click to view full details"}
                       >
                         {/* 1. SR NO */}
-                        <td className="py-2 px-2.5 text-center font-bold text-slate-400 whitespace-nowrap text-xs">
+                        <td className="align-top py-2.5 px-2.5 text-center text-slate-400 whitespace-nowrap text-xs font-normal">
                           {index + 1}
                         </td>
 
-                        {/* 2. DELETED DATE & TIME (Stacked like registrations table) */}
-                        <td className="py-2 px-3 whitespace-nowrap">
+                        {/* 2. DELETED DATE & TIME (Stacked like registrations table, English/Marathi numbers per language) */}
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
                           <div className="flex flex-col leading-tight">
-                            <span className="font-bold text-slate-900 text-xs">{datePart}</span>
+                            <span className="text-slate-800 text-xs font-normal">{datePart}</span>
                             {timePart && (
-                              <span className="text-[11px] font-normal text-slate-500 mt-0.5">{timePart}</span>
+                              <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{timePart}</span>
                             )}
                           </div>
                         </td>
 
                         {/* 3. MEMBER TYPE */}
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          {isPrimary ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
-                              <FileText className="w-3 h-3 text-emerald-700" />
-                              <span>{lang === "mr" ? "प्राथमिक" : "Primary"}</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 font-bold text-[11px] text-amber-900 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full">
-                              <Briefcase className="w-3 h-3 text-amber-700" />
-                              <span>{lang === "mr" ? "कार्यकारिणी" : "Executive"}</span>
-                            </span>
-                          )}
-                        </td>
-
-                        {/* 4. RECEIPT NO */}
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          <span className="font-mono font-bold text-xs text-slate-900">
-                            {member.receiptNo || "-"}
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                          <span className="text-xs font-normal text-slate-700 leading-tight block">
+                            {isPrimary ? (lang === "mr" ? "प्राथमिक" : "Primary") : (lang === "mr" ? "कार्यकारिणी" : "Executive")}
                           </span>
                         </td>
 
+                        {/* 4. RECEIPT NO (Aligned copy button, simple font) */}
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                          <div className="w-[170px] flex items-center justify-between gap-1 leading-tight">
+                            <span className="font-mono text-xs text-slate-800 font-normal truncate" title={member.receiptNo || "-"}>
+                              {member.receiptNo || "-"}
+                            </span>
+                            {member.receiptNo && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopy(member.receiptNo!, member.id + "-rec");
+                                }}
+                                className="text-slate-400 hover:text-slate-700 p-0.5 transition cursor-pointer shrink-0"
+                                title={lang === "mr" ? "पावती क्र. कॉपी करा" : "Copy Receipt No"}
+                              >
+                                {copiedId === member.id + "-rec" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
                         {/* 5. MEMBER NAME */}
-                        <td className="py-2 px-3 whitespace-nowrap">
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-900 text-xs truncate max-w-[170px]" title={member.fullName}>
+                            <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={member.fullName}>
                               {member.fullName}
                             </span>
                             {mainList.length > 1 && (
                               <span
-                                className="text-[11px] font-medium text-amber-800 shrink-0"
+                                className="text-[11px] font-normal text-amber-800 shrink-0"
                                 title={`एकूण ${mainList.length} मुख्य सदस्य: ${mainList.map((m: any) => m.fullName).join(", ")}`}
                               >
                                 (+{mainList.length - 1} {lang === "mr" ? "मुख्य" : "Main"})
@@ -765,65 +778,60 @@ export default function DeletedMembersPage() {
                         </td>
 
                         {/* 6. MOBILE NO */}
-                        <td className="py-2 px-3 whitespace-nowrap">
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
                           {member.mobileNo ? (
                             <a
                               href={`tel:${member.mobileNo}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs font-medium text-slate-700 hover:text-blue-700 flex items-center gap-1"
+                              className="text-xs font-normal font-mono text-slate-700 hover:text-slate-900 flex items-center gap-1"
                             >
                               <Phone className="w-3 h-3 text-slate-400" />
                               <span>{member.mobileNo}</span>
                             </a>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-400 text-xs font-normal">-</span>
                           )}
                         </td>
 
                         {/* 7. LOCATION / ADDRESS */}
                         {viewMode === "all" ? (
                           <>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700 truncate max-w-[150px]" title={member.address || ""}>
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700 truncate max-w-[150px]" title={member.address || ""}>
                               {member.address || "-"}
                             </td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700">
                               {member.gaav || "-"}
                             </td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700">
                               {member.taluka || "-"}
                             </td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs font-bold text-indigo-900">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700">
                               {member.district || "-"}
                             </td>
-                            <td className="py-2 px-3 whitespace-nowrap text-xs text-slate-700">
+                            <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700">
                               {member.state || "महाराष्ट्र"}
                             </td>
                           </>
                         ) : (
-                          <td className="py-2 px-3 whitespace-nowrap text-xs font-medium text-slate-700 truncate max-w-[150px]" title={`${member.gaav || ""}, ${member.city || ""}, ${member.district || ""}`}>
+                          <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal text-slate-700 truncate max-w-[150px]" title={`${member.gaav || ""}, ${member.city || ""}, ${member.district || ""}`}>
                             {member.city || member.gaav || member.district || "-"}
                           </td>
                         )}
 
                         {/* 8. FEE & PAYMENT */}
-                        <td className="py-2 px-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-900 text-xs">
-                              ₹{member.registrationFee || (isExecutive ? 1001 : 500)}
-                            </span>
-                            <span className="text-xs font-medium text-slate-600">
-                              • {formatPaymentMethod(member.paymentMethod)}
-                            </span>
-                          </div>
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap">
+                          <span className="text-slate-800 text-xs font-normal">
+                            ₹{member.registrationFee || (isExecutive ? 1001 : 500)} • {formatPaymentMethod(member.paymentMethod)}
+                          </span>
                         </td>
 
                         {/* 9. MUKHYA MEMBERS */}
-                        <td className="py-2 px-2 text-center whitespace-nowrap text-xs font-medium text-slate-800">
+                        <td className="align-top py-2.5 px-2 text-center whitespace-nowrap text-xs font-normal text-slate-800">
                           {mainList.length} {lang === "mr" ? "मुख्य" : "Main"}
                         </td>
 
                         {/* 10. KUTUMB MEMBERS */}
-                        <td className="py-2 px-2 text-center whitespace-nowrap text-xs font-medium text-slate-800">
+                        <td className="align-top py-2.5 px-2 text-center whitespace-nowrap text-xs font-normal text-slate-800">
                           {(isPrimary || familyCount > 0) && familyCount > 0 ? (
                             <span>{familyCount} {lang === "mr" ? "कुटुंब" : "Family"}</span>
                           ) : (
@@ -831,20 +839,20 @@ export default function DeletedMembersPage() {
                           )}
                         </td>
 
-                        {/* 10. DELETED BY & REASON */}
-                        <td className="py-2 px-3 whitespace-nowrap text-xs font-medium">
+                        {/* 11. DELETED BY & REASON */}
+                        <td className="align-top py-2.5 px-3 whitespace-nowrap text-xs font-normal">
                           <div className="flex flex-col leading-tight max-w-[160px]">
-                            <span className="text-slate-800 truncate" title={member.deletedBy || ""}>
+                            <span className="text-slate-800 font-normal truncate" title={member.deletedBy || ""}>
                               {member.deletedBy || "Admin"}
                             </span>
-                            <span className="text-[11px] text-slate-400 italic truncate" title={member.reason || ""}>
+                            <span className="text-[10px] text-slate-400 font-normal italic truncate mt-0.5" title={member.reason || ""}>
                               {member.reason || (lang === "mr" ? "नोंद हटवली" : "Record deleted")}
                             </span>
                           </div>
                         </td>
 
-                        {/* 11. ACTIONS */}
-                        <td className="py-2 px-3 text-right whitespace-nowrap">
+                        {/* 12. ACTIONS */}
+                        <td className="align-top py-2.5 px-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                             {/* View Details */}
                             <button
@@ -894,7 +902,7 @@ export default function DeletedMembersPage() {
           const isExec = selectedDetailsMember.memberType === "EXECUTIVE";
           const dateObj = selectedDetailsMember.deletedAt ? new Date(selectedDetailsMember.deletedAt) : null;
           const deletedDateTimeStr = dateObj
-            ? `${dateObj.toLocaleDateString("mr-IN")} • ${dateObj.toLocaleTimeString("mr-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`
+            ? `${dateObj.toLocaleDateString(lang === "mr" ? "mr-IN" : "en-GB")} • ${dateObj.toLocaleTimeString(lang === "mr" ? "mr-IN" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}`
             : "-";
           const regDateStr = selectedDetailsMember.registrationDate || "-";
           const mainMembersList = (Array.isArray(selectedDetailsMember.mainMembers) && selectedDetailsMember.mainMembers.length > 0)
@@ -1032,23 +1040,9 @@ export default function DeletedMembersPage() {
                           </div>
 
                           {/* Card Content with Avatar and 6 Tiles */}
-                          <div className="p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                            {m.photoUrl || (idx === 0 && selectedDetailsMember.photoUrl) ? (
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400 shadow-md shrink-0 bg-white">
-                                <img
-                                  src={m.photoUrl || selectedDetailsMember.photoUrl}
-                                  alt={m.fullName || selectedDetailsMember.fullName}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 border-2 border-amber-400 text-[#7A0C0C] font-black text-xl flex items-center justify-center shadow-inner shrink-0">
-                                {getInitials(m.fullName || selectedDetailsMember.fullName)}
-                              </div>
-                            )}
-
+                          <div className="p-4">
                             {/* 6 Grid Tiles */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 flex-1 w-full text-xs">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full text-xs">
                               <div className="bg-[#FAF7F2] p-2.5 rounded-xl border border-amber-100/80">
                                 <span className="text-[10px] text-stone-500 font-semibold block">पूर्ण नाव</span>
                                 <span className="font-bold text-stone-900 block truncate" title={m.fullName || selectedDetailsMember.fullName}>

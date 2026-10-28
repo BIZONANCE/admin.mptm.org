@@ -1381,12 +1381,7 @@ export default function ExecutiveMemberRegisterPage() {
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>Digitally Certified & Approved</span>
                     </div>
-                    <p className="font-black text-[#7A0C0C] text-xs pt-0.5">
-                      अध्यक्ष / सचिव / कोषाध्यक्ष
-                    </p>
-                    <p className="text-[10px] text-stone-600 font-medium">
-                      महाराष्ट्र प्रांतिक तैलिक महासभा, अमरावती
-                    </p>
+                    
                   </div>
                 </div>
 
