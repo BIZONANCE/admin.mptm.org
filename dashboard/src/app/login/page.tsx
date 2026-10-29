@@ -348,10 +348,12 @@ export default function LoginPage() {
               <div className="space-y-6 text-left">
                 <div className="w-14 h-14 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-white shadow-2xs">
                   <Image
-                    src="/navlogo.png"
+                    src="/Navlogo.png"
                     alt="Logo"
                     width={56}
                     height={56}
+                    unoptimized
+                    priority
                     className="w-full h-full object-cover"
                   />
                 </div>
