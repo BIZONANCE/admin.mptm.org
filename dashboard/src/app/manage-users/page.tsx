@@ -29,7 +29,7 @@ export default function ManageUsersPage() {
     if (typeof window !== "undefined") {
       const role = localStorage.getItem("mptm_admin_role");
       const username = localStorage.getItem("mptm_admin_username");
-      const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org";
+      const isSuper = role === "SUPER_ADMIN" || username === "mptmamravati.org" || username === "admin@mptmamravati.org" || username === "mptmamravati@gmail.com";
       if (!isSuper) {
         router.replace("/memberregistration");
       }

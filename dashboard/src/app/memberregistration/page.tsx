@@ -321,7 +321,7 @@ mptmamravati.org`;
       const role = localStorage.getItem("mptm_admin_role") || "USER";
       const username = localStorage.getItem("mptm_admin_username") || "";
       const lowerUser = username.toLowerCase();
-      const isSuper = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "admin" || lowerUser === "superadmin";
+      const isSuper = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "mptmamravati@gmail.com" || lowerUser === "admin" || lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
       const params = new URLSearchParams({
         userEmail: username,
@@ -361,7 +361,7 @@ mptmamravati.org`;
       const username = localStorage.getItem("mptm_admin_username") || "";
 
       const lowerUser = username.toLowerCase();
-      const superAdminStatus = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "admin" || lowerUser === "superadmin";
+      const superAdminStatus = role === "SUPER_ADMIN" || lowerUser === "mptmamravati.org" || lowerUser === "admin@mptmamravati.org" || lowerUser === "mptmamravati@gmail.com" || lowerUser === "admin" || lowerUser === "superadmin";
       setIsSuperAdmin(superAdminStatus);
       setLoggedUserEmail(username);
 

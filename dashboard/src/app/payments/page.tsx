@@ -632,6 +632,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       setIsSuperAdmin(superAdminStatus);
@@ -699,6 +700,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
@@ -747,6 +749,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
@@ -783,6 +786,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
@@ -833,6 +837,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;
@@ -893,6 +898,7 @@ export default function PaymentsPage() {
         role === "SUPER_ADMIN" ||
         lowerUser === "mptmamravati.org" ||
         lowerUser === "admin@mptmamravati.org" ||
+        lowerUser === "mptmamravati@gmail.com" ||
         lowerUser === "admin" ||
         lowerUser === "superadmin";
       const effectiveRole = isSuper ? "SUPER_ADMIN" : role;

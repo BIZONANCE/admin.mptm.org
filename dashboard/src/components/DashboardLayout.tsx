@@ -189,6 +189,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const isSuperCreds =
         lowerUName === "mptmamravati.org" ||
         lowerUName === "admin@mptmamravati.org" ||
+        lowerUName === "mptmamravati@gmail.com" ||
         lowerUName === "admin" ||
         lowerUName === "superadmin";
       const savedRole = localStorage.getItem("mptm_admin_role");
@@ -206,6 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (
       lower === "mptmamravati.org" ||
       lower === "admin@mptmamravati.org" ||
+      lower === "mptmamravati@gmail.com" ||
       lower === "admin" ||
       lower === "superadmin"
     ) return true;

@@ -49,7 +49,7 @@ export default function ManageCareerPage() {
       return app.resumeData;
     }
     // Minimal valid sample PDF data URI fallback
-    const samplePdfBase64 = "JVBERi0xLjQKJSDi48nNCiMSIDAgb2JqCjw8L0xlbmd0aCA2OS9GaWx0ZXIvRmxhdGVEZWNvZGU+PnN0cmVhbQp4nF3MSwoCMRAD0K9TcgWNmWfyf4sIGzcugm5cuvP4jQsWpJBX8hL4OEFKygmSj8w4M9bAWI0lYvV4sD50tFhC8RbsQ8WbByswFmtb7j6U/Qh5ZpT8A7m/E0wKZW5kc3RyZWFtCmVuZG9iaiAKMiAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL01lZGlhQm94WzAgMCA2MTIgNzg4XS9Db250ZW50cyAxIDAgUj4+CmVuZG9iaiAKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL01lZGlhQm94WzAgMCA2MTIgNzg4XS9Db250ZW50cyAxIDAgUj4+CmVuZG9iaiAKNCAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMyAwIFI+PgplbmRvYmogCnRyYWlsZXIKPDwvUm9vdCA0IDAgUj4+CnN0YXJ0eHJlZgoyMjQKJSVFT0YK";
+    const samplePdfBase64 = "JVBERi0xLjQKJSDi48nNCiMSIDAgb2JqCjw8L0xlbmd0aCA2OS9GaWx0ZXIvRmxhdGVEZWNvZGU+PnN0cmVhbQp4nF3MSwoCMRAD0K9TcgWNmWfyf4sIGzcugm5cuvP4jQsWpJBX8hL4OEFKygmSj8w4M9bAWI0lYvV4sD50tFhC8RbsQ8WbByswFmtb7j6U/Qh5ZpT8A7m/E0wKZW5kc3RyZWFtCmVuZG9iaiAKMiAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL01lZGlhQm94WzAgMCA2MTIgNzg4XS9Db250ZW50cyAxIDAgUj4+CmVuZG9iaiAKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDMgMCBSL01lZGlhQm94WzAgMCA2MTIgNzg4XS9Db250ZW50cyAxIDAgUj4+CmVuZG9iaiAKNCAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMyAwIFI+PgplbmdvYmogCnRyYWlsZXIKPDwvUm9vdCA0IDAgUj4+CnN0YXJ0eHJlZgoyMjQKJSVFT0YK";
     return `data:application/pdf;base64,${samplePdfBase64}`;
   };
 
@@ -61,7 +61,8 @@ export default function ManageCareerPage() {
       const isSuper =
         role === "SUPER_ADMIN" ||
         username === "mptmamravati.org" ||
-        username === "admin@mptmamravati.org";
+        username === "admin@mptmamravati.org" ||
+        username === "mptmamravati@gmail.com";
       setIsSuperAdmin(isSuper);
       if (!isSuper) {
         router.replace("/memberregistration");
@@ -235,10 +236,6 @@ export default function ManageCareerPage() {
           </button>
         </div>
 
-
-
-
-
         {/* Filters & Search Toolbar (Compact Single Row) */}
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
@@ -296,9 +293,9 @@ export default function ManageCareerPage() {
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
                 <tr>
+                  <th className="py-2.5 px-4 text-left">Date</th>
                   <th className="py-2.5 px-4 text-left">Applicant Name</th>
                   <th className="py-2.5 px-4 text-left">Contact Info</th>
-                  <th className="py-2.5 px-4 text-left">Date Applied</th>
                   <th className="py-2.5 px-4 text-left">Resume</th>
                   <th className="py-2.5 px-4 text-left">Status</th>
                   <th className="py-2.5 px-4 text-right">Actions</th>
@@ -309,6 +306,10 @@ export default function ManageCareerPage() {
                 {isLoading ? (
                   Array.from({ length: 6 }).map((_, idx) => (
                     <tr key={`skel-career-${idx}`} className="animate-pulse">
+                      {/* Date Applied */}
+                      <td className="py-4 px-4 sm:px-6">
+                        <div className="h-3.5 w-20 bg-slate-200 rounded" />
+                      </td>
                       {/* Name */}
                       <td className="py-4 px-4 sm:px-6">
                         <div className="h-4 w-32 bg-slate-200 rounded mb-1.5" />
@@ -318,10 +319,6 @@ export default function ManageCareerPage() {
                       <td className="py-4 px-4 sm:px-6">
                         <div className="h-3.5 w-36 bg-slate-200 rounded mb-1.5" />
                         <div className="h-3 w-24 bg-slate-200 rounded" />
-                      </td>
-                      {/* Date Applied */}
-                      <td className="py-4 px-4 sm:px-6">
-                        <div className="h-3.5 w-20 bg-slate-200 rounded" />
                       </td>
                       {/* Resume */}
                       <td className="py-4 px-4 sm:px-6">
@@ -361,6 +358,14 @@ export default function ManageCareerPage() {
 
                     return (
                     <tr key={app.id} className="hover:bg-amber-50/70 transition cursor-pointer group border-b border-slate-100/80">
+                      {/* Date */}
+                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-slate-800 text-xs font-normal">{appDate}</span>
+                          {appTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{appTime}</span>}
+                        </div>
+                      </td>
+
                       {/* Name */}
                       <td className="align-top py-2.5 px-4 whitespace-nowrap">
                         <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={app.name}>
@@ -382,14 +387,6 @@ export default function ManageCareerPage() {
                               {[app.city, app.district].filter(Boolean).join(", ")}
                             </span>
                           )}
-                        </div>
-                      </td>
-
-                      {/* Date */}
-                      <td className="align-top py-2.5 px-4 whitespace-nowrap">
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-slate-800 text-xs font-normal">{appDate}</span>
-                          {appTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{appTime}</span>}
                         </div>
                       </td>
 

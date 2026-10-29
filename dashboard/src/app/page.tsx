@@ -162,7 +162,8 @@ export default function DashboardHome() {
       const superAdminStatus =
         role === "SUPER_ADMIN" ||
         username === "mptmamravati.org" ||
-        username === "admin@mptmamravati.org";
+        username === "admin@mptmamravati.org" ||
+        username === "mptmamravati@gmail.com";
 
       setIsSuperAdmin(superAdminStatus);
       setLoggedUserEmail(username);

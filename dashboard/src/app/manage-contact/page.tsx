@@ -80,7 +80,8 @@ export default function ManageContactPage() {
       const isSuper =
         role === "SUPER_ADMIN" ||
         username === "mptmamravati.org" ||
-        username === "admin@mptmamravati.org";
+        username === "admin@mptmamravati.org" ||
+        username === "mptmamravati@gmail.com";
       setIsSuperAdmin(isSuper);
       if (!isSuper) {
         router.replace("/memberregistration");
@@ -364,8 +365,8 @@ export default function ManageContactPage() {
             <form onSubmit={handleSaveContactInfo} className="space-y-5">
               {/* Phone */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Official Mobile Phone (10-Digit) *
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mobile Number *
                 </label>
                 <input
                   type="tel"
@@ -388,8 +389,8 @@ export default function ManageContactPage() {
 
               {/* Alternate Phone */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Alternate Mobile Phone (10-Digit) <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Alternate Mobile Number <span className="text-slate-400 font-normal lowercase"></span>
                 </label>
                 <input
                   type="tel"
@@ -402,15 +403,15 @@ export default function ManageContactPage() {
                   }
                   maxLength={10}
                   inputMode="numeric"
-                  placeholder="Optional 10-Digit Alternate Number (e.g. 9876543211)"
+                  placeholder="Alternate Number"
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 font-mono outline-none focus:ring-2 focus:ring-slate-900 transition"
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Official Email Address *
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                 Email Address *
                 </label>
                 <input
                   type="email"
@@ -426,8 +427,8 @@ export default function ManageContactPage() {
 
               {/* Office Hours */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Office Hours *
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                 Working Hours *
                 </label>
                 <input
                   type="text"
@@ -443,7 +444,7 @@ export default function ManageContactPage() {
 
               {/* Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Office Address *
                 </label>
                 <textarea
@@ -534,10 +535,10 @@ export default function ManageContactPage() {
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead className="bg-[#EBF1FA] text-slate-700 text-xs font-medium border-b border-slate-200 whitespace-nowrap">
                     <tr>
+                      <th className="py-2.5 px-4 text-left">Date</th>
                       <th className="py-2.5 px-4 text-left">Visitor Name</th>
                       <th className="py-2.5 px-4 text-left">Contact Info</th>
                       <th className="py-2.5 px-4 text-left">Subject & Message</th>
-                      <th className="py-2.5 px-4 text-left">Date</th>
                       <th className="py-2.5 px-4 text-left">Status</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
@@ -547,6 +548,10 @@ export default function ManageContactPage() {
                     {isLoading ? (
                       Array.from({ length: 6 }).map((_, idx) => (
                         <tr key={`skel-contact-${idx}`} className="animate-pulse">
+                          {/* Date */}
+                          <td className="py-4 px-4 sm:px-6">
+                            <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                          </td>
                           {/* Visitor Name */}
                           <td className="py-4 px-4 sm:px-6">
                             <div className="h-4 w-32 bg-slate-200 rounded" />
@@ -560,10 +565,6 @@ export default function ManageContactPage() {
                           <td className="py-4 px-4 sm:px-6 max-w-xs">
                             <div className="h-3.5 w-40 bg-slate-200 rounded mb-1.5" />
                             <div className="h-3 w-56 bg-slate-200 rounded" />
-                          </td>
-                          {/* Date */}
-                          <td className="py-4 px-4 sm:px-6">
-                            <div className="h-3.5 w-24 bg-slate-200 rounded" />
                           </td>
                           {/* Status */}
                           <td className="py-4 px-4 sm:px-6">
@@ -604,6 +605,14 @@ export default function ManageContactPage() {
                             msg.status === "UNREAD" ? "bg-amber-50/30" : ""
                           }`}
                         >
+                          {/* Date */}
+                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-slate-800 text-xs font-normal">{msgDate}</span>
+                              {msgTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{msgTime}</span>}
+                            </div>
+                          </td>
+
                           {/* Visitor Name */}
                           <td className="align-top py-2.5 px-4 whitespace-nowrap">
                             <span className="text-slate-800 text-xs font-normal truncate max-w-[190px] block" title={msg.name}>
@@ -637,14 +646,6 @@ export default function ManageContactPage() {
                               <span className="text-[11px] font-normal text-slate-500 truncate max-w-[240px] mt-0.5" title={msg.message}>
                                 {msg.message}
                               </span>
-                            </div>
-                          </td>
-
-                          {/* Date */}
-                          <td className="align-top py-2.5 px-4 whitespace-nowrap">
-                            <div className="flex flex-col leading-tight">
-                              <span className="text-slate-800 text-xs font-normal">{msgDate}</span>
-                              {msgTime && <span className="text-[10px] font-normal text-slate-400 mt-0.5 leading-none">{msgTime}</span>}
                             </div>
                           </td>
 
@@ -738,7 +739,7 @@ export default function ManageContactPage() {
                       <Phone className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Mobile Number</p>
+                      <p className="text-[11px] font-semibold text-slate-500 uppercase">Mobile Number</p>
                       <p className="font-mono font-bold text-slate-900 group-hover:underline">{viewingMsg.phone}</p>
                     </div>
                   </a>
@@ -751,7 +752,7 @@ export default function ManageContactPage() {
                       <Mail className="w-4 h-4" />
                     </div>
                     <div className="truncate">
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Email Address</p>
+                      <p className="text-[11px] font-semibold text-slate-500 uppercase">Email Address</p>
                       <p className="font-bold text-slate-900 group-hover:underline truncate">{viewingMsg.email}</p>
                     </div>
                   </a>
@@ -773,7 +774,7 @@ export default function ManageContactPage() {
 
                 {/* Message Body */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Message Content:</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Message Content:</label>
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 leading-relaxed text-xs sm:text-sm whitespace-pre-wrap min-h-[90px]">
                     {viewingMsg.message}
                   </div>
