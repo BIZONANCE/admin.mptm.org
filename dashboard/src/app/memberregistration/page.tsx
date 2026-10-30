@@ -374,6 +374,16 @@ mptmamravati.org`;
     }
 
     fetchRegistrations();
+
+    fetch(`${API_URL}/api/users`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.data)) {
+            setManagedUsers(data.data);
+            localStorage.setItem("mptm_managed_users", JSON.stringify(data.data));
+          }
+        })
+        .catch(() => {});
   }, [router]);
 
   const uniqueReferrersList = useMemo(() => {
@@ -697,7 +707,12 @@ mptmamravati.org`;
     const baseUrl = `${siteUrl}/memberregistration`;
     const targetRef = isSuperAdmin ? selectedUserForLink : loggedUserEmail;
     if (targetRef && targetRef.trim()) {
-      return `${baseUrl}?ref=${encodeURIComponent(targetRef.trim())}`;
+      const cleanRef = targetRef.trim().toLowerCase();
+      const matchedUser = managedUsers.find(
+        (u: any) => (u.email || "").trim().toLowerCase() === cleanRef
+      );
+      const tokenOrRef = matchedUser?.referralToken || targetRef.trim();
+      return `${baseUrl}?ref=${encodeURIComponent(tokenOrRef)}`;
     }
     return baseUrl;
   };

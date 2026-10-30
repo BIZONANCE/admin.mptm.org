@@ -59,6 +59,7 @@ export interface ManagedUser {
   time?: string;
   status: "VERIFIED" | "PENDING";
   role: string;
+  referralToken?: string;
   createdAt: string;
 }
 
